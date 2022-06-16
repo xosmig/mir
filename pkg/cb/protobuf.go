@@ -18,10 +18,12 @@ func StartMessage(self t.ModuleID, data []byte) *messagepb.Message {
 	})
 }
 
-func EchoMessage(self t.ModuleID, data []byte) *messagepb.Message {
+func EchoMessage(self t.ModuleID, signature []byte) *messagepb.Message {
 	return Message(self, &cbpb.CBMessage{
 		Type: &cbpb.CBMessage_EchoMessage{
-			EchoMessage: &cbpb.EchoMessage{Data: data},
+			EchoMessage: &cbpb.EchoMessage{
+				Signature: signature,
+			},
 		},
 	})
 }

@@ -90,7 +90,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		// if echos[p] = ⊥ ∧ verifysig(p, bcb||p||ECHO||m, σ) then
 		if nodeId == params.Leader && !state.receivedEcho[from] && state.request != nil {
 			state.receivedEcho[from] = true
-			dsl.VerifyNodeSignature(m, mc.Crypto, [][]byte{state.request}, msg.Signature, from)
+			dsl.VerifyNodeSignature(m, mc.Crypto, state.request, msg.Signature, from)
 		}
 		return nil
 	})
