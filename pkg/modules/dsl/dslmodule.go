@@ -3,38 +3,44 @@ package dsl
 import (
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/events"
+	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	"reflect"
 	"unsafe"
 )
 
-// Module allows creating passive modules in a very natural declarative way.
-type Module struct {
+// dslModuleImpl allows creating passive modules in a very natural declarative way.
+type dslModuleImpl struct {
 	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) error
-	conditionHandlers []conditionEntry
+	conditionHandlers []func() error
 	outputEvents      *events.EventList
 }
 
 type Handle struct {
-	moduleImpl *Module
+	moduleImpl *dslModuleImpl
 }
 
 type DslModule interface {
 	GetDslHandle() Handle
+	GetPassiveModule() modules.PassiveModule
 }
 
-func (m *Module) GetDslHandle() Handle {
+func (m *dslModuleImpl) GetDslHandle() Handle {
 	return Handle{moduleImpl: m}
 }
 
-func NewModule() *Module {
-	return &Module{}
+func (m *dslModuleImpl) GetPassiveModule() modules.PassiveModule {
+	return m
 }
 
-type conditionEntry struct {
-	condition func() bool
-	handler   func() error
+func NewModule() *dslModuleImpl {
+	return &dslModuleImpl{}
 }
+
+//type conditionEntry struct {
+//	condition func() bool
+//	handler   func() error
+//}
 
 type evContainer[Ev any] struct{ ev *Ev }
 
@@ -104,39 +110,46 @@ func UponEvent[EvTp, Ev any](m DslModule, handler func(ev *Ev) error) {
 //	})
 //}
 
-// UponRepeatedCondition registers a *repeated* condition handler. Predicate `cond` will be evaluated each time after a
-// batch of events is processed and *each time* `cond()` returns `True`, `handler` will be invoked.
-// Conditions are checked in the order of their registration.
-func UponRepeatedCondition(m DslModule, cond func() bool, handler func() error) {
-	m.GetDslHandle().moduleImpl.conditionHandlers = append(
-		m.GetDslHandle().moduleImpl.conditionHandlers,
-		conditionEntry{
-			condition: cond,
-			handler:   handler,
-		})
-}
+//// UponRepeatedCondition registers a *repeated* condition handler. Predicate `cond` will be evaluated each time after a
+//// batch of events is processed and *each time* `cond()` returns `True`, `handler` will be invoked.
+//// Conditions are checked in the order of their registration.
+//func UponRepeatedCondition(m DslModule, cond func() bool, handler func() error) {
+//	m.GetDslHandle().moduleImpl.conditionHandlers = append(
+//		m.GetDslHandle().moduleImpl.conditionHandlers,
+//		conditionEntry{
+//			condition: cond,
+//			handler:   handler,
+//		})
+//}
 
-// UponOneShotCondition registers a *one-shot* condition handler. Predicate `cond` will be evaluated each time after a
-// batch of events is processed until it returns `true`. After `cond()` returns `true` *for the first time*  `cond()`,
-// `handler` will be invoked.
-// Conditions are checked in the order of their registration.
-func UponOneShotCondition(m DslModule, cond func() bool, handler func() error) {
-	// Note that a more efficient implementation that actually removes the one-shot condition from the list is possible.
-	fired := false
-	UponRepeatedCondition(m, func() bool { return !fired && cond() }, func() error {
-		fired = true
-		return handler()
-	})
+//// UponOneShotCondition registers a *one-shot* condition handler. Predicate `cond` will be evaluated each time after a
+//// batch of events is processed until it returns `true`. After `cond()` returns `true` *for the first time*  `cond()`,
+//// `handler` will be invoked.
+//// Conditions are checked in the order of their registration.
+//func UponOneShotCondition(m DslModule, cond func() bool, handler func() error) {
+//	// Note that a more efficient implementation that actually removes the one-shot condition from the list is possible.
+//	fired := false
+//	UponRepeatedCondition(m, func() bool { return !fired && cond() }, func() error {
+//		fired = true
+//		return handler()
+//	})
+//}
+
+// UponCondition registers a special type of handler that will be invoked each time after processing a batch of events.
+// The handler is assumed to represent a conditional action: it is supposed to check some predicate on the state
+// and perform actions if the predicate evaluates is satisfied.
+func UponCondition(m DslModule, handler func() error) {
+	m.GetDslHandle().moduleImpl.conditionHandlers = append(m.GetDslHandle().moduleImpl.conditionHandlers, handler)
 }
 
 // The ImplementsModule method only serves the purpose of indicating that this is a Module and must not be called.
-func (m *Module) ImplementsModule() {}
+func (m *dslModuleImpl) ImplementsModule() {}
 
 func EmitEvent(m DslModule, ev *eventpb.Event) {
 	m.GetDslHandle().moduleImpl.outputEvents.PushBack(ev)
 }
 
-func (m *Module) ApplyEvents(evs *events.EventList) (*events.EventList, error) {
+func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, error) {
 	// Run event handlers.
 	iter := evs.Iterator()
 	for ev := iter.Next(); ev != nil; ev = iter.Next() {
@@ -153,14 +166,23 @@ func (m *Module) ApplyEvents(evs *events.EventList) (*events.EventList, error) {
 		}
 	}
 
-	// Run condition handlers.
-	for _, condEntry := range m.conditionHandlers {
-		if condEntry.condition() {
-			err := condEntry.handler()
+	//// Run condition handlers.
+	//for _, condEntry := range m.conditionHandlers {
+	//	if condEntry.condition() {
+	//		err := condEntry.handler()
+	//
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//	}
+	//}
 
-			if err != nil {
-				return nil, err
-			}
+	// Run condition handlers.
+	for _, condition := range m.conditionHandlers {
+		err := condition()
+
+		if err != nil {
+			return nil, err
 		}
 	}
 

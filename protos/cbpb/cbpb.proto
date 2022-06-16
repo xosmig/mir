@@ -27,5 +27,6 @@ message EchoMessage {
 
 message FinalMessage {
   bytes data = 1;
-  repeated bytes signatures = 2;
+  repeated string signers = 2;
+  repeated bytes signatures = 3;
 }

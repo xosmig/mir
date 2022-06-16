@@ -38,19 +38,22 @@ func (params *ModuleParams) GetF() int {
 }
 
 type cbModuleState struct {
-	sentEcho  bool
-	sentFinal bool
-	delivered bool
-	echos     map[t.NodeID][]byte
-	echoSigs  map[t.NodeID][]byte
+	// this variable is not part of the original protocol description, but it greatly simplifies the code
+	request []byte
+
+	sentEcho     bool
+	sentFinal    bool
+	delivered    bool
+	receivedEcho map[t.NodeID]bool
+	echoSigs     map[t.NodeID][]byte
 }
 
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
 	m := cbdsl.NewModule(mc.Self)
 
 	state := cbModuleState{
-		sentEcho:  false,
-		sentFinal: false,
+		sentEcho: false,
+		//sentFinal: false,
 		delivered: false,
 		echoSigs:  make(map[t.NodeID][]byte),
 	}
@@ -60,6 +63,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		if nodeId != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
+		state.request = data
 		dsl.SendMessage(m, mc.Net, StartMessage(mc.Self, data), params.AllNodes)
 		return nil
 	})
@@ -81,21 +85,27 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	// upon event <al, Deliver | p, [ECHO, m, σ]> do    // only process s
 	cbdsl.UponEchoMessageReceived(m, func(from t.NodeID, msg *cbpb.EchoMessage) error {
 		// if echos[p] = ⊥ ∧ verifysig(p, bcb||p||ECHO||m, σ) then
-		_, alreadyReceived := state.echos[from]
-		if nodeId == params.Leader && !alreadyReceived {
-			state.echos[from] = msg.Data
-			cbdsl.VerifyNodeSignature(m, mc.Crypto, [][]byte{msg.Data}, msg.Signature, from)
+		if nodeId == params.Leader && !state.receivedEcho[from] {
+			state.receivedEcho[from] = true
+			dsl.VerifyNodeSignature(m, mc.Crypto, [][]byte{msg.Data}, msg.Signature, from)
 		}
 		return nil
 	})
 
-	dsl.
-		dsl.UponOneShotCondition(m,
-		func() bool { return len(state.echos) >= params.GetN()-params.GetF() && !state.sentFinal },
-		func() error {
-			val := state.decided
-			Deliver(val)
-		})
+	dsl.UponNodeSignatureVerified(m, func(TODO) error {
+		TODO
+	})
+
+	// upon exists m != ⊥ such that #({p ∈ Π | echos[p] = m}) > (N + f) / 2 and sentfinal = FALSE do
+	dsl.UponCondition(m, func() error {
+		if len(state.echoSigs) > (params.GetN()+params.GetF())/2 && !state.sentFinal {
+			state.sentFinal = true
+			dsl.SendMessage(m, mc.Net, FinalMessage(mc.Self, state.echoSigs), params.AllNodes)
+		}
+		return nil
+	})
+
+	return m.GetPassiveModule()
 }
 
 //func isStartMessage(ev *eventpb.MessageReceived) bool {

@@ -25,3 +25,15 @@ func EchoMessage(self t.ModuleID, data []byte) *messagepb.Message {
 		},
 	})
 }
+
+func FinalMessage(self t.ModuleID, data []byte, signers []t.NodeID, signatures [][]byte) *messagepb.Message {
+	return Message(self, &cbpb.CBMessage{
+		Type: &cbpb.CBMessage_FinalMessage{
+			FinalMessage: &cbpb.FinalMessage{
+				Data: data,
+				
+				Signatures: signatures,
+			},
+		},
+	})
+}
