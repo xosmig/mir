@@ -12,6 +12,7 @@ import "commonpb/commonpb.proto";
 import "requestpb/requestpb.proto";
 import "messagepb/messagepb.proto";
 import "isspb/isspb.proto";
+import "cbpb/cbpb.proto";
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/eventpb";
 
