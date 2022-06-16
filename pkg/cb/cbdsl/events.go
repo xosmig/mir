@@ -8,7 +8,18 @@ import (
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
-// Contains wrappers event wrappers specific for this module
+// Contains event wrappers specific for this module
+
+func SignRequest(m *CBModule, destModule t.ModuleID, data [][]byte) {
+	dsl.SignRequest(m, destModule, data, &eventpb.SignOrigin{
+		Module: m.moduleId.Pb(),
+		Type: &eventpb.SignOrigin_Empty{
+			Empty: &eventpb.EmptySignOrigin{},
+		},
+	})
+}
+
+// Module-specific dsl handler wrappers
 
 func UponCBMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.CBMessage) error) {
 	dsl.UponMessageReceived(m, func(from t.NodeID, msg *messagepb.Message) error {
@@ -43,8 +54,17 @@ func UponEchoMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.
 	})
 }
 
-func SignRequest(m *CBModule, destModule t.ModuleID, data [][]byte) {
-	dsl.SignRequest(m, destModule, data, eventpb.SignOrigin{
+func VerifyNodeSignature(m *CBModule,
+	destModule t.ModuleID,
+	data [][]byte,
+	signature []byte,
+	nodeID t.NodeID,
+) {
+	origin := &eventpb.SigVerOrigin{
 		Module: m.moduleId.Pb(),
-	})
+		Type: &eventpb.SigVerOrigin_Empty{
+			&eventpb.EmptySigVerOrigin{},
+		},
+	}
+	dsl.VerifyNodeSigs(m, destModule, [][][]byte{data}, [][]byte{signature}, []t.NodeID{nodeID}, origin)
 }

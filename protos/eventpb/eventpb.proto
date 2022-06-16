@@ -91,11 +91,14 @@ message SignResult {
   SignOrigin origin = 2;
 }
 
+message EmptySignOrigin {
+}
+
 message SignOrigin {
   string module = 1;
   oneof type {
-    isspb.ISSSignOrigin iss = 2;
-    cbpb.CBSignOrigin cb = 3;
+    EmptySignOrigin empty = 2;
+    isspb.ISSSignOrigin iss = 3;
   }
 }
 
@@ -118,10 +121,14 @@ message NodeSigsVerified {
   bool            all_ok   = 5;
 }
 
+message EmptySigVerOrigin {
+}
+
 message SigVerOrigin {
   string module = 1;
   oneof type {
-    isspb.ISSSigVerOrigin iss = 2;
+    EmptySigVerOrigin empty = 2;
+    isspb.ISSSigVerOrigin iss = 3;
   }
 }
 

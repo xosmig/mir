@@ -868,6 +868,44 @@ func (x *SignResult) GetOrigin() *SignOrigin {
 	return nil
 }
 
+type EmptySignOrigin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *EmptySignOrigin) Reset() {
+	*x = EmptySignOrigin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_eventpb_eventpb_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EmptySignOrigin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmptySignOrigin) ProtoMessage() {}
+
+func (x *EmptySignOrigin) ProtoReflect() protoreflect.Message {
+	mi := &file_eventpb_eventpb_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmptySignOrigin.ProtoReflect.Descriptor instead.
+func (*EmptySignOrigin) Descriptor() ([]byte, []int) {
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{8}
+}
+
 type SignOrigin struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -875,6 +913,7 @@ type SignOrigin struct {
 
 	Module string `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
 	// Types that are assignable to Type:
+	//	*SignOrigin_Empty
 	//	*SignOrigin_Iss
 	Type isSignOrigin_Type `protobuf_oneof:"type"`
 }
@@ -882,7 +921,7 @@ type SignOrigin struct {
 func (x *SignOrigin) Reset() {
 	*x = SignOrigin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[8]
+		mi := &file_eventpb_eventpb_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -895,7 +934,7 @@ func (x *SignOrigin) String() string {
 func (*SignOrigin) ProtoMessage() {}
 
 func (x *SignOrigin) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[8]
+	mi := &file_eventpb_eventpb_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -908,7 +947,7 @@ func (x *SignOrigin) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignOrigin.ProtoReflect.Descriptor instead.
 func (*SignOrigin) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{8}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SignOrigin) GetModule() string {
@@ -925,6 +964,13 @@ func (m *SignOrigin) GetType() isSignOrigin_Type {
 	return nil
 }
 
+func (x *SignOrigin) GetEmpty() *EmptySignOrigin {
+	if x, ok := x.GetType().(*SignOrigin_Empty); ok {
+		return x.Empty
+	}
+	return nil
+}
+
 func (x *SignOrigin) GetIss() *isspb.ISSSignOrigin {
 	if x, ok := x.GetType().(*SignOrigin_Iss); ok {
 		return x.Iss
@@ -936,9 +982,15 @@ type isSignOrigin_Type interface {
 	isSignOrigin_Type()
 }
 
-type SignOrigin_Iss struct {
-	Iss *isspb.ISSSignOrigin `protobuf:"bytes,2,opt,name=iss,proto3,oneof"`
+type SignOrigin_Empty struct {
+	Empty *EmptySignOrigin `protobuf:"bytes,2,opt,name=empty,proto3,oneof"`
 }
+
+type SignOrigin_Iss struct {
+	Iss *isspb.ISSSignOrigin `protobuf:"bytes,3,opt,name=iss,proto3,oneof"`
+}
+
+func (*SignOrigin_Empty) isSignOrigin_Type() {}
 
 func (*SignOrigin_Iss) isSignOrigin_Type() {}
 
@@ -953,7 +1005,7 @@ type SigVerData struct {
 func (x *SigVerData) Reset() {
 	*x = SigVerData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[9]
+		mi := &file_eventpb_eventpb_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -966,7 +1018,7 @@ func (x *SigVerData) String() string {
 func (*SigVerData) ProtoMessage() {}
 
 func (x *SigVerData) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[9]
+	mi := &file_eventpb_eventpb_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -979,7 +1031,7 @@ func (x *SigVerData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SigVerData.ProtoReflect.Descriptor instead.
 func (*SigVerData) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{9}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SigVerData) GetData() [][]byte {
@@ -1003,7 +1055,7 @@ type VerifyNodeSigs struct {
 func (x *VerifyNodeSigs) Reset() {
 	*x = VerifyNodeSigs{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[10]
+		mi := &file_eventpb_eventpb_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1016,7 +1068,7 @@ func (x *VerifyNodeSigs) String() string {
 func (*VerifyNodeSigs) ProtoMessage() {}
 
 func (x *VerifyNodeSigs) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[10]
+	mi := &file_eventpb_eventpb_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1029,7 +1081,7 @@ func (x *VerifyNodeSigs) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyNodeSigs.ProtoReflect.Descriptor instead.
 func (*VerifyNodeSigs) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{10}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *VerifyNodeSigs) GetData() []*SigVerData {
@@ -1075,7 +1127,7 @@ type NodeSigsVerified struct {
 func (x *NodeSigsVerified) Reset() {
 	*x = NodeSigsVerified{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[11]
+		mi := &file_eventpb_eventpb_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1088,7 +1140,7 @@ func (x *NodeSigsVerified) String() string {
 func (*NodeSigsVerified) ProtoMessage() {}
 
 func (x *NodeSigsVerified) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[11]
+	mi := &file_eventpb_eventpb_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1101,7 +1153,7 @@ func (x *NodeSigsVerified) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeSigsVerified.ProtoReflect.Descriptor instead.
 func (*NodeSigsVerified) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{11}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *NodeSigsVerified) GetOrigin() *SigVerOrigin {
@@ -1139,6 +1191,44 @@ func (x *NodeSigsVerified) GetAllOk() bool {
 	return false
 }
 
+type EmptySigVerOrigin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *EmptySigVerOrigin) Reset() {
+	*x = EmptySigVerOrigin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_eventpb_eventpb_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EmptySigVerOrigin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmptySigVerOrigin) ProtoMessage() {}
+
+func (x *EmptySigVerOrigin) ProtoReflect() protoreflect.Message {
+	mi := &file_eventpb_eventpb_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmptySigVerOrigin.ProtoReflect.Descriptor instead.
+func (*EmptySigVerOrigin) Descriptor() ([]byte, []int) {
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{13}
+}
+
 type SigVerOrigin struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1146,6 +1236,7 @@ type SigVerOrigin struct {
 
 	Module string `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
 	// Types that are assignable to Type:
+	//	*SigVerOrigin_Empty
 	//	*SigVerOrigin_Iss
 	Type isSigVerOrigin_Type `protobuf_oneof:"type"`
 }
@@ -1153,7 +1244,7 @@ type SigVerOrigin struct {
 func (x *SigVerOrigin) Reset() {
 	*x = SigVerOrigin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[12]
+		mi := &file_eventpb_eventpb_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1166,7 +1257,7 @@ func (x *SigVerOrigin) String() string {
 func (*SigVerOrigin) ProtoMessage() {}
 
 func (x *SigVerOrigin) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[12]
+	mi := &file_eventpb_eventpb_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1179,7 +1270,7 @@ func (x *SigVerOrigin) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SigVerOrigin.ProtoReflect.Descriptor instead.
 func (*SigVerOrigin) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{12}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SigVerOrigin) GetModule() string {
@@ -1196,6 +1287,13 @@ func (m *SigVerOrigin) GetType() isSigVerOrigin_Type {
 	return nil
 }
 
+func (x *SigVerOrigin) GetEmpty() *EmptySigVerOrigin {
+	if x, ok := x.GetType().(*SigVerOrigin_Empty); ok {
+		return x.Empty
+	}
+	return nil
+}
+
 func (x *SigVerOrigin) GetIss() *isspb.ISSSigVerOrigin {
 	if x, ok := x.GetType().(*SigVerOrigin_Iss); ok {
 		return x.Iss
@@ -1207,9 +1305,15 @@ type isSigVerOrigin_Type interface {
 	isSigVerOrigin_Type()
 }
 
-type SigVerOrigin_Iss struct {
-	Iss *isspb.ISSSigVerOrigin `protobuf:"bytes,2,opt,name=iss,proto3,oneof"`
+type SigVerOrigin_Empty struct {
+	Empty *EmptySigVerOrigin `protobuf:"bytes,2,opt,name=empty,proto3,oneof"`
 }
+
+type SigVerOrigin_Iss struct {
+	Iss *isspb.ISSSigVerOrigin `protobuf:"bytes,3,opt,name=iss,proto3,oneof"`
+}
+
+func (*SigVerOrigin_Empty) isSigVerOrigin_Type() {}
 
 func (*SigVerOrigin_Iss) isSigVerOrigin_Type() {}
 
@@ -1224,7 +1328,7 @@ type RequestReady struct {
 func (x *RequestReady) Reset() {
 	*x = RequestReady{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[13]
+		mi := &file_eventpb_eventpb_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1237,7 +1341,7 @@ func (x *RequestReady) String() string {
 func (*RequestReady) ProtoMessage() {}
 
 func (x *RequestReady) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[13]
+	mi := &file_eventpb_eventpb_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1250,7 +1354,7 @@ func (x *RequestReady) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestReady.ProtoReflect.Descriptor instead.
 func (*RequestReady) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{13}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *RequestReady) GetRequestRef() *requestpb.RequestRef {
@@ -1272,7 +1376,7 @@ type SendMessage struct {
 func (x *SendMessage) Reset() {
 	*x = SendMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[14]
+		mi := &file_eventpb_eventpb_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1285,7 +1389,7 @@ func (x *SendMessage) String() string {
 func (*SendMessage) ProtoMessage() {}
 
 func (x *SendMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[14]
+	mi := &file_eventpb_eventpb_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1298,7 +1402,7 @@ func (x *SendMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendMessage.ProtoReflect.Descriptor instead.
 func (*SendMessage) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{14}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SendMessage) GetDestinations() []string {
@@ -1327,7 +1431,7 @@ type MessageReceived struct {
 func (x *MessageReceived) Reset() {
 	*x = MessageReceived{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[15]
+		mi := &file_eventpb_eventpb_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1340,7 +1444,7 @@ func (x *MessageReceived) String() string {
 func (*MessageReceived) ProtoMessage() {}
 
 func (x *MessageReceived) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[15]
+	mi := &file_eventpb_eventpb_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1353,7 +1457,7 @@ func (x *MessageReceived) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageReceived.ProtoReflect.Descriptor instead.
 func (*MessageReceived) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{15}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MessageReceived) GetFrom() string {
@@ -1382,7 +1486,7 @@ type WALAppend struct {
 func (x *WALAppend) Reset() {
 	*x = WALAppend{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[16]
+		mi := &file_eventpb_eventpb_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1395,7 +1499,7 @@ func (x *WALAppend) String() string {
 func (*WALAppend) ProtoMessage() {}
 
 func (x *WALAppend) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[16]
+	mi := &file_eventpb_eventpb_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1408,7 +1512,7 @@ func (x *WALAppend) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WALAppend.ProtoReflect.Descriptor instead.
 func (*WALAppend) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{16}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *WALAppend) GetEvent() *Event {
@@ -1436,7 +1540,7 @@ type WALEntry struct {
 func (x *WALEntry) Reset() {
 	*x = WALEntry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[17]
+		mi := &file_eventpb_eventpb_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1449,7 +1553,7 @@ func (x *WALEntry) String() string {
 func (*WALEntry) ProtoMessage() {}
 
 func (x *WALEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[17]
+	mi := &file_eventpb_eventpb_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1462,7 +1566,7 @@ func (x *WALEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WALEntry.ProtoReflect.Descriptor instead.
 func (*WALEntry) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{17}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *WALEntry) GetEvent() *Event {
@@ -1483,7 +1587,7 @@ type WALTruncate struct {
 func (x *WALTruncate) Reset() {
 	*x = WALTruncate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[18]
+		mi := &file_eventpb_eventpb_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1496,7 +1600,7 @@ func (x *WALTruncate) String() string {
 func (*WALTruncate) ProtoMessage() {}
 
 func (x *WALTruncate) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[18]
+	mi := &file_eventpb_eventpb_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1613,7 @@ func (x *WALTruncate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WALTruncate.ProtoReflect.Descriptor instead.
 func (*WALTruncate) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{18}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *WALTruncate) GetRetentionIndex() uint64 {
@@ -1528,7 +1632,7 @@ type WALLoadAll struct {
 func (x *WALLoadAll) Reset() {
 	*x = WALLoadAll{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[19]
+		mi := &file_eventpb_eventpb_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1541,7 +1645,7 @@ func (x *WALLoadAll) String() string {
 func (*WALLoadAll) ProtoMessage() {}
 
 func (x *WALLoadAll) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[19]
+	mi := &file_eventpb_eventpb_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1554,7 +1658,7 @@ func (x *WALLoadAll) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WALLoadAll.ProtoReflect.Descriptor instead.
 func (*WALLoadAll) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{19}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{21}
 }
 
 type Deliver struct {
@@ -1569,7 +1673,7 @@ type Deliver struct {
 func (x *Deliver) Reset() {
 	*x = Deliver{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[20]
+		mi := &file_eventpb_eventpb_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1582,7 +1686,7 @@ func (x *Deliver) String() string {
 func (*Deliver) ProtoMessage() {}
 
 func (x *Deliver) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[20]
+	mi := &file_eventpb_eventpb_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1595,7 +1699,7 @@ func (x *Deliver) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Deliver.ProtoReflect.Descriptor instead.
 func (*Deliver) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{20}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Deliver) GetSn() uint64 {
@@ -1624,7 +1728,7 @@ type VerifyRequestSig struct {
 func (x *VerifyRequestSig) Reset() {
 	*x = VerifyRequestSig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[21]
+		mi := &file_eventpb_eventpb_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1637,7 +1741,7 @@ func (x *VerifyRequestSig) String() string {
 func (*VerifyRequestSig) ProtoMessage() {}
 
 func (x *VerifyRequestSig) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[21]
+	mi := &file_eventpb_eventpb_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1650,7 +1754,7 @@ func (x *VerifyRequestSig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyRequestSig.ProtoReflect.Descriptor instead.
 func (*VerifyRequestSig) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{21}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *VerifyRequestSig) GetRequestRef() *requestpb.RequestRef {
@@ -1680,7 +1784,7 @@ type RequestSigVerified struct {
 func (x *RequestSigVerified) Reset() {
 	*x = RequestSigVerified{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[22]
+		mi := &file_eventpb_eventpb_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1693,7 +1797,7 @@ func (x *RequestSigVerified) String() string {
 func (*RequestSigVerified) ProtoMessage() {}
 
 func (x *RequestSigVerified) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[22]
+	mi := &file_eventpb_eventpb_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1706,7 +1810,7 @@ func (x *RequestSigVerified) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestSigVerified.ProtoReflect.Descriptor instead.
 func (*RequestSigVerified) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{22}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *RequestSigVerified) GetRequestRef() *requestpb.RequestRef {
@@ -1743,7 +1847,7 @@ type StoreVerifiedRequest struct {
 func (x *StoreVerifiedRequest) Reset() {
 	*x = StoreVerifiedRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[23]
+		mi := &file_eventpb_eventpb_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1756,7 +1860,7 @@ func (x *StoreVerifiedRequest) String() string {
 func (*StoreVerifiedRequest) ProtoMessage() {}
 
 func (x *StoreVerifiedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[23]
+	mi := &file_eventpb_eventpb_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1769,7 +1873,7 @@ func (x *StoreVerifiedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StoreVerifiedRequest.ProtoReflect.Descriptor instead.
 func (*StoreVerifiedRequest) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{23}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *StoreVerifiedRequest) GetRequestRef() *requestpb.RequestRef {
@@ -1805,7 +1909,7 @@ type AppSnapshotRequest struct {
 func (x *AppSnapshotRequest) Reset() {
 	*x = AppSnapshotRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[24]
+		mi := &file_eventpb_eventpb_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1818,7 +1922,7 @@ func (x *AppSnapshotRequest) String() string {
 func (*AppSnapshotRequest) ProtoMessage() {}
 
 func (x *AppSnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[24]
+	mi := &file_eventpb_eventpb_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1831,7 +1935,7 @@ func (x *AppSnapshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppSnapshotRequest.ProtoReflect.Descriptor instead.
 func (*AppSnapshotRequest) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{24}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *AppSnapshotRequest) GetModule() string {
@@ -1860,7 +1964,7 @@ type AppSnapshot struct {
 func (x *AppSnapshot) Reset() {
 	*x = AppSnapshot{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[25]
+		mi := &file_eventpb_eventpb_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1873,7 +1977,7 @@ func (x *AppSnapshot) String() string {
 func (*AppSnapshot) ProtoMessage() {}
 
 func (x *AppSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[25]
+	mi := &file_eventpb_eventpb_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1886,7 +1990,7 @@ func (x *AppSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppSnapshot.ProtoReflect.Descriptor instead.
 func (*AppSnapshot) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{25}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AppSnapshot) GetEpoch() uint64 {
@@ -1914,7 +2018,7 @@ type AppRestoreState struct {
 func (x *AppRestoreState) Reset() {
 	*x = AppRestoreState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[26]
+		mi := &file_eventpb_eventpb_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1927,7 +2031,7 @@ func (x *AppRestoreState) String() string {
 func (*AppRestoreState) ProtoMessage() {}
 
 func (x *AppRestoreState) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[26]
+	mi := &file_eventpb_eventpb_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1940,7 +2044,7 @@ func (x *AppRestoreState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppRestoreState.ProtoReflect.Descriptor instead.
 func (*AppRestoreState) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{26}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AppRestoreState) GetData() []byte {
@@ -1962,7 +2066,7 @@ type TimerDelay struct {
 func (x *TimerDelay) Reset() {
 	*x = TimerDelay{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[27]
+		mi := &file_eventpb_eventpb_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1975,7 +2079,7 @@ func (x *TimerDelay) String() string {
 func (*TimerDelay) ProtoMessage() {}
 
 func (x *TimerDelay) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[27]
+	mi := &file_eventpb_eventpb_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1988,7 +2092,7 @@ func (x *TimerDelay) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimerDelay.ProtoReflect.Descriptor instead.
 func (*TimerDelay) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{27}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *TimerDelay) GetEvents() []*Event {
@@ -2018,7 +2122,7 @@ type TimerRepeat struct {
 func (x *TimerRepeat) Reset() {
 	*x = TimerRepeat{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[28]
+		mi := &file_eventpb_eventpb_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2031,7 +2135,7 @@ func (x *TimerRepeat) String() string {
 func (*TimerRepeat) ProtoMessage() {}
 
 func (x *TimerRepeat) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[28]
+	mi := &file_eventpb_eventpb_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2044,7 +2148,7 @@ func (x *TimerRepeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimerRepeat.ProtoReflect.Descriptor instead.
 func (*TimerRepeat) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{28}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *TimerRepeat) GetEvents() []*Event {
@@ -2079,7 +2183,7 @@ type TimerGarbageCollect struct {
 func (x *TimerGarbageCollect) Reset() {
 	*x = TimerGarbageCollect{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_eventpb_eventpb_proto_msgTypes[29]
+		mi := &file_eventpb_eventpb_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2092,7 +2196,7 @@ func (x *TimerGarbageCollect) String() string {
 func (*TimerGarbageCollect) ProtoMessage() {}
 
 func (x *TimerGarbageCollect) ProtoReflect() protoreflect.Message {
-	mi := &file_eventpb_eventpb_proto_msgTypes[29]
+	mi := &file_eventpb_eventpb_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2105,7 +2209,7 @@ func (x *TimerGarbageCollect) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimerGarbageCollect.ProtoReflect.Descriptor instead.
 func (*TimerGarbageCollect) Descriptor() ([]byte, []int) {
-	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{29}
+	return file_eventpb_eventpb_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *TimerGarbageCollect) GetRetentionIndex() uint64 {
@@ -2266,38 +2370,47 @@ var file_eventpb_eventpb_proto_rawDesc = []byte{
 	0x74, 0x75, 0x72, 0x65, 0x12, 0x2b, 0x0a, 0x06, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x70, 0x62, 0x2e, 0x53,
 	0x69, 0x67, 0x6e, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x52, 0x06, 0x6f, 0x72, 0x69, 0x67, 0x69,
-	0x6e, 0x22, 0x56, 0x0a, 0x0a, 0x53, 0x69, 0x67, 0x6e, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x12,
-	0x16, 0x0a, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x12, 0x28, 0x0a, 0x03, 0x69, 0x73, 0x73, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x69, 0x73, 0x73, 0x70, 0x62, 0x2e, 0x49, 0x53, 0x53,
-	0x53, 0x69, 0x67, 0x6e, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x48, 0x00, 0x52, 0x03, 0x69, 0x73,
-	0x73, 0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x20, 0x0a, 0x0a, 0x53, 0x69, 0x67,
-	0x56, 0x65, 0x72, 0x44, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18,
-	0x01, 0x20, 0x03, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0xa3, 0x01, 0x0a, 0x0e,
-	0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x4e, 0x6f, 0x64, 0x65, 0x53, 0x69, 0x67, 0x73, 0x12, 0x27,
-	0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x65,
-	0x76, 0x65, 0x6e, 0x74, 0x70, 0x62, 0x2e, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x44, 0x61, 0x74,
-	0x61, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x12, 0x1e, 0x0a, 0x0a, 0x73, 0x69, 0x67, 0x6e, 0x61,
-	0x74, 0x75, 0x72, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0c, 0x52, 0x0a, 0x73, 0x69, 0x67,
-	0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x73, 0x12, 0x2d, 0x0a, 0x06, 0x6f, 0x72, 0x69, 0x67, 0x69,
-	0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x70,
-	0x62, 0x2e, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x52, 0x06,
-	0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x12, 0x19, 0x0a, 0x08, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69,
-	0x64, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x6e, 0x6f, 0x64, 0x65, 0x49, 0x64,
-	0x73, 0x22, 0xa1, 0x01, 0x0a, 0x10, 0x4e, 0x6f, 0x64, 0x65, 0x53, 0x69, 0x67, 0x73, 0x56, 0x65,
-	0x72, 0x69, 0x66, 0x69, 0x65, 0x64, 0x12, 0x2d, 0x0a, 0x06, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x70, 0x62,
-	0x2e, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x52, 0x06, 0x6f,
-	0x72, 0x69, 0x67, 0x69, 0x6e, 0x12, 0x19, 0x0a, 0x08, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64,
-	0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x6e, 0x6f, 0x64, 0x65, 0x49, 0x64, 0x73,
-	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x18, 0x03, 0x20, 0x03, 0x28, 0x08, 0x52,
-	0x05, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73,
-	0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x12, 0x15,
-	0x0a, 0x06, 0x61, 0x6c, 0x6c, 0x5f, 0x6f, 0x6b, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05,
-	0x61, 0x6c, 0x6c, 0x4f, 0x6b, 0x22, 0x5a, 0x0a, 0x0c, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f,
-	0x72, 0x69, 0x67, 0x69, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x12, 0x2a, 0x0a,
-	0x03, 0x69, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x69, 0x73, 0x73,
+	0x6e, 0x22, 0x11, 0x0a, 0x0f, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x53, 0x69, 0x67, 0x6e, 0x4f, 0x72,
+	0x69, 0x67, 0x69, 0x6e, 0x22, 0x88, 0x01, 0x0a, 0x0a, 0x53, 0x69, 0x67, 0x6e, 0x4f, 0x72, 0x69,
+	0x67, 0x69, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x12, 0x30, 0x0a, 0x05, 0x65,
+	0x6d, 0x70, 0x74, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x65, 0x76, 0x65,
+	0x6e, 0x74, 0x70, 0x62, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x53, 0x69, 0x67, 0x6e, 0x4f, 0x72,
+	0x69, 0x67, 0x69, 0x6e, 0x48, 0x00, 0x52, 0x05, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x28, 0x0a,
+	0x03, 0x69, 0x73, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x69, 0x73, 0x73,
+	0x70, 0x62, 0x2e, 0x49, 0x53, 0x53, 0x53, 0x69, 0x67, 0x6e, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e,
+	0x48, 0x00, 0x52, 0x03, 0x69, 0x73, 0x73, 0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22,
+	0x20, 0x0a, 0x0a, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x44, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a,
+	0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74,
+	0x61, 0x22, 0xa3, 0x01, 0x0a, 0x0e, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x4e, 0x6f, 0x64, 0x65,
+	0x53, 0x69, 0x67, 0x73, 0x12, 0x27, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x13, 0x2e, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x70, 0x62, 0x2e, 0x53, 0x69, 0x67,
+	0x56, 0x65, 0x72, 0x44, 0x61, 0x74, 0x61, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x12, 0x1e, 0x0a,
+	0x0a, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28,
+	0x0c, 0x52, 0x0a, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x73, 0x12, 0x2d, 0x0a,
+	0x06, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e,
+	0x65, 0x76, 0x65, 0x6e, 0x74, 0x70, 0x62, 0x2e, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72,
+	0x69, 0x67, 0x69, 0x6e, 0x52, 0x06, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x12, 0x19, 0x0a, 0x08,
+	0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07,
+	0x6e, 0x6f, 0x64, 0x65, 0x49, 0x64, 0x73, 0x22, 0xa1, 0x01, 0x0a, 0x10, 0x4e, 0x6f, 0x64, 0x65,
+	0x53, 0x69, 0x67, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x69, 0x65, 0x64, 0x12, 0x2d, 0x0a, 0x06,
+	0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x65,
+	0x76, 0x65, 0x6e, 0x74, 0x70, 0x62, 0x2e, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72, 0x69,
+	0x67, 0x69, 0x6e, 0x52, 0x06, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x12, 0x19, 0x0a, 0x08, 0x6e,
+	0x6f, 0x64, 0x65, 0x5f, 0x69, 0x64, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x6e,
+	0x6f, 0x64, 0x65, 0x49, 0x64, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x18,
+	0x03, 0x20, 0x03, 0x28, 0x08, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x12, 0x16, 0x0a, 0x06,
+	0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x65, 0x72,
+	0x72, 0x6f, 0x72, 0x73, 0x12, 0x15, 0x0a, 0x06, 0x61, 0x6c, 0x6c, 0x5f, 0x6f, 0x6b, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x61, 0x6c, 0x6c, 0x4f, 0x6b, 0x22, 0x13, 0x0a, 0x11, 0x45,
+	0x6d, 0x70, 0x74, 0x79, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72, 0x69, 0x67, 0x69, 0x6e,
+	0x22, 0x8e, 0x01, 0x0a, 0x0c, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72, 0x69, 0x67, 0x69,
+	0x6e, 0x12, 0x16, 0x0a, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x06, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x12, 0x32, 0x0a, 0x05, 0x65, 0x6d, 0x70,
+	0x74, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x65, 0x76, 0x65, 0x6e, 0x74,
+	0x70, 0x62, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72,
+	0x69, 0x67, 0x69, 0x6e, 0x48, 0x00, 0x52, 0x05, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x2a, 0x0a,
+	0x03, 0x69, 0x73, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x69, 0x73, 0x73,
 	0x70, 0x62, 0x2e, 0x49, 0x53, 0x53, 0x53, 0x69, 0x67, 0x56, 0x65, 0x72, 0x4f, 0x72, 0x69, 0x67,
 	0x69, 0x6e, 0x48, 0x00, 0x52, 0x03, 0x69, 0x73, 0x73, 0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70,
 	0x65, 0x22, 0x46, 0x0a, 0x0c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x52, 0x65, 0x61, 0x64,
@@ -2400,7 +2513,7 @@ func file_eventpb_eventpb_proto_rawDescGZIP() []byte {
 	return file_eventpb_eventpb_proto_rawDescData
 }
 
-var file_eventpb_eventpb_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_eventpb_eventpb_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_eventpb_eventpb_proto_goTypes = []interface{}{
 	(*Event)(nil),                 // 0: eventpb.Event
 	(*Init)(nil),                  // 1: eventpb.Init
@@ -2410,95 +2523,99 @@ var file_eventpb_eventpb_proto_goTypes = []interface{}{
 	(*HashOrigin)(nil),            // 5: eventpb.HashOrigin
 	(*SignRequest)(nil),           // 6: eventpb.SignRequest
 	(*SignResult)(nil),            // 7: eventpb.SignResult
-	(*SignOrigin)(nil),            // 8: eventpb.SignOrigin
-	(*SigVerData)(nil),            // 9: eventpb.SigVerData
-	(*VerifyNodeSigs)(nil),        // 10: eventpb.VerifyNodeSigs
-	(*NodeSigsVerified)(nil),      // 11: eventpb.NodeSigsVerified
-	(*SigVerOrigin)(nil),          // 12: eventpb.SigVerOrigin
-	(*RequestReady)(nil),          // 13: eventpb.RequestReady
-	(*SendMessage)(nil),           // 14: eventpb.SendMessage
-	(*MessageReceived)(nil),       // 15: eventpb.MessageReceived
-	(*WALAppend)(nil),             // 16: eventpb.WALAppend
-	(*WALEntry)(nil),              // 17: eventpb.WALEntry
-	(*WALTruncate)(nil),           // 18: eventpb.WALTruncate
-	(*WALLoadAll)(nil),            // 19: eventpb.WALLoadAll
-	(*Deliver)(nil),               // 20: eventpb.Deliver
-	(*VerifyRequestSig)(nil),      // 21: eventpb.VerifyRequestSig
-	(*RequestSigVerified)(nil),    // 22: eventpb.RequestSigVerified
-	(*StoreVerifiedRequest)(nil),  // 23: eventpb.StoreVerifiedRequest
-	(*AppSnapshotRequest)(nil),    // 24: eventpb.AppSnapshotRequest
-	(*AppSnapshot)(nil),           // 25: eventpb.AppSnapshot
-	(*AppRestoreState)(nil),       // 26: eventpb.AppRestoreState
-	(*TimerDelay)(nil),            // 27: eventpb.TimerDelay
-	(*TimerRepeat)(nil),           // 28: eventpb.TimerRepeat
-	(*TimerGarbageCollect)(nil),   // 29: eventpb.TimerGarbageCollect
-	(*requestpb.Request)(nil),     // 30: requestpb.Request
-	(*isspb.ISSEvent)(nil),        // 31: isspb.ISSEvent
-	(*commonpb.HashData)(nil),     // 32: commonpb.HashData
-	(*isspb.ISSHashOrigin)(nil),   // 33: isspb.ISSHashOrigin
-	(*isspb.ISSSignOrigin)(nil),   // 34: isspb.ISSSignOrigin
-	(*isspb.ISSSigVerOrigin)(nil), // 35: isspb.ISSSigVerOrigin
-	(*requestpb.RequestRef)(nil),  // 36: requestpb.RequestRef
-	(*messagepb.Message)(nil),     // 37: messagepb.Message
-	(*requestpb.Batch)(nil),       // 38: requestpb.Batch
+	(*EmptySignOrigin)(nil),       // 8: eventpb.EmptySignOrigin
+	(*SignOrigin)(nil),            // 9: eventpb.SignOrigin
+	(*SigVerData)(nil),            // 10: eventpb.SigVerData
+	(*VerifyNodeSigs)(nil),        // 11: eventpb.VerifyNodeSigs
+	(*NodeSigsVerified)(nil),      // 12: eventpb.NodeSigsVerified
+	(*EmptySigVerOrigin)(nil),     // 13: eventpb.EmptySigVerOrigin
+	(*SigVerOrigin)(nil),          // 14: eventpb.SigVerOrigin
+	(*RequestReady)(nil),          // 15: eventpb.RequestReady
+	(*SendMessage)(nil),           // 16: eventpb.SendMessage
+	(*MessageReceived)(nil),       // 17: eventpb.MessageReceived
+	(*WALAppend)(nil),             // 18: eventpb.WALAppend
+	(*WALEntry)(nil),              // 19: eventpb.WALEntry
+	(*WALTruncate)(nil),           // 20: eventpb.WALTruncate
+	(*WALLoadAll)(nil),            // 21: eventpb.WALLoadAll
+	(*Deliver)(nil),               // 22: eventpb.Deliver
+	(*VerifyRequestSig)(nil),      // 23: eventpb.VerifyRequestSig
+	(*RequestSigVerified)(nil),    // 24: eventpb.RequestSigVerified
+	(*StoreVerifiedRequest)(nil),  // 25: eventpb.StoreVerifiedRequest
+	(*AppSnapshotRequest)(nil),    // 26: eventpb.AppSnapshotRequest
+	(*AppSnapshot)(nil),           // 27: eventpb.AppSnapshot
+	(*AppRestoreState)(nil),       // 28: eventpb.AppRestoreState
+	(*TimerDelay)(nil),            // 29: eventpb.TimerDelay
+	(*TimerRepeat)(nil),           // 30: eventpb.TimerRepeat
+	(*TimerGarbageCollect)(nil),   // 31: eventpb.TimerGarbageCollect
+	(*requestpb.Request)(nil),     // 32: requestpb.Request
+	(*isspb.ISSEvent)(nil),        // 33: isspb.ISSEvent
+	(*commonpb.HashData)(nil),     // 34: commonpb.HashData
+	(*isspb.ISSHashOrigin)(nil),   // 35: isspb.ISSHashOrigin
+	(*isspb.ISSSignOrigin)(nil),   // 36: isspb.ISSSignOrigin
+	(*isspb.ISSSigVerOrigin)(nil), // 37: isspb.ISSSigVerOrigin
+	(*requestpb.RequestRef)(nil),  // 38: requestpb.RequestRef
+	(*messagepb.Message)(nil),     // 39: messagepb.Message
+	(*requestpb.Batch)(nil),       // 40: requestpb.Batch
 }
 var file_eventpb_eventpb_proto_depIdxs = []int32{
 	1,  // 0: eventpb.Event.init:type_name -> eventpb.Init
 	2,  // 1: eventpb.Event.tick:type_name -> eventpb.Tick
-	16, // 2: eventpb.Event.wal_append:type_name -> eventpb.WALAppend
-	17, // 3: eventpb.Event.wal_entry:type_name -> eventpb.WALEntry
-	18, // 4: eventpb.Event.wal_truncate:type_name -> eventpb.WALTruncate
-	19, // 5: eventpb.Event.wal_load_all:type_name -> eventpb.WALLoadAll
-	30, // 6: eventpb.Event.request:type_name -> requestpb.Request
+	18, // 2: eventpb.Event.wal_append:type_name -> eventpb.WALAppend
+	19, // 3: eventpb.Event.wal_entry:type_name -> eventpb.WALEntry
+	20, // 4: eventpb.Event.wal_truncate:type_name -> eventpb.WALTruncate
+	21, // 5: eventpb.Event.wal_load_all:type_name -> eventpb.WALLoadAll
+	32, // 6: eventpb.Event.request:type_name -> requestpb.Request
 	3,  // 7: eventpb.Event.hash_request:type_name -> eventpb.HashRequest
 	4,  // 8: eventpb.Event.hash_result:type_name -> eventpb.HashResult
 	6,  // 9: eventpb.Event.sign_request:type_name -> eventpb.SignRequest
 	7,  // 10: eventpb.Event.sign_result:type_name -> eventpb.SignResult
-	10, // 11: eventpb.Event.verify_node_sigs:type_name -> eventpb.VerifyNodeSigs
-	11, // 12: eventpb.Event.node_sigs_verified:type_name -> eventpb.NodeSigsVerified
-	13, // 13: eventpb.Event.request_ready:type_name -> eventpb.RequestReady
-	14, // 14: eventpb.Event.send_message:type_name -> eventpb.SendMessage
-	15, // 15: eventpb.Event.message_received:type_name -> eventpb.MessageReceived
-	20, // 16: eventpb.Event.deliver:type_name -> eventpb.Deliver
-	31, // 17: eventpb.Event.iss:type_name -> isspb.ISSEvent
-	21, // 18: eventpb.Event.verify_request_sig:type_name -> eventpb.VerifyRequestSig
-	22, // 19: eventpb.Event.request_sig_verified:type_name -> eventpb.RequestSigVerified
-	23, // 20: eventpb.Event.store_verified_request:type_name -> eventpb.StoreVerifiedRequest
-	24, // 21: eventpb.Event.app_snapshot_request:type_name -> eventpb.AppSnapshotRequest
-	25, // 22: eventpb.Event.app_snapshot:type_name -> eventpb.AppSnapshot
-	26, // 23: eventpb.Event.app_restore_state:type_name -> eventpb.AppRestoreState
-	27, // 24: eventpb.Event.timer_delay:type_name -> eventpb.TimerDelay
-	28, // 25: eventpb.Event.timer_repeat:type_name -> eventpb.TimerRepeat
-	29, // 26: eventpb.Event.timer_garbage_collect:type_name -> eventpb.TimerGarbageCollect
+	11, // 11: eventpb.Event.verify_node_sigs:type_name -> eventpb.VerifyNodeSigs
+	12, // 12: eventpb.Event.node_sigs_verified:type_name -> eventpb.NodeSigsVerified
+	15, // 13: eventpb.Event.request_ready:type_name -> eventpb.RequestReady
+	16, // 14: eventpb.Event.send_message:type_name -> eventpb.SendMessage
+	17, // 15: eventpb.Event.message_received:type_name -> eventpb.MessageReceived
+	22, // 16: eventpb.Event.deliver:type_name -> eventpb.Deliver
+	33, // 17: eventpb.Event.iss:type_name -> isspb.ISSEvent
+	23, // 18: eventpb.Event.verify_request_sig:type_name -> eventpb.VerifyRequestSig
+	24, // 19: eventpb.Event.request_sig_verified:type_name -> eventpb.RequestSigVerified
+	25, // 20: eventpb.Event.store_verified_request:type_name -> eventpb.StoreVerifiedRequest
+	26, // 21: eventpb.Event.app_snapshot_request:type_name -> eventpb.AppSnapshotRequest
+	27, // 22: eventpb.Event.app_snapshot:type_name -> eventpb.AppSnapshot
+	28, // 23: eventpb.Event.app_restore_state:type_name -> eventpb.AppRestoreState
+	29, // 24: eventpb.Event.timer_delay:type_name -> eventpb.TimerDelay
+	30, // 25: eventpb.Event.timer_repeat:type_name -> eventpb.TimerRepeat
+	31, // 26: eventpb.Event.timer_garbage_collect:type_name -> eventpb.TimerGarbageCollect
 	0,  // 27: eventpb.Event.next:type_name -> eventpb.Event
-	32, // 28: eventpb.HashRequest.data:type_name -> commonpb.HashData
+	34, // 28: eventpb.HashRequest.data:type_name -> commonpb.HashData
 	5,  // 29: eventpb.HashRequest.origin:type_name -> eventpb.HashOrigin
 	5,  // 30: eventpb.HashResult.origin:type_name -> eventpb.HashOrigin
-	30, // 31: eventpb.HashOrigin.request:type_name -> requestpb.Request
-	33, // 32: eventpb.HashOrigin.iss:type_name -> isspb.ISSHashOrigin
-	8,  // 33: eventpb.SignRequest.origin:type_name -> eventpb.SignOrigin
-	8,  // 34: eventpb.SignResult.origin:type_name -> eventpb.SignOrigin
-	34, // 35: eventpb.SignOrigin.iss:type_name -> isspb.ISSSignOrigin
-	9,  // 36: eventpb.VerifyNodeSigs.data:type_name -> eventpb.SigVerData
-	12, // 37: eventpb.VerifyNodeSigs.origin:type_name -> eventpb.SigVerOrigin
-	12, // 38: eventpb.NodeSigsVerified.origin:type_name -> eventpb.SigVerOrigin
-	35, // 39: eventpb.SigVerOrigin.iss:type_name -> isspb.ISSSigVerOrigin
-	36, // 40: eventpb.RequestReady.request_ref:type_name -> requestpb.RequestRef
-	37, // 41: eventpb.SendMessage.msg:type_name -> messagepb.Message
-	37, // 42: eventpb.MessageReceived.msg:type_name -> messagepb.Message
-	0,  // 43: eventpb.WALAppend.event:type_name -> eventpb.Event
-	0,  // 44: eventpb.WALEntry.event:type_name -> eventpb.Event
-	38, // 45: eventpb.Deliver.batch:type_name -> requestpb.Batch
-	36, // 46: eventpb.VerifyRequestSig.request_ref:type_name -> requestpb.RequestRef
-	36, // 47: eventpb.RequestSigVerified.request_ref:type_name -> requestpb.RequestRef
-	36, // 48: eventpb.StoreVerifiedRequest.request_ref:type_name -> requestpb.RequestRef
-	0,  // 49: eventpb.TimerDelay.events:type_name -> eventpb.Event
-	0,  // 50: eventpb.TimerRepeat.events:type_name -> eventpb.Event
-	51, // [51:51] is the sub-list for method output_type
-	51, // [51:51] is the sub-list for method input_type
-	51, // [51:51] is the sub-list for extension type_name
-	51, // [51:51] is the sub-list for extension extendee
-	0,  // [0:51] is the sub-list for field type_name
+	32, // 31: eventpb.HashOrigin.request:type_name -> requestpb.Request
+	35, // 32: eventpb.HashOrigin.iss:type_name -> isspb.ISSHashOrigin
+	9,  // 33: eventpb.SignRequest.origin:type_name -> eventpb.SignOrigin
+	9,  // 34: eventpb.SignResult.origin:type_name -> eventpb.SignOrigin
+	8,  // 35: eventpb.SignOrigin.empty:type_name -> eventpb.EmptySignOrigin
+	36, // 36: eventpb.SignOrigin.iss:type_name -> isspb.ISSSignOrigin
+	10, // 37: eventpb.VerifyNodeSigs.data:type_name -> eventpb.SigVerData
+	14, // 38: eventpb.VerifyNodeSigs.origin:type_name -> eventpb.SigVerOrigin
+	14, // 39: eventpb.NodeSigsVerified.origin:type_name -> eventpb.SigVerOrigin
+	13, // 40: eventpb.SigVerOrigin.empty:type_name -> eventpb.EmptySigVerOrigin
+	37, // 41: eventpb.SigVerOrigin.iss:type_name -> isspb.ISSSigVerOrigin
+	38, // 42: eventpb.RequestReady.request_ref:type_name -> requestpb.RequestRef
+	39, // 43: eventpb.SendMessage.msg:type_name -> messagepb.Message
+	39, // 44: eventpb.MessageReceived.msg:type_name -> messagepb.Message
+	0,  // 45: eventpb.WALAppend.event:type_name -> eventpb.Event
+	0,  // 46: eventpb.WALEntry.event:type_name -> eventpb.Event
+	40, // 47: eventpb.Deliver.batch:type_name -> requestpb.Batch
+	38, // 48: eventpb.VerifyRequestSig.request_ref:type_name -> requestpb.RequestRef
+	38, // 49: eventpb.RequestSigVerified.request_ref:type_name -> requestpb.RequestRef
+	38, // 50: eventpb.StoreVerifiedRequest.request_ref:type_name -> requestpb.RequestRef
+	0,  // 51: eventpb.TimerDelay.events:type_name -> eventpb.Event
+	0,  // 52: eventpb.TimerRepeat.events:type_name -> eventpb.Event
+	53, // [53:53] is the sub-list for method output_type
+	53, // [53:53] is the sub-list for method input_type
+	53, // [53:53] is the sub-list for extension type_name
+	53, // [53:53] is the sub-list for extension extendee
+	0,  // [0:53] is the sub-list for field type_name
 }
 
 func init() { file_eventpb_eventpb_proto_init() }
@@ -2604,7 +2721,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SignOrigin); i {
+			switch v := v.(*EmptySignOrigin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2616,7 +2733,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SigVerData); i {
+			switch v := v.(*SignOrigin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2628,7 +2745,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*VerifyNodeSigs); i {
+			switch v := v.(*SigVerData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2640,7 +2757,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NodeSigsVerified); i {
+			switch v := v.(*VerifyNodeSigs); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2652,7 +2769,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SigVerOrigin); i {
+			switch v := v.(*NodeSigsVerified); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2664,7 +2781,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RequestReady); i {
+			switch v := v.(*EmptySigVerOrigin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2676,7 +2793,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SendMessage); i {
+			switch v := v.(*SigVerOrigin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2688,7 +2805,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MessageReceived); i {
+			switch v := v.(*RequestReady); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2700,7 +2817,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WALAppend); i {
+			switch v := v.(*SendMessage); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2712,7 +2829,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WALEntry); i {
+			switch v := v.(*MessageReceived); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2724,7 +2841,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WALTruncate); i {
+			switch v := v.(*WALAppend); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2736,7 +2853,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WALLoadAll); i {
+			switch v := v.(*WALEntry); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2748,7 +2865,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Deliver); i {
+			switch v := v.(*WALTruncate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2760,7 +2877,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*VerifyRequestSig); i {
+			switch v := v.(*WALLoadAll); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2772,7 +2889,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RequestSigVerified); i {
+			switch v := v.(*Deliver); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2784,7 +2901,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*StoreVerifiedRequest); i {
+			switch v := v.(*VerifyRequestSig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2796,7 +2913,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AppSnapshotRequest); i {
+			switch v := v.(*RequestSigVerified); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2808,7 +2925,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AppSnapshot); i {
+			switch v := v.(*StoreVerifiedRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2820,7 +2937,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AppRestoreState); i {
+			switch v := v.(*AppSnapshotRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2832,7 +2949,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimerDelay); i {
+			switch v := v.(*AppSnapshot); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2844,7 +2961,7 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimerRepeat); i {
+			switch v := v.(*AppRestoreState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2856,6 +2973,30 @@ func file_eventpb_eventpb_proto_init() {
 			}
 		}
 		file_eventpb_eventpb_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TimerDelay); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_eventpb_eventpb_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TimerRepeat); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_eventpb_eventpb_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TimerGarbageCollect); i {
 			case 0:
 				return &v.state
@@ -2901,10 +3042,12 @@ func file_eventpb_eventpb_proto_init() {
 		(*HashOrigin_Request)(nil),
 		(*HashOrigin_Iss)(nil),
 	}
-	file_eventpb_eventpb_proto_msgTypes[8].OneofWrappers = []interface{}{
+	file_eventpb_eventpb_proto_msgTypes[9].OneofWrappers = []interface{}{
+		(*SignOrigin_Empty)(nil),
 		(*SignOrigin_Iss)(nil),
 	}
-	file_eventpb_eventpb_proto_msgTypes[12].OneofWrappers = []interface{}{
+	file_eventpb_eventpb_proto_msgTypes[14].OneofWrappers = []interface{}{
+		(*SigVerOrigin_Empty)(nil),
 		(*SigVerOrigin_Iss)(nil),
 	}
 	type x struct{}
@@ -2913,7 +3056,7 @@ func file_eventpb_eventpb_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_eventpb_eventpb_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   30,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

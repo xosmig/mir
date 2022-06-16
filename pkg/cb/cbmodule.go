@@ -41,7 +41,8 @@ type cbModuleState struct {
 	sentEcho  bool
 	sentFinal bool
 	delivered bool
-	echoSigs  map[t.ModuleID][]byte
+	echos     map[t.NodeID][]byte
+	echoSigs  map[t.NodeID][]byte
 }
 
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
@@ -51,11 +52,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		sentEcho:  false,
 		sentFinal: false,
 		delivered: false,
-		echoSigs:  make(map[t.ModuleID][]byte),
+		echoSigs:  make(map[t.NodeID][]byte),
 	}
 
-	// upon event <bcb, Broadcast | m> do
-	dsl.UponRequest(m, func(_ string, _ uint64, data []byte, _ []byte) error {
+	// upon event <bcb, Broadcast | m> do    // only process s
+	dsl.UponRequest(m, func(clientId string, reqNo uint64, data []byte, authenticator []byte) error {
 		if nodeId != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
@@ -65,32 +66,36 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 
 	// upon event <al, Deliver | p, [Send, m]> such that p = s and sentecho = false do
 	cbdsl.UponStartMessageReceived(m, func(from t.NodeID, msg *cbpb.StartMessage) error {
-		if from == params.Leader && state.sentEcho  {
+		if from == params.Leader && state.sentEcho {
 			state.sentEcho = true
 			cbdsl.SignRequest(m, mc.Crypto, [][]byte{msg.Data})
 		}
 		return nil
 	})
 
-	dsl.UponEvent[eventpb.Event_SignResult](m, func(ev *eventpb.SignResult) error {
-		dsl.SendMessage(m, mc.Net, EchoMessage(mc.Self, ev.Signature), []t.NodeID{params.Leader})
+	dsl.UponSignResult(m, func(signature []byte, _ *eventpb.SignOrigin) error {
+		dsl.SendMessage(m, mc.Net, EchoMessage(mc.Self, signature), []t.NodeID{params.Leader})
 		return nil
 	})
 
+	// upon event <al, Deliver | p, [ECHO, m, σ]> do    // only process s
 	cbdsl.UponEchoMessageReceived(m, func(from t.NodeID, msg *cbpb.EchoMessage) error {
-		msg := ev.Msg.GetCb().GetEchoMessage()
-		sig := msg.GetSig()
-		if len(state.echoSigs) >= params.GetN() - params.GetF() {
-			dsl.VerifyNodeSigs(m, mc.Crypto, )
+		// if echos[p] = ⊥ ∧ verifysig(p, bcb||p||ECHO||m, σ) then
+		_, alreadyReceived := state.echos[from]
+		if nodeId == params.Leader && !alreadyReceived {
+			state.echos[from] = msg.Data
+			cbdsl.VerifyNodeSignature(m, mc.Crypto, [][]byte{msg.Data}, msg.Signature, from)
 		}
+		return nil
 	})
 
-
-
-	dsl.UponOneShotCondition(m, func() bool { state. }, func() error {
-		val := state.decided;
-		Deliver(val)
-	})
+	dsl.
+		dsl.UponOneShotCondition(m,
+		func() bool { return len(state.echos) >= params.GetN()-params.GetF() && !state.sentFinal },
+		func() error {
+			val := state.decided
+			Deliver(val)
+		})
 }
 
 //func isStartMessage(ev *eventpb.MessageReceived) bool {

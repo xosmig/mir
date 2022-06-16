@@ -11,7 +11,8 @@ option go_package = "github.com/filecoin-project/mir/pkg/pb/cbpb";
 message CBMessage {
   oneof type {
     StartMessage startMessage = 1;
-    EchoMessage  echoMessage = 2;
+    EchoMessage  echoMessage  = 2;
+    FinalMessage finalMessage = 3;
   }
 }
 
@@ -21,4 +22,10 @@ message StartMessage {
 
 message EchoMessage {
   bytes data = 1;
+  bytes signature = 2;
+}
+
+message FinalMessage {
+  bytes data = 1;
+  repeated bytes signatures = 2;
 }
