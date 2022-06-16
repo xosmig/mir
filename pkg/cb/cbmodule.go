@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/pb/cbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
+	"github.com/filecoin-project/mir/pkg/util/maputil"
 )
 
 type ModuleConfig struct {
@@ -52,10 +53,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	m := cbdsl.NewModule(mc.Self)
 
 	state := cbModuleState{
-		sentEcho: false,
-		//sentFinal: false,
-		delivered: false,
-		echoSigs:  make(map[t.NodeID][]byte),
+		request:      nil,
+		sentEcho:     false,
+		sentFinal:    false,
+		delivered:    false,
+		receivedEcho: make(map[t.NodeID]bool),
+		echoSigs:     make(map[t.NodeID][]byte),
 	}
 
 	// upon event <bcb, Broadcast | m> do    // only process s
@@ -85,9 +88,9 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	// upon event <al, Deliver | p, [ECHO, m, σ]> do    // only process s
 	cbdsl.UponEchoMessageReceived(m, func(from t.NodeID, msg *cbpb.EchoMessage) error {
 		// if echos[p] = ⊥ ∧ verifysig(p, bcb||p||ECHO||m, σ) then
-		if nodeId == params.Leader && !state.receivedEcho[from] {
+		if nodeId == params.Leader && !state.receivedEcho[from] && state.request != nil {
 			state.receivedEcho[from] = true
-			dsl.VerifyNodeSignature(m, mc.Crypto, [][]byte{msg.Data}, msg.Signature, from)
+			dsl.VerifyNodeSignature(m, mc.Crypto, [][]byte{state.request}, msg.Signature, from)
 		}
 		return nil
 	})
@@ -100,9 +103,16 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	dsl.UponCondition(m, func() error {
 		if len(state.echoSigs) > (params.GetN()+params.GetF())/2 && !state.sentFinal {
 			state.sentFinal = true
-			dsl.SendMessage(m, mc.Net, FinalMessage(mc.Self, state.echoSigs), params.AllNodes)
+			dsl.SendMessage(m, mc.Net,
+				FinalMessage(mc.Self, state.request, maputil.GetKeys(state.echoSigs), maputil.GetValues(state.echoSigs)),
+				params.AllNodes)
 		}
 		return nil
+	})
+
+	// upon event <al, Deliver | p, [FINAL, m, Σ]> do
+	cbdsl.UponFinalMessageReceived(m, func(from t.NodeID, msg *cbpb.FinalMessage) error {
+		TODO
 	})
 
 	return m.GetPassiveModule()

@@ -21,8 +21,7 @@ message StartMessage {
 }
 
 message EchoMessage {
-  bytes data = 1;
-  bytes signature = 2;
+  bytes signature = 1;
 }
 
 message FinalMessage {

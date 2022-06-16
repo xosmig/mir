@@ -16,9 +16,7 @@ type dslModuleImpl struct {
 	outputEvents      *events.EventList
 }
 
-type Handle struct {
-	moduleImpl *dslModuleImpl
-}
+type Handle *dslModuleImpl
 
 type DslModule interface {
 	GetDslHandle() Handle
@@ -26,7 +24,7 @@ type DslModule interface {
 }
 
 func (m *dslModuleImpl) GetDslHandle() Handle {
-	return Handle{moduleImpl: m}
+	return m
 }
 
 func (m *dslModuleImpl) GetPassiveModule() modules.PassiveModule {
@@ -60,8 +58,8 @@ func UponEvent[EvTp, Ev any](m DslModule, handler func(ev *Ev) error) {
 	evType := typeOf[Ev]()
 	evContainerType := typeOf[evContainer[Ev]]()
 
-	m.GetDslHandle().moduleImpl.eventHandlers[evTpType] = append(
-		m.GetDslHandle().moduleImpl.eventHandlers[evTpType],
+	m.GetDslHandle().eventHandlers[evTpType] = append(
+		m.GetDslHandle().eventHandlers[evTpType],
 		func(ev *eventpb.Event) error {
 			evTp := ev.Type.(EvTp)
 			// The safety of this cast is verified by the runtime checks below.
@@ -114,8 +112,8 @@ func UponEvent[EvTp, Ev any](m DslModule, handler func(ev *Ev) error) {
 //// batch of events is processed and *each time* `cond()` returns `True`, `handler` will be invoked.
 //// Conditions are checked in the order of their registration.
 //func UponRepeatedCondition(m DslModule, cond func() bool, handler func() error) {
-//	m.GetDslHandle().moduleImpl.conditionHandlers = append(
-//		m.GetDslHandle().moduleImpl.conditionHandlers,
+//	m.GetDslHandle().conditionHandlers = append(
+//		m.GetDslHandle().conditionHandlers,
 //		conditionEntry{
 //			condition: cond,
 //			handler:   handler,
@@ -139,14 +137,14 @@ func UponEvent[EvTp, Ev any](m DslModule, handler func(ev *Ev) error) {
 // The handler is assumed to represent a conditional action: it is supposed to check some predicate on the state
 // and perform actions if the predicate evaluates is satisfied.
 func UponCondition(m DslModule, handler func() error) {
-	m.GetDslHandle().moduleImpl.conditionHandlers = append(m.GetDslHandle().moduleImpl.conditionHandlers, handler)
+	m.GetDslHandle().conditionHandlers = append(m.GetDslHandle().conditionHandlers, handler)
 }
 
 // The ImplementsModule method only serves the purpose of indicating that this is a Module and must not be called.
 func (m *dslModuleImpl) ImplementsModule() {}
 
 func EmitEvent(m DslModule, ev *eventpb.Event) {
-	m.GetDslHandle().moduleImpl.outputEvents.PushBack(ev)
+	m.GetDslHandle().outputEvents.PushBack(ev)
 }
 
 func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, error) {

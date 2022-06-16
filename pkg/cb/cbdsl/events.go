@@ -54,6 +54,17 @@ func UponEchoMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.
 	})
 }
 
+func UponFinalMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.FinalMessage) error) {
+	UponCBMessageReceived(m, func(from t.NodeID, msg *cbpb.CBMessage) error {
+		finalMsgWrapper, ok := msg.Type.(*cbpb.CBMessage_FinalMessage)
+		if !ok {
+			return nil
+		}
+
+		return handler(from, finalMsgWrapper.FinalMessage)
+	})
+}
+
 func VerifyNodeSignature(m *CBModule,
 	destModule t.ModuleID,
 	data [][]byte,
