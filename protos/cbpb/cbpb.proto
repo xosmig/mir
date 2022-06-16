@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package cbpb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/cbpb";
+
+// ============================================================
+// Messages
+// ============================================================
+
+message CBMessage {
+  oneof type {
+    StartMessage startMessage = 1;
+    EchoMessage  echoMessage = 2;
+  }
+}
+
+message StartMessage {
+  bytes data = 1;
+}
+
+message EchoMessage {
+  bytes data = 1;
+}
