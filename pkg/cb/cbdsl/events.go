@@ -1,13 +1,16 @@
-package cb
+package cbdsl
 
 import (
 	"github.com/filecoin-project/mir/pkg/modules/dsl"
 	"github.com/filecoin-project/mir/pkg/pb/cbpb"
+	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	"github.com/filecoin-project/mir/pkg/pb/messagepb"
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
-func UponCBMessageReceived(m *dsl.Module, handler func(from t.NodeID, msg *cbpb.CBMessage) error) {
+// Contains wrappers event wrappers specific for this module
+
+func UponCBMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.CBMessage) error) {
 	dsl.UponMessageReceived(m, func(from t.NodeID, msg *messagepb.Message) error {
 		cbMsgWrapper, ok := msg.Type.(*messagepb.Message_Cb)
 		if !ok {
@@ -18,7 +21,7 @@ func UponCBMessageReceived(m *dsl.Module, handler func(from t.NodeID, msg *cbpb.
 	})
 }
 
-func UponStartMessageReceived(m *dsl.Module, handler func(from t.NodeID, msg *cbpb.StartMessage) error) {
+func UponStartMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.StartMessage) error) {
 	UponCBMessageReceived(m, func(from t.NodeID, msg *cbpb.CBMessage) error {
 		startMsgWrapper, ok := msg.Type.(*cbpb.CBMessage_StartMessage)
 		if !ok {
@@ -29,7 +32,7 @@ func UponStartMessageReceived(m *dsl.Module, handler func(from t.NodeID, msg *cb
 	})
 }
 
-func UponEchoMessageReceived(m *dsl.Module, handler func(from t.NodeID, msg *cbpb.EchoMessage) error) {
+func UponEchoMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.EchoMessage) error) {
 	UponCBMessageReceived(m, func(from t.NodeID, msg *cbpb.CBMessage) error {
 		echoMsgWrapper, ok := msg.Type.(*cbpb.CBMessage_EchoMessage)
 		if !ok {
@@ -37,5 +40,11 @@ func UponEchoMessageReceived(m *dsl.Module, handler func(from t.NodeID, msg *cbp
 		}
 
 		return handler(from, echoMsgWrapper.EchoMessage)
+	})
+}
+
+func SignRequest(m *CBModule, destModule t.ModuleID, data [][]byte) {
+	dsl.SignRequest(m, destModule, data, eventpb.SignOrigin{
+		Module: m.moduleId.Pb(),
 	})
 }

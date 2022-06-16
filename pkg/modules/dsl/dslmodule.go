@@ -15,6 +15,18 @@ type Module struct {
 	outputEvents      *events.EventList
 }
 
+type Handle struct {
+	moduleImpl *Module
+}
+
+type DslModule interface {
+	GetDslHandle() Handle
+}
+
+func (m *Module) GetDslHandle() Handle {
+	return Handle{moduleImpl: m}
+}
+
 func NewModule() *Module {
 	return &Module{}
 }
@@ -37,17 +49,19 @@ func typeOf[T any]() reflect.Type {
 // This event handler will be called every time an event of type EvTp is received.
 // Type EvTp is the protoc-generated wrapper around Ev -- protobuf representation of the event.
 // Note that the type parameter Ev can be inferred automatically from handler.
-func UponEvent[EvTp, Ev any](m *Module, handler func(ev *Ev) error) {
+func UponEvent[EvTp, Ev any](m DslModule, handler func(ev *Ev) error) {
 	evTpType := typeOf[EvTp]()
 	evType := typeOf[Ev]()
 	evContainerType := typeOf[evContainer[Ev]]()
 
-	m.eventHandlers[evTpType] = append(m.eventHandlers[evTpType], func(ev *eventpb.Event) error {
-		evTp := ev.Type.(EvTp)
-		// The safety of this cast is verified by the runtime checks below.
-		evTpPtr := (*evContainer[Ev])(unsafe.Pointer(&evTp))
-		return handler((*evTpPtr).ev)
-	})
+	m.GetDslHandle().moduleImpl.eventHandlers[evTpType] = append(
+		m.GetDslHandle().moduleImpl.eventHandlers[evTpType],
+		func(ev *eventpb.Event) error {
+			evTp := ev.Type.(EvTp)
+			// The safety of this cast is verified by the runtime checks below.
+			evTpPtr := (*evContainer[Ev])(unsafe.Pointer(&evTp))
+			return handler((*evTpPtr).ev)
+		})
 
 	// These checks verify that an object of type EvTp can be safely interpreted as object of type evContainer[Ev].
 	// They are only performed at the time of registration of the handler (which is supposedly at the very beginning
@@ -75,36 +89,38 @@ func UponEvent[EvTp, Ev any](m *Module, handler func(ev *Ev) error) {
 	}
 }
 
-// UponEventWithCondition registers a conditional event handler for module m.
-// The condition cond will be checked every time an event of type EvTp is received and the handler will be invoked
-// whenever the condition evaluates to true.
-// Type EvTp is the protoc-generated wrapper around Ev -- protobuf representation of the event.
-// Note that the type parameter Ev can be inferred automatically from handler.
-// TODO: decide whether we want to keep this function.
-func UponEventWithCondition[EvTp, Ev any](m *Module, cond func(ev *Ev) bool, handler func(ev *Ev) error) {
-	UponEvent[EvTp](m, func(ev *Ev) error {
-		if !cond(ev) {
-			return nil
-		}
-		return handler(ev)
-	})
-}
+//// UponEventWithCondition registers a conditional event handler for module m.
+//// The condition cond will be checked every time an event of type EvTp is received and the handler will be invoked
+//// whenever the condition evaluates to true.
+//// Type EvTp is the protoc-generated wrapper around Ev -- protobuf representation of the event.
+//// Note that the type parameter Ev can be inferred automatically from handler.
+//// TODO: decide whether we want to keep this function.
+//func UponEventWithCondition[EvTp, Ev any](m DslModule, cond func(ev *Ev) bool, handler func(ev *Ev) error) {
+//	UponEvent[EvTp](m, func(ev *Ev) error {
+//		if !cond(ev) {
+//			return nil
+//		}
+//		return handler(ev)
+//	})
+//}
 
 // UponRepeatedCondition registers a *repeated* condition handler. Predicate `cond` will be evaluated each time after a
 // batch of events is processed and *each time* `cond()` returns `True`, `handler` will be invoked.
 // Conditions are checked in the order of their registration.
-func UponRepeatedCondition(m *Module, cond func() bool, handler func() error) {
-	m.conditionHandlers = append(m.conditionHandlers, conditionEntry{
-		condition: cond,
-		handler:   handler,
-	})
+func UponRepeatedCondition(m DslModule, cond func() bool, handler func() error) {
+	m.GetDslHandle().moduleImpl.conditionHandlers = append(
+		m.GetDslHandle().moduleImpl.conditionHandlers,
+		conditionEntry{
+			condition: cond,
+			handler:   handler,
+		})
 }
 
 // UponOneShotCondition registers a *one-shot* condition handler. Predicate `cond` will be evaluated each time after a
 // batch of events is processed until it returns `true`. After `cond()` returns `true` *for the first time*  `cond()`,
 // `handler` will be invoked.
 // Conditions are checked in the order of their registration.
-func UponOneShotCondition(m *Module, cond func() bool, handler func() error) {
+func UponOneShotCondition(m DslModule, cond func() bool, handler func() error) {
 	// Note that a more efficient implementation that actually removes the one-shot condition from the list is possible.
 	fired := false
 	UponRepeatedCondition(m, func() bool { return !fired && cond() }, func() error {
@@ -116,8 +132,8 @@ func UponOneShotCondition(m *Module, cond func() bool, handler func() error) {
 // The ImplementsModule method only serves the purpose of indicating that this is a Module and must not be called.
 func (m *Module) ImplementsModule() {}
 
-func EmitEvent(m *Module, ev *eventpb.Event) {
-	m.outputEvents.PushBack(ev)
+func EmitEvent(m DslModule, ev *eventpb.Event) {
+	m.GetDslHandle().moduleImpl.outputEvents.PushBack(ev)
 }
 
 func (m *Module) ApplyEvents(evs *events.EventList) (*events.EventList, error) {

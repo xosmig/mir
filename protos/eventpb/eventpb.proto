@@ -95,6 +95,7 @@ message SignOrigin {
   string module = 1;
   oneof type {
     isspb.ISSSignOrigin iss = 2;
+    cbpb.CBSignOrigin cb = 3;
   }
 }
 

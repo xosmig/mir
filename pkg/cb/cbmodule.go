@@ -2,12 +2,11 @@ package cb
 
 import (
 	"fmt"
+	"github.com/filecoin-project/mir/pkg/cb/cbdsl"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/modules/dsl"
 	"github.com/filecoin-project/mir/pkg/pb/cbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
-	"github.com/filecoin-project/mir/pkg/pb/messagepb"
-	"github.com/filecoin-project/mir/pkg/pb/requestpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
@@ -46,7 +45,7 @@ type cbModuleState struct {
 }
 
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
-	m := dsl.NewModule()
+	m := cbdsl.NewModule(mc.Self)
 
 	state := cbModuleState{
 		sentEcho:  false,
@@ -56,17 +55,20 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	}
 
 	// upon event <bcb, Broadcast | m> do
-	dsl.UponEvent[eventpb.Event_Request](m, func(ev *requestpb.Request) error {
+	dsl.UponRequest(m, func(_ string, _ uint64, data []byte, _ []byte) error {
 		if nodeId != params.Leader {
-			return fmt.Errorf("only the leader node can receive client requests")
+			return fmt.Errorf("only the leader node can receive requests")
 		}
-		dsl.SendMessage(m, mc.Net, StartMessage(mc.Self, ev.Data), params.AllNodes)
+		dsl.SendMessage(m, mc.Net, StartMessage(mc.Self, data), params.AllNodes)
 		return nil
 	})
 
 	// upon event <al, Deliver | p, [Send, m]> such that p = s and sentecho = false do
-	UponMessageReceived[cbpb.CBMessage_EchoMessage](m, func(msg *cbpb.EchoMessage) error {
-		dsl.SignRequest(m, mc.Crypto, [][]byte{msg.Data}, SignRequestOrigin())
+	cbdsl.UponStartMessageReceived(m, func(from t.NodeID, msg *cbpb.StartMessage) error {
+		if from == params.Leader && state.sentEcho  {
+			state.sentEcho = true
+			cbdsl.SignRequest(m, mc.Crypto, [][]byte{msg.Data})
+		}
 		return nil
 	})
 
@@ -75,7 +77,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		return nil
 	})
 
-	dsl.UponEventWithCondition[eventpb.Event_MessageReceived](m, isEchoMessage, func(ev *eventpb.MessageReceived) error {
+	cbdsl.UponEchoMessageReceived(m, func(from t.NodeID, msg *cbpb.EchoMessage) error {
 		msg := ev.Msg.GetCb().GetEchoMessage()
 		sig := msg.GetSig()
 		if len(state.echoSigs) >= params.GetN() - params.GetF() {
@@ -91,23 +93,23 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	})
 }
 
-func isStartMessage(ev *eventpb.MessageReceived) bool {
-	cbMessage, ok := ev.Msg.Type.(*messagepb.Message_Cb)
-	if !ok {
-		return false
-	}
-
-	_, ok = cbMessage.Cb.Type.(*cbpb.CBMessage_StartMessage)
-	return ok
-}
-
-func isEchoMessage(ev *eventpb.MessageReceived) bool {
-	cbMessage, ok := ev.Msg.Type.(*messagepb.Message_Cb)
-	if !ok {
-		return false
-	}
-
-	_, ok = cbMessage.Cb.Type.(*cbpb.CBMessage_EchoMessage)
-	return ok
-}
-
+//func isStartMessage(ev *eventpb.MessageReceived) bool {
+//	cbMessage, ok := ev.Msg.Type.(*messagepb.Message_Cb)
+//	if !ok {
+//		return false
+//	}
+//
+//	_, ok = cbMessage.Cb.Type.(*cbpb.CBMessage_StartMessage)
+//	return ok
+//}
+//
+//func isEchoMessage(ev *eventpb.MessageReceived) bool {
+//	cbMessage, ok := ev.Msg.Type.(*messagepb.Message_Cb)
+//	if !ok {
+//		return false
+//	}
+//
+//	_, ok = cbMessage.Cb.Type.(*cbpb.CBMessage_EchoMessage)
+//	return ok
+//}
+//
