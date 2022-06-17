@@ -42,27 +42,29 @@ type cbModuleState struct {
 	// this variable is not part of the original protocol description, but it greatly simplifies the code
 	request []byte
 
-	sentEcho     bool
-	sentFinal    bool
-	delivered    bool
-	receivedEcho map[t.NodeID]bool
-	echoSigs     map[t.NodeID][]byte
+	sentEcho         bool
+	sentFinal        bool
+	delivered        bool
+	receivedEcho     map[t.NodeID]bool
+	echoSigs         map[t.NodeID][]byte
+	verifiedEchoSigs map[t.NodeID][]byte
 }
 
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
 	m := cbdsl.NewModule(mc.Self)
 
 	state := cbModuleState{
-		request:      nil,
-		sentEcho:     false,
-		sentFinal:    false,
-		delivered:    false,
-		receivedEcho: make(map[t.NodeID]bool),
-		echoSigs:     make(map[t.NodeID][]byte),
+		request:          nil,
+		sentEcho:         false,
+		sentFinal:        false,
+		delivered:        false,
+		receivedEcho:     make(map[t.NodeID]bool),
+		echoSigs:         make(map[t.NodeID][]byte),
+		verifiedEchoSigs: make(map[t.NodeID][]byte),
 	}
 
 	// upon event <bcb, Broadcast | m> do    // only process s
-	dsl.UponRequest(m, func(clientId string, reqNo uint64, data []byte, authenticator []byte) error {
+	dsl.UponRequest(m, func(clientId t.ClientID, reqNo uint64, data []byte, authenticator []byte) error {
 		if nodeId != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
@@ -71,17 +73,20 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		return nil
 	})
 
-	// upon event <al, Deliver | p, [Send, m]> such that p = s and sentecho = false do
+	// upon event <al, Deliver | p, [Send, m]> ...
 	cbdsl.UponStartMessageReceived(m, func(from t.NodeID, msg *cbpb.StartMessage) error {
-		if from == params.Leader && state.sentEcho {
-			state.sentEcho = true
+		// ... such that p = s and sentecho = false do
+		if from == params.Leader && !state.sentEcho {
 			cbdsl.SignRequest(m, mc.Crypto, [][]byte{msg.Data})
 		}
 		return nil
 	})
 
-	dsl.UponSignResult(m, func(signature []byte, _ *eventpb.SignOrigin) error {
-		dsl.SendMessage(m, mc.Net, EchoMessage(mc.Self, signature), []t.NodeID{params.Leader})
+	dsl.UponSignResult(m, func(signature []byte, origin *eventpb.SignOrigin) error {
+		if !state.sentEcho {
+			state.sentEcho = true
+			dsl.SendMessage(m, mc.Net, EchoMessage(mc.Self, signature), []t.NodeID{params.Leader})
+		}
 		return nil
 	})
 
@@ -90,21 +95,27 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		// if echos[p] = ⊥ ∧ verifysig(p, bcb||p||ECHO||m, σ) then
 		if nodeId == params.Leader && !state.receivedEcho[from] && state.request != nil {
 			state.receivedEcho[from] = true
-			dsl.VerifyNodeSignature(m, mc.Crypto, state.request, msg.Signature, from)
+			state.echoSigs[from] = msg.Signature
+			cbdsl.VerifyNodeSignature(m, mc.Crypto, [][]byte{state.request}, msg.Signature, from)
 		}
 		return nil
 	})
 
-	dsl.UponNodeSignatureVerified(m, func(TODO) error {
-		TODO
+	cbdsl.UponNodeSignatureVerified(m, func(nodeId t.NodeID, valid bool, err error) error {
+		if valid && err == nil {
+			state.verifiedEchoSigs[nodeId] = state.echoSigs[nodeId]
+		}
+		return nil
 	})
 
-	// upon exists m != ⊥ such that #({p ∈ Π | echos[p] = m}) > (N + f) / 2 and sentfinal = FALSE do
+	// upon exists m != ⊥ such that #({p ∈ Π | echos[p] = m}) > (N+f)/2 and sentfinal = FALSE do
 	dsl.UponCondition(m, func() error {
-		if len(state.echoSigs) > (params.GetN()+params.GetF())/2 && !state.sentFinal {
+		if len(state.verifiedEchoSigs) > (params.GetN()+params.GetF())/2 && !state.sentFinal {
 			state.sentFinal = true
+			certSigners := maputil.GetKeys(state.verifiedEchoSigs)
+			certSignatures := maputil.GetValues(state.verifiedEchoSigs)
 			dsl.SendMessage(m, mc.Net,
-				FinalMessage(mc.Self, state.request, maputil.GetKeys(state.echoSigs), maputil.GetValues(state.echoSigs)),
+				FinalMessage(mc.Self, state.request, certSigners, certSignatures),
 				params.AllNodes)
 		}
 		return nil
@@ -112,7 +123,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 
 	// upon event <al, Deliver | p, [FINAL, m, Σ]> do
 	cbdsl.UponFinalMessageReceived(m, func(from t.NodeID, msg *cbpb.FinalMessage) error {
-		TODO
+		// if #({p ∈ Π | Σ[p] != ⊥ ∧ verifysig(p, bcb||p||ECHO||m, Σ[p])}) > (N+f)/2 and delivered = FALSE do
+		if len(msg.Signers) == len(msg.Signatures) && len(msg.Signers) > (params.GetN()+params.GetF())/2 && !state.delivered {
+
+		}
+		return nil
 	})
 
 	return m.GetPassiveModule()

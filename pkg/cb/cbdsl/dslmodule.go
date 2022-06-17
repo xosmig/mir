@@ -5,13 +5,13 @@ import (
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
-type CBModule struct {
+type cbModuleImpl struct {
 	dsl.DslModule
 	moduleId t.ModuleID
 }
 
-func NewModule(moduleId t.ModuleID) *CBModule {
-	return &CBModule{
+func NewModule(moduleId t.ModuleID) *cbModuleImpl {
+	return &cbModuleImpl{
 		DslModule: dsl.NewModule(),
 		moduleId:  moduleId,
 	}

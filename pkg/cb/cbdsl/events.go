@@ -10,7 +10,7 @@ import (
 
 // Contains event wrappers specific for this module
 
-func SignRequest(m *CBModule, destModule t.ModuleID, data [][]byte) {
+func SignRequest(m *cbModuleImpl, destModule t.ModuleID, data [][]byte) {
 	dsl.SignRequest(m, destModule, data, &eventpb.SignOrigin{
 		Module: m.moduleId.Pb(),
 		Type: &eventpb.SignOrigin_Empty{
@@ -21,7 +21,7 @@ func SignRequest(m *CBModule, destModule t.ModuleID, data [][]byte) {
 
 // Module-specific dsl handler wrappers
 
-func UponCBMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.CBMessage) error) {
+func UponCBMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, msg *cbpb.CBMessage) error) {
 	dsl.UponMessageReceived(m, func(from t.NodeID, msg *messagepb.Message) error {
 		cbMsgWrapper, ok := msg.Type.(*messagepb.Message_Cb)
 		if !ok {
@@ -32,7 +32,7 @@ func UponCBMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.CB
 	})
 }
 
-func UponStartMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.StartMessage) error) {
+func UponStartMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, msg *cbpb.StartMessage) error) {
 	UponCBMessageReceived(m, func(from t.NodeID, msg *cbpb.CBMessage) error {
 		startMsgWrapper, ok := msg.Type.(*cbpb.CBMessage_StartMessage)
 		if !ok {
@@ -43,7 +43,7 @@ func UponStartMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb
 	})
 }
 
-func UponEchoMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.EchoMessage) error) {
+func UponEchoMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, msg *cbpb.EchoMessage) error) {
 	UponCBMessageReceived(m, func(from t.NodeID, msg *cbpb.CBMessage) error {
 		echoMsgWrapper, ok := msg.Type.(*cbpb.CBMessage_EchoMessage)
 		if !ok {
@@ -54,7 +54,7 @@ func UponEchoMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.
 	})
 }
 
-func UponFinalMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb.FinalMessage) error) {
+func UponFinalMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, msg *cbpb.FinalMessage) error) {
 	UponCBMessageReceived(m, func(from t.NodeID, msg *cbpb.CBMessage) error {
 		finalMsgWrapper, ok := msg.Type.(*cbpb.CBMessage_FinalMessage)
 		if !ok {
@@ -65,7 +65,8 @@ func UponFinalMessageReceived(m *CBModule, handler func(from t.NodeID, msg *cbpb
 	})
 }
 
-func VerifyNodeSignature(m *CBModule,
+func VerifyNodeSignature(
+	m *cbModuleImpl,
 	destModule t.ModuleID,
 	data [][]byte,
 	signature []byte,
@@ -74,8 +75,20 @@ func VerifyNodeSignature(m *CBModule,
 	origin := &eventpb.SigVerOrigin{
 		Module: m.moduleId.Pb(),
 		Type: &eventpb.SigVerOrigin_Empty{
-			&eventpb.EmptySigVerOrigin{},
+			Empty: &eventpb.EmptySigVerOrigin{},
 		},
 	}
 	dsl.VerifyNodeSigs(m, destModule, [][][]byte{data}, [][]byte{signature}, []t.NodeID{nodeID}, origin)
+}
+
+func UponNodeSignatureVerified(m *cbModuleImpl, handler func(nodeId t.NodeID, valid bool, err error) error) {
+	dsl.UponNodeSigsVerified(m, func(origin *eventpb.SigVerOrigin, nodeIds []t.NodeID, valid []bool, errs []error, allOk bool) error {
+		for i := range nodeIds {
+			err := handler(nodeIds[i], valid[i], errs[i])
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

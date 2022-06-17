@@ -15,3 +15,11 @@ func GetValues[K comparable, V any](m map[K]V) []V {
 	}
 	return values
 }
+
+func GetValuesOf[K comparable, V any](m map[K]V, keys []K) []V {
+	values := make([]V, 0, len(keys))
+	for _, k := range keys {
+		values = append(values, m[k])
+	}
+	return values
+}
