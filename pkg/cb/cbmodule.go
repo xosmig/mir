@@ -52,6 +52,8 @@ type cbModuleState struct {
 
 // NewModule returns a passive module for the Signed Echo Broadcast from the textbook "Introduction to reliable and
 // secure distributed programming". It serves as a motivating example for the DSL module interface.
+// The pseudocode can also be found in https://dcl.epfl.ch/site/_media/education/sdc_byzconsensus.pdf (Algorithm 4
+// (Echo broadcast [Rei94]))
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
 	m := cbdsl.NewModule(mc.Self)
 
