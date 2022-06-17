@@ -50,6 +50,8 @@ type cbModuleState struct {
 	verifiedEchoSigs map[t.NodeID][]byte
 }
 
+// NewModule returns a passive module for the Signed Echo Broadcast from the textbook "Introduction to reliable and
+// secure distributed programming". It serves as a motivating example for the DSL module interface.
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
 	m := cbdsl.NewModule(mc.Self)
 
@@ -132,24 +134,3 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 
 	return m.GetPassiveModule()
 }
-
-//func isStartMessage(ev *eventpb.MessageReceived) bool {
-//	cbMessage, ok := ev.Msg.Type.(*messagepb.Message_Cb)
-//	if !ok {
-//		return false
-//	}
-//
-//	_, ok = cbMessage.Cb.Type.(*cbpb.CBMessage_StartMessage)
-//	return ok
-//}
-//
-//func isEchoMessage(ev *eventpb.MessageReceived) bool {
-//	cbMessage, ok := ev.Msg.Type.(*messagepb.Message_Cb)
-//	if !ok {
-//		return false
-//	}
-//
-//	_, ok = cbMessage.Cb.Type.(*cbpb.CBMessage_EchoMessage)
-//	return ok
-//}
-//

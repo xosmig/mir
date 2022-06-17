@@ -35,11 +35,6 @@ func NewModule() *dslModuleImpl {
 	return &dslModuleImpl{}
 }
 
-//type conditionEntry struct {
-//	condition func() bool
-//	handler   func() error
-//}
-
 type evContainer[Ev any] struct{ ev *Ev }
 
 // typeOf returns the reflect.Type that represents the type T.
@@ -93,46 +88,6 @@ func UponEvent[EvTp, Ev any](m DslModule, handler func(ev *Ev) error) {
 	}
 }
 
-//// UponEventWithCondition registers a conditional event handler for module m.
-//// The condition cond will be checked every time an event of type EvTp is received and the handler will be invoked
-//// whenever the condition evaluates to true.
-//// Type EvTp is the protoc-generated wrapper around Ev -- protobuf representation of the event.
-//// Note that the type parameter Ev can be inferred automatically from handler.
-//// TODO: decide whether we want to keep this function.
-//func UponEventWithCondition[EvTp, Ev any](m DslModule, cond func(ev *Ev) bool, handler func(ev *Ev) error) {
-//	UponEvent[EvTp](m, func(ev *Ev) error {
-//		if !cond(ev) {
-//			return nil
-//		}
-//		return handler(ev)
-//	})
-//}
-
-//// UponRepeatedCondition registers a *repeated* condition handler. Predicate `cond` will be evaluated each time after a
-//// batch of events is processed and *each time* `cond()` returns `True`, `handler` will be invoked.
-//// Conditions are checked in the order of their registration.
-//func UponRepeatedCondition(m DslModule, cond func() bool, handler func() error) {
-//	m.GetDslHandle().conditionHandlers = append(
-//		m.GetDslHandle().conditionHandlers,
-//		conditionEntry{
-//			condition: cond,
-//			handler:   handler,
-//		})
-//}
-
-//// UponOneShotCondition registers a *one-shot* condition handler. Predicate `cond` will be evaluated each time after a
-//// batch of events is processed until it returns `true`. After `cond()` returns `true` *for the first time*  `cond()`,
-//// `handler` will be invoked.
-//// Conditions are checked in the order of their registration.
-//func UponOneShotCondition(m DslModule, cond func() bool, handler func() error) {
-//	// Note that a more efficient implementation that actually removes the one-shot condition from the list is possible.
-//	fired := false
-//	UponRepeatedCondition(m, func() bool { return !fired && cond() }, func() error {
-//		fired = true
-//		return handler()
-//	})
-//}
-
 // UponCondition registers a special type of handler that will be invoked each time after processing a batch of events.
 // The handler is assumed to represent a conditional action: it is supposed to check some predicate on the state
 // and perform actions if the predicate evaluates is satisfied.
@@ -163,17 +118,6 @@ func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, e
 			}
 		}
 	}
-
-	//// Run condition handlers.
-	//for _, condEntry := range m.conditionHandlers {
-	//	if condEntry.condition() {
-	//		err := condEntry.handler()
-	//
-	//		if err != nil {
-	//			return nil, err
-	//		}
-	//	}
-	//}
 
 	// Run condition handlers.
 	for _, condition := range m.conditionHandlers {
