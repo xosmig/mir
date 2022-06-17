@@ -5,6 +5,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
+	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 	"reflect"
 	"unsafe"
 )
@@ -37,21 +38,14 @@ func NewModule() *dslModuleImpl {
 
 type evContainer[Ev any] struct{ ev *Ev }
 
-// typeOf returns the reflect.Type that represents the type T.
-// TODO: consider moving this function to some utility package. Ideally, it should be in the standard library :)
-// see: https://github.com/golang/go/issues/50741
-func typeOf[T any]() reflect.Type {
-	return reflect.TypeOf((*T)(nil)).Elem()
-}
-
 // UponEvent registers an event handler for module m.
 // This event handler will be called every time an event of type EvTp is received.
 // Type EvTp is the protoc-generated wrapper around Ev -- protobuf representation of the event.
 // Note that the type parameter Ev can be inferred automatically from handler.
 func UponEvent[EvTp, Ev any](m DslModule, handler func(ev *Ev) error) {
-	evTpType := typeOf[EvTp]()
-	evType := typeOf[Ev]()
-	evContainerType := typeOf[evContainer[Ev]]()
+	evTpType := reflectutil.TypeOf[EvTp]()
+	evType := reflectutil.TypeOf[Ev]()
+	evContainerType := reflectutil.TypeOf[evContainer[Ev]]()
 
 	m.GetDslHandle().eventHandlers[evTpType] = append(
 		m.GetDslHandle().eventHandlers[evTpType],
