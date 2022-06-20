@@ -68,8 +68,8 @@ message ContextStoreOrigin {
 }
 
 message DslOrigin {
-  uint64 contextStoreId = 1;
-  uint64 itemID         = 2;
+  uint64 contextHandleId = 1;
+  uint64 itemID          = 2;
 }
 
 message HashRequest {

@@ -1,7 +1,6 @@
 package dsl
 
 import (
-	"fmt"
 	cs "github.com/filecoin-project/mir/pkg/contextstore"
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
@@ -11,41 +10,50 @@ import (
 	"github.com/pkg/errors"
 )
 
-//
-
 // Event-specific dsl functions for emitting events (wrappers around the functions defined in pkg/events)
 
 func SendMessage(m Module, destModule t.ModuleID, msg *messagepb.Message, dest []t.NodeID) {
 	EmitEvent(m, events.SendMessage(destModule, msg, dest))
 }
 
-func SignRequest[T any](m Module, destModule t.ModuleID, data [][]byte, contextStore cs.ContextStore[T], context T) {
-	//impl := m.GetDslHandle().impl
-
-	if !contextStore.HasID() {
-		panic(fmt.Errorf("no handlers are assigned to this contextstore of type '%T'", contextStore))
-	}
-
-	itemID := contextStore.Store(context)
+func SignRequest[C any](m Module, destModule t.ModuleID, data [][]byte, contextHandle ContextHandle[C], context C) {
+	itemID := contextHandle.StoreContext(context)
 
 	origin := &eventpb.SignOrigin{
-		Module: m.GetDslHandle().impl.moduleID.Pb(),
+		Module: m.GetModuleID().Pb(),
 		Type: &eventpb.SignOrigin_Dsl{
-			Dsl: dslOrigin(contextStore.GetID(), itemID),
+			Dsl: &eventpb.DslOrigin{
+				ContextHandleId: contextHandle.GetID().Pb(),
+				ItemID:          itemID.Pb(),
+			},
 		},
 	}
+
 	EmitEvent(m, events.SignRequest(destModule, data, origin))
 }
 
 // VerifyNodeSigs emits a signature verification event for a batch of signatures.
-func VerifyNodeSigs(
+func VerifyNodeSigs[C any](
 	m Module,
 	destModule t.ModuleID,
 	data [][][]byte,
 	signatures [][]byte,
 	nodeIDs []t.NodeID,
-	origin *eventpb.SigVerOrigin,
+	contextHandle ContextHandle[C],
+	context C,
 ) {
+	itemID := contextHandle.StoreContext(context)
+
+	origin := &eventpb.SigVerOrigin{
+		Module: m.GetModuleID().Pb(),
+		Type: &eventpb.SigVerOrigin_Dsl{
+			Dsl: &eventpb.DslOrigin{
+				ContextHandleId: contextHandle.GetID().Pb(),
+				ItemID:          itemID.Pb(),
+			},
+		},
+	}
+
 	EmitEvent(m, events.VerifyNodeSigs(destModule, data, signatures, nodeIDs, origin))
 }
 
@@ -57,38 +65,42 @@ func UponRequest(m Module, handler func(clientId t.ClientID, reqNo uint64, data 
 	})
 }
 
-func UponSignResult[T any](m Module, contextStore cs.ContextStore[T], handler func(signature []byte, context T) error) {
-	storeID := m.GetDslHandle().impl.getContextStoreId(contextStore)
-
-	UponEvent[eventpb.Event_SignRequest](m, func(res *eventpb.SignResult) error {
-		csOrigin, ok := res.Origin.Type.(*eventpb.SignOrigin_ContextStore)
-		if !ok {
-			return nil
-		}
-
-		if csOrigin.ContextStore.StoreID != storeID {
-			return nil
-		}
-
-		return handler(res.Signature, contextStore.RecoverAndDispose(cs.ItemID(csOrigin.ContextStore.ItemID)))
+func UponMessageReceived(m Module, handler func(from t.NodeID, msg *messagepb.Message) error) {
+	UponEvent[eventpb.Event_MessageReceived](m, func(ev *eventpb.MessageReceived) error {
+		return handler(t.NodeID(ev.From), ev.Msg)
 	})
 }
 
-func UponNodeSigsVerified[T any](
-	m Module,
-	contextStore cs.ContextStore[T],
-	handler func(nodeIds []t.NodeID, valid []bool, errs []error, allOk bool, context T) error) {
-	UponEvent[eventpb.Event_NodeSigsVerified](m, func(res *eventpb.NodeSigsVerified) error {
-		csOrigin, ok := res.Origin.Type.(*eventpb.SigVerOrigin_ContextStore)
+func UponSignResult[C any](m Module, contextHandle ContextHandle[C], handler func(signature []byte, context C) error) {
+	UponEvent[eventpb.Event_SignRequest](m, func(res *eventpb.SignResult) error {
+		dslOriginWrapper, ok := res.Origin.Type.(*eventpb.SignOrigin_Dsl)
 		if !ok {
 			return nil
 		}
+		dslOrigin := dslOriginWrapper.Dsl
 
-		if cs.StoreID(csOrigin.ContextStore.StoreID) != contextStore.Id() {
+		if ContextHandleID(dslOrigin.ContextHandleId) != contextHandle.GetID() {
 			return nil
 		}
 
-		if cs.StoreID(csOrigin.ContextStore.StoreID) != contextStore.Id() {
+		context := contextHandle.RecoverContextAndDeferCleanup(cs.ItemID(dslOrigin.ItemID))
+		return handler(res.Signature, context)
+	})
+}
+
+func UponNodeSigsVerified[C any](
+	m Module,
+	contextHandle ContextHandle[C],
+	handler func(nodeIds []t.NodeID, valid []bool, errs []error, allOk bool, context C) error,
+) {
+	UponEvent[eventpb.Event_NodeSigsVerified](m, func(res *eventpb.NodeSigsVerified) error {
+		dslOriginWrapper, ok := res.Origin.Type.(*eventpb.SigVerOrigin_Dsl)
+		if !ok {
+			return nil
+		}
+		dslOrigin := dslOriginWrapper.Dsl
+
+		if ContextHandleID(dslOrigin.ContextHandleId) != contextHandle.GetID() {
 			return nil
 		}
 
@@ -102,13 +114,7 @@ func UponNodeSigsVerified[T any](
 			errs = append(errs, errors.New(err))
 		}
 
-		context := contextStore.RecoverAndDispose(cs.ItemID(csOrigin.ContextStore.ItemID))
+		context := contextHandle.RecoverContextAndDeferCleanup(cs.ItemID(dslOrigin.ItemID))
 		return handler(nodeIds, res.Valid, errs, res.AllOk, context)
-	})
-}
-
-func UponMessageReceived(m Module, handler func(from t.NodeID, msg *messagepb.Message) error) {
-	UponEvent[eventpb.Event_MessageReceived](m, func(ev *eventpb.MessageReceived) error {
-		return handler(t.NodeID(ev.From), ev.Msg)
 	})
 }

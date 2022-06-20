@@ -2,7 +2,6 @@ package dsl
 
 import (
 	"fmt"
-	cs "github.com/filecoin-project/mir/pkg/contextstore"
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
@@ -12,35 +11,42 @@ import (
 	"unsafe"
 )
 
-// dslModuleImpl allows creating passive modules in a very natural declarative way.
 type dslModuleImpl struct {
 	moduleID          t.ModuleID
 	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) error
 	conditionHandlers []func() error
 	outputEvents      *events.EventList
-	// contextStore is used to store and recover context on asynchronous operations such as signature verification.
-	contextStore cs.ContextStore[any]
+
+	// This field is used to deterministically assign unique identifiers to context handles.
+	// See: ContextHandle.
+	nextContextHandleID uint64
+
+	eventCleanup []func()
 }
 
-type Handle struct {
-	impl *dslModuleImpl
-}
+type Handle *dslModuleImpl
 
+// Module allows creating high-level passive modules in a very natural declarative way.
 type Module interface {
 	modules.PassiveModule
 	GetDslHandle() Handle
+	GetModuleID() t.ModuleID
 }
 
 func (m *dslModuleImpl) GetDslHandle() Handle {
-	return Handle{m}
+	return m
+}
+
+func (m *dslModuleImpl) GetModuleID() t.ModuleID {
+	return m.moduleID
 }
 
 func NewModule(moduleID t.ModuleID) *dslModuleImpl {
 	return &dslModuleImpl{
-		moduleID:      moduleID,
-		eventHandlers: make(map[reflect.Type][]func(ev *eventpb.Event) error),
-		outputEvents:  &events.EventList{},
-		contextStore:  cs.NewSequentialContextStore[any](),
+		moduleID:            moduleID,
+		eventHandlers:       make(map[reflect.Type][]func(ev *eventpb.Event) error),
+		outputEvents:        &events.EventList{},
+		nextContextHandleID: 0,
 	}
 }
 
@@ -55,8 +61,8 @@ func UponEvent[EvWrapper, Ev any](m Module, handler func(ev *Ev) error) {
 	evType := reflectutil.TypeOf[Ev]()
 	evContainerType := reflectutil.TypeOf[evContainer[Ev]]()
 
-	m.GetDslHandle().impl.eventHandlers[evTpType] = append(
-		m.GetDslHandle().impl.eventHandlers[evTpType],
+	m.GetDslHandle().eventHandlers[evTpType] = append(
+		m.GetDslHandle().eventHandlers[evTpType],
 		func(ev *eventpb.Event) error {
 			evTp := ev.Type.(EvWrapper)
 			// The safety of this cast is verified by the runtime checks below.
@@ -96,20 +102,22 @@ func UponEvent[EvWrapper, Ev any](m Module, handler func(ev *Ev) error) {
 // The handler is assumed to represent a conditional action: it is supposed to check some predicate on the state
 // and perform actions if the predicate evaluates is satisfied.
 func UponCondition(m Module, handler func() error) {
-	m.GetDslHandle().impl.conditionHandlers = append(m.GetDslHandle().impl.conditionHandlers, handler)
+	m.GetDslHandle().conditionHandlers = append(m.GetDslHandle().conditionHandlers, handler)
 }
 
 // The ImplementsModule method only serves the purpose of indicating that this is a Module and must not be called.
 func (m *dslModuleImpl) ImplementsModule() {}
 
 func EmitEvent(m Module, ev *eventpb.Event) {
-	m.GetDslHandle().impl.outputEvents.PushBack(ev)
+	m.GetDslHandle().outputEvents.PushBack(ev)
 }
 
 func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, error) {
 	// Run event handlers.
 	iter := evs.Iterator()
 	for ev := iter.Next(); ev != nil; ev = iter.Next() {
+		m.eventCleanup = nil
+
 		handlers, ok := m.eventHandlers[reflect.TypeOf(ev.Type)]
 		if !ok {
 			return nil, fmt.Errorf("unknown event type '%T'", ev.Type)
@@ -118,8 +126,13 @@ func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, e
 		for _, h := range handlers {
 			err := h(ev)
 			if err != nil {
+				// TODO: should we do the cleanup in case of an error?
 				return nil, err
 			}
+		}
+
+		for _, f := range m.eventCleanup {
+			f()
 		}
 	}
 

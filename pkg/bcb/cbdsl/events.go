@@ -1,7 +1,6 @@
 package cbdsl
 
 import (
-	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	"github.com/filecoin-project/mir/pkg/pb/messagepb"
 	t "github.com/filecoin-project/mir/pkg/types"
@@ -10,7 +9,7 @@ import (
 // Module-specific dsl handler wrappers
 
 func UponBCBMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, msg *bcbpb.BCBMessage) error) {
-	dsl.UponMessageReceived(m, func(from t.NodeID, msg *messagepb.Message) error {
+	dslevents.UponMessageReceived(m, func(from t.NodeID, msg *messagepb.Message) error {
 		cbMsgWrapper, ok := msg.Type.(*messagepb.Message_Bcb)
 		if !ok {
 			return nil

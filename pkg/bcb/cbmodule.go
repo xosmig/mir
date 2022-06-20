@@ -3,7 +3,6 @@ package bcb
 import (
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/bcb/cbdsl"
-	cs "github.com/filecoin-project/mir/pkg/contextstore"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
@@ -48,11 +47,15 @@ type cbModuleState struct {
 	delivered    bool
 	receivedEcho map[t.NodeID]bool
 	echoSigs     map[t.NodeID][]byte
-
-	signStartCS   cs.ContextStore[struct{}]
-	verifyEchoCS  cs.ContextStore[[]byte]
-	verifyFinalCS cs.ContextStore[struct{}]
 }
+
+type signStartMessageContext struct{}
+
+type verifyEchoContext struct {
+	signature []byte
+}
+
+type verifyFinalContext struct{}
 
 // NewModule returns a passive module for the Signed Echo Broadcast from the textbook "Introduction to reliable and
 // secure distributed programming". It serves as a motivating example for the DSL module interface.
@@ -60,6 +63,10 @@ type cbModuleState struct {
 // (Echo broadcast [Rei94]))
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
 	m := cbdsl.NewModule(mc.Self)
+
+	signStartMessageCH := dsl.NewContextHandle[signStartMessageContext](m)
+	verifyEchoCH := dsl.NewContextHandle[verifyEchoContext](m)
+	verifyFinalCH := dsl.NewContextHandle[verifyFinalContext](m)
 
 	state := cbModuleState{
 		request: nil,
@@ -69,8 +76,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		delivered:    false,
 		receivedEcho: make(map[t.NodeID]bool),
 		echoSigs:     make(map[t.NodeID][]byte),
-
-		signStartCS: cs.NewSequentialContextStore[struct{}](0),
 	}
 
 	// upon event <bcb, Broadcast | m> do    // only process s
