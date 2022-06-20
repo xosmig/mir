@@ -1,11 +1,11 @@
-package cb
+package bcb
 
 import (
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/cb/cbdsl"
+	"github.com/filecoin-project/mir/pkg/bcb/cbdsl"
+	cs "github.com/filecoin-project/mir/pkg/contextstore"
+	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/modules"
-	"github.com/filecoin-project/mir/pkg/modules/dsl"
-	"github.com/filecoin-project/mir/pkg/pb/cbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/maputil"
@@ -19,7 +19,7 @@ type ModuleConfig struct {
 
 func DefaultModuleConfig() *ModuleConfig {
 	return &ModuleConfig{
-		Self:   "cb",
+		Self:   "bcb",
 		Net:    "net",
 		Crypto: "crypto",
 	}
@@ -48,6 +48,10 @@ type cbModuleState struct {
 	delivered    bool
 	receivedEcho map[t.NodeID]bool
 	echoSigs     map[t.NodeID][]byte
+
+	signStartCS   cs.ContextStore[struct{}]
+	verifyEchoCS  cs.ContextStore[[]byte]
+	verifyFinalCS cs.ContextStore[struct{}]
 }
 
 // NewModule returns a passive module for the Signed Echo Broadcast from the textbook "Introduction to reliable and
@@ -58,12 +62,15 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	m := cbdsl.NewModule(mc.Self)
 
 	state := cbModuleState{
-		request:      nil,
+		request: nil,
+
 		sentEcho:     false,
 		sentFinal:    false,
 		delivered:    false,
 		receivedEcho: make(map[t.NodeID]bool),
 		echoSigs:     make(map[t.NodeID][]byte),
+
+		signStartCS: cs.NewSequentialContextStore[struct{}](0),
 	}
 
 	// upon event <bcb, Broadcast | m> do    // only process s
@@ -77,18 +84,17 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	})
 
 	// upon event <al, Deliver | p, [Send, m]> ...
-	// TODO: should `UponStartMessageReceived` unpack `cbpb.StartMessage`?
-	cbdsl.UponStartMessageReceived(m, func(from t.NodeID, msg *cbpb.StartMessage) error {
+	cbdsl.UponStartMessageReceived(m, func(from t.NodeID, data []byte) error {
 		// ... such that p = s and sentecho = false do
 		if from == params.Leader && !state.sentEcho {
 			// σ := sign(self, bcb||self||ECHO||m);
-			sigMsg := [][]byte{params.InstanceUID, []byte("ECHO"), msg.Data}
-			cbdsl.SignRequest(m, mc.Crypto, sigMsg)
+			sigMsg := [][]byte{params.InstanceUID, []byte("ECHO"), data}
+			dsl.SignRequest(m, mc.Crypto, sigMsg, state.signStartCS, struct{}{})
 		}
 		return nil
 	})
 
-	dsl.UponSignResult(m, func(signature []byte, origin *eventpb.SignOrigin) error {
+	dsl.UponSignResult(m, state.signStartCS, func(signature []byte, origin *eventpb.SignOrigin) error {
 		if !state.sentEcho {
 			state.sentEcho = true
 			dsl.SendMessage(m, mc.Net, EchoMessage(mc.Self, signature), []t.NodeID{params.Leader})
@@ -136,5 +142,5 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		return nil
 	})
 
-	return m.GetPassiveModule()
+	return m
 }

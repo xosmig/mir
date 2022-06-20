@@ -23,3 +23,13 @@ func TestSequentialContextStoreImpl_RecoverAndDispose(t *testing.T) {
 		cs.RecoverAndDispose(helloID)
 	})
 }
+
+func TestSequentialContextStoreImpl_GetID(t *testing.T) {
+	cs := NewSequentialContextStore[string]()
+
+	assert.Panics(t, func() {
+		cs.GetID()
+	})
+	cs.SetID(17)
+	assert.Equal(t, 17, cs.GetID())
+}

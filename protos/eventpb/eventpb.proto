@@ -12,7 +12,6 @@ import "commonpb/commonpb.proto";
 import "requestpb/requestpb.proto";
 import "messagepb/messagepb.proto";
 import "isspb/isspb.proto";
-import "cbpb/cbpb.proto";
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/eventpb";
 
@@ -68,6 +67,11 @@ message ContextStoreOrigin {
   uint64 itemID = 1;
 }
 
+message DslOrigin {
+  uint64 contextStoreId = 1;
+  uint64 itemID         = 2;
+}
+
 message HashRequest {
   repeated commonpb.HashData data   = 1;
   HashOrigin                 origin = 2;
@@ -81,9 +85,10 @@ message HashResult {
 message HashOrigin {
   string module = 1;
   oneof type {
-    ContextStoreOrigin  contextstore = 2;
+    ContextStoreOrigin  contextStore = 2;
     requestpb.Request   request      = 3;
     isspb.ISSHashOrigin iss          = 4;
+    DslOrigin           dsl          = 5;
   }
 }
 
@@ -100,8 +105,9 @@ message SignResult {
 message SignOrigin {
   string module = 1;
   oneof type {
-    ContextStoreOrigin  contextstore = 2;
+    ContextStoreOrigin  contextStore = 2;
     isspb.ISSSignOrigin iss          = 3;
+    DslOrigin           dsl          = 4;
   }
 }
 
@@ -127,8 +133,9 @@ message NodeSigsVerified {
 message SigVerOrigin {
   string module = 1;
   oneof type {
-    ContextStoreOrigin    contextstore = 2;
+    ContextStoreOrigin    contextStore = 2;
     isspb.ISSSigVerOrigin iss          = 3;
+    DslOrigin             dsl          = 4;
   }
 }
 

@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package cbpb;
+package bcbpb;
 
-option go_package = "github.com/filecoin-project/mir/pkg/pb/cbpb";
+option go_package = "github.com/filecoin-project/mir/pkg/pb/bcbpb";
 
 // ============================================================
 // Messages
 // ============================================================
 
-message CBMessage {
+message BCBMessage {
   oneof type {
     StartMessage start_message = 1;
     EchoMessage  echo_message  = 2;

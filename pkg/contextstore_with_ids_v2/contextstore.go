@@ -16,6 +16,17 @@ type ContextStore[T any] interface {
 
 	// RecoverAndDispose returns the data stored under the provided id and removes it from the ContextStore.
 	RecoverAndDispose(id ItemID) T
+
+	// SetID assigns an identifier to the ContextStore.
+	// IDs can be useful to manage multiple context stores in a single module.
+	SetID(id uint64)
+
+	// HasID returns true iff SetID was previously invoked.
+	HasID() bool
+
+	// GetID returns the id previously assigned by SetID.
+	// If SetID was not called before GetID, GetID panics.
+	GetID() uint64
 }
 
 // ItemID is used to uniquely identify entries of the ContextStore.
