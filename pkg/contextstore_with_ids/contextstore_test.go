@@ -1,11 +1,11 @@
-package contextstore
+package contextstore_with_ids
 
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestSequentialContextStoreImpl_RecoverAndDispose(t *testing.T) {
+func TestContextStore_SimpleTest(t *testing.T) {
 	cs := NewSequentialContextStore[string]()
 	helloID := cs.Store("Hello")
 	worldID := cs.Store("World")
@@ -21,13 +21,5 @@ func TestSequentialContextStoreImpl_RecoverAndDispose(t *testing.T) {
 	assert.Equal(t, "Hello", cs.RecoverAndDispose(helloID))
 	assert.Panics(t, func() {
 		cs.RecoverAndDispose(helloID)
-	})
-
-	assert.NotPanics(t, func() {
-		cs.Dispose(worldID)
-	})
-
-	assert.NotPanics(t, func() {
-		cs.Dispose(helloID)
 	})
 }

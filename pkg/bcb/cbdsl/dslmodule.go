@@ -1,18 +1,18 @@
 package cbdsl
 
 import (
-	"github.com/filecoin-project/mir/pkg/modules/dsl"
+	"github.com/filecoin-project/mir/pkg/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
 type cbModuleImpl struct {
-	dsl.DslModule
+	dsl.Module
 	moduleId t.ModuleID
 }
 
 func NewModule(moduleId t.ModuleID) *cbModuleImpl {
 	return &cbModuleImpl{
-		DslModule: dsl.NewModule(),
-		moduleId:  moduleId,
+		Module:   dsl.NewModule(),
+		moduleId: moduleId,
 	}
 }

@@ -1,4 +1,4 @@
-package cb
+package bcb
 
 import (
 	"github.com/filecoin-project/mir/pkg/pb/cbpb"

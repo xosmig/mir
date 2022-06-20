@@ -2,9 +2,11 @@ package dsl
 
 import (
 	"fmt"
+	cs "github.com/filecoin-project/mir/pkg/contextstore"
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
+	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 	"reflect"
 	"unsafe"
@@ -12,28 +14,32 @@ import (
 
 // dslModuleImpl allows creating passive modules in a very natural declarative way.
 type dslModuleImpl struct {
+	moduleID          t.ModuleID
 	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) error
 	conditionHandlers []func() error
 	outputEvents      *events.EventList
+	// contextStore is used to store and recover context on asynchronous operations such as signature verification.
+	contextStore cs.ContextStore[any]
 }
 
 type Handle *dslModuleImpl
 
-type DslModule interface {
+type Module interface {
+	modules.PassiveModule
 	GetDslHandle() Handle
-	GetPassiveModule() modules.PassiveModule
 }
 
 func (m *dslModuleImpl) GetDslHandle() Handle {
 	return m
 }
 
-func (m *dslModuleImpl) GetPassiveModule() modules.PassiveModule {
-	return m
-}
-
-func NewModule() *dslModuleImpl {
-	return &dslModuleImpl{}
+func NewModule(moduleID t.ModuleID) *dslModuleImpl {
+	return &dslModuleImpl{
+		moduleID:      moduleID,
+		eventHandlers: make(map[reflect.Type][]func(ev *eventpb.Event) error),
+		outputEvents:  &events.EventList{},
+		contextStore:  cs.NewSequentialContextStore[any](),
+	}
 }
 
 type evContainer[Ev any] struct{ ev *Ev }
@@ -42,7 +48,7 @@ type evContainer[Ev any] struct{ ev *Ev }
 // This event handler will be called every time an event of type Ev is received.
 // Type EvWrapper is the protoc-generated wrapper around Ev -- protobuf representation of the event.
 // Note that the type parameter Ev can be inferred automatically from handler.
-func UponEvent[EvWrapper, Ev any](m DslModule, handler func(ev *Ev) error) {
+func UponEvent[EvWrapper, Ev any](m Module, handler func(ev *Ev) error) {
 	evTpType := reflectutil.TypeOf[EvWrapper]()
 	evType := reflectutil.TypeOf[Ev]()
 	evContainerType := reflectutil.TypeOf[evContainer[Ev]]()
@@ -87,14 +93,14 @@ func UponEvent[EvWrapper, Ev any](m DslModule, handler func(ev *Ev) error) {
 // UponCondition registers a special type of handler that will be invoked each time after processing a batch of events.
 // The handler is assumed to represent a conditional action: it is supposed to check some predicate on the state
 // and perform actions if the predicate evaluates is satisfied.
-func UponCondition(m DslModule, handler func() error) {
+func UponCondition(m Module, handler func() error) {
 	m.GetDslHandle().conditionHandlers = append(m.GetDslHandle().conditionHandlers, handler)
 }
 
 // The ImplementsModule method only serves the purpose of indicating that this is a Module and must not be called.
 func (m *dslModuleImpl) ImplementsModule() {}
 
-func EmitEvent(m DslModule, ev *eventpb.Event) {
+func EmitEvent(m Module, ev *eventpb.Event) {
 	m.GetDslHandle().outputEvents.PushBack(ev)
 }
 
