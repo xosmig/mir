@@ -2,8 +2,7 @@ package bcb
 
 import (
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/bcb/cbdsl"
-	cs "github.com/filecoin-project/mir/pkg/contextstore"
+	"github.com/filecoin-project/mir/pkg/bcb/bcbdsl"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
@@ -48,10 +47,6 @@ type cbModuleState struct {
 	delivered    bool
 	receivedEcho map[t.NodeID]bool
 	echoSigs     map[t.NodeID][]byte
-
-	signStartCS   cs.ContextStore[struct{}]
-	verifyEchoCS  cs.ContextStore[[]byte]
-	verifyFinalCS cs.ContextStore[struct{}]
 }
 
 // NewModule returns a passive module for the Signed Echo Broadcast from the textbook "Introduction to reliable and
@@ -59,7 +54,7 @@ type cbModuleState struct {
 // The pseudocode can also be found in https://dcl.epfl.ch/site/_media/education/sdc_byzconsensus.pdf (Algorithm 4
 // (Echo broadcast [Rei94]))
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
-	m := cbdsl.NewModule(mc.Self)
+	m := bcbdsl.NewModule(mc.Self)
 
 	state := cbModuleState{
 		request: nil,
@@ -69,8 +64,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		delivered:    false,
 		receivedEcho: make(map[t.NodeID]bool),
 		echoSigs:     make(map[t.NodeID][]byte),
-
-		signStartCS: cs.NewSequentialContextStore[struct{}](0),
 	}
 
 	// upon event <bcb, Broadcast | m> do    // only process s
@@ -84,12 +77,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	})
 
 	// upon event <al, Deliver | p, [Send, m]> ...
-	cbdsl.UponStartMessageReceived(m, func(from t.NodeID, data []byte) error {
+	bcbdsl.UponStartMessageReceived(m, func(from t.NodeID, data []byte) error {
 		// ... such that p = s and sentecho = false do
 		if from == params.Leader && !state.sentEcho {
 			// σ := sign(self, bcb||self||ECHO||m);
 			sigMsg := [][]byte{params.InstanceUID, []byte("ECHO"), data}
-			dsl.SignRequest(m, mc.Crypto, sigMsg, state.signStartCS, struct{}{})
+			dsl.SignRequest(m, mc.Crypto, sigMsg, state.signStartCS)
 		}
 		return nil
 	})
@@ -103,17 +96,17 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	})
 
 	// upon event <al, Deliver | p, [ECHO, m, σ]> do    // only process s
-	cbdsl.UponEchoMessageReceived(m, func(from t.NodeID, msg *cbpb.EchoMessage) error {
+	bcbdsl.UponEchoMessageReceived(m, func(from t.NodeID, msg *cbpb.EchoMessage) error {
 		// if echos[p] = ⊥ ∧ verifysig(p, bcb||p||ECHO||m, σ) then
 		if nodeId == params.Leader && !state.receivedEcho[from] && state.request != nil {
 			state.receivedEcho[from] = true
 			sigMsg := [][]byte{params.InstanceUID, []byte("ECHO"), state.request}
-			cbdsl.VerifyNodeSignature(m, mc.Crypto, sigMsg, msg.Signature, from, SigVerOriginEcho(msg.Signature))
+			bcbdsl.VerifyNodeSignature(m, mc.Crypto, sigMsg, msg.Signature, from, SigVerOriginEcho(msg.Signature))
 		}
 		return nil
 	})
 
-	cbdsl.UponEchoSignatureVerified(m, func(origin *cbpb.SigVerOriginEcho, nodeId t.NodeID, valid bool, err error) error {
+	bcbdsl.UponEchoSignatureVerified(m, func(origin *cbpb.SigVerOriginEcho, nodeId t.NodeID, valid bool, err error) error {
 		if valid && err == nil {
 			state.echoSigs[nodeId] = origin.Signature
 		}
@@ -134,7 +127,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	})
 
 	// upon event <al, Deliver | p, [FINAL, m, Σ]> do
-	cbdsl.UponFinalMessageReceived(m, func(from t.NodeID, msg *cbpb.FinalMessage) error {
+	bcbdsl.UponFinalMessageReceived(m, func(from t.NodeID, msg *cbpb.FinalMessage) error {
 		// if #({p ∈ Π | Σ[p] != ⊥ ∧ verifysig(p, bcb||p||ECHO||m, Σ[p])}) > (N+f)/2 and delivered = FALSE do
 		if len(msg.Signers) == len(msg.Signatures) && len(msg.Signers) > (params.GetN()+params.GetF())/2 && !state.delivered {
 

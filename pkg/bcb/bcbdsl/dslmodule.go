@@ -1,4 +1,4 @@
-package cbdsl
+package bcbdsl
 
 import (
 	"github.com/filecoin-project/mir/pkg/dsl"
