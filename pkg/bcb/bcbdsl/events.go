@@ -6,7 +6,6 @@ import (
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	"github.com/filecoin-project/mir/pkg/pb/messagepb"
 	t "github.com/filecoin-project/mir/pkg/types"
-	"github.com/filecoin-project/mir/pkg/util/protoutil"
 )
 
 // Module-specific dsl functions for emitting events
@@ -29,17 +28,29 @@ func Deliver(m dsl.Module, dest t.ModuleID, data []byte) {
 
 // Module-specific dsl functions for processing events
 
-func UponBCBEvent[EvWrapper, Ev any](m dsl.Module, handler func(ev *Ev) error) {
-	// due to the way protoc generates go code, this check cannot be performed in compile time
-	protoutil.VerifyWrapper[EvWrapper, Ev]()
-	dsl.UponEvent[eventpb.Event_Bcb](m, func(bcbEvent *bcbpb.Event) error {
-		protoutil.Unwrap()
+func UponBCBEvent(m dsl.Module, handler func(ev *bcbpb.Event) error) {
+	dsl.RegisterEventHandler(m, func(bcbEvent *eventpb.Event_Bcb) error {
+		return handler(bcbEvent.Bcb)
 	})
 }
 
 func UponRequest(m dsl.Module, handler func(data []byte) error) {
-	dsl.UponEvent[Event](m, func(ev *) error {
+	UponBCBEvent(m, func(ev *bcbpb.Event) error {
+		requestEvWrapper, ok := ev.Type.(*bcbpb.Event_Request)
+		if !ok {
+			return nil
+		}
+		return handler(requestEvWrapper.Request.Data)
+	})
+}
 
+func UponDeliver(m dsl.Module, handler func(data []byte) error) {
+	UponBCBEvent(m, func(ev *bcbpb.Event) error {
+		deliverEvWrapper, ok := ev.Type.(*bcbpb.Event_Deliver)
+		if !ok {
+			return nil
+		}
+		return handler(deliverEvWrapper.Deliver.Data)
 	})
 }
 
