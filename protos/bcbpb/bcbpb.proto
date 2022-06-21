@@ -8,7 +8,22 @@ option go_package = "github.com/filecoin-project/mir/pkg/pb/bcbpb";
 // Messages
 // ============================================================
 
-message BCBMessage {
+message Request {
+  bytes data = 1;
+}
+
+message Deliver {
+  bytes data = 1;
+}
+
+message Event {
+  oneof type {
+    Request request = 1;
+    Deliver deliver = 2;
+  }
+}
+
+message Message {
   oneof type {
     StartMessage start_message = 1;
     EchoMessage  echo_message  = 2;

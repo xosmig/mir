@@ -1,56 +1,51 @@
 package bcb
 
 import (
-	"github.com/filecoin-project/mir/pkg/pb/cbpb"
+	"github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	"github.com/filecoin-project/mir/pkg/pb/messagepb"
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
-func Message(self t.ModuleID, msg *cbpb.CBMessage) *messagepb.Message {
-	return &messagepb.Message{DestModule: self.Pb(), Type: &messagepb.Message_Cb{Cb: msg}}
+func Message(moduleID t.ModuleID, msg *bcbpb.Message) *messagepb.Message {
+	return &messagepb.Message{
+		DestModule: moduleID.Pb(),
+		Type: &messagepb.Message_Bcb{
+			Bcb: msg,
+		},
+	}
 }
 
-func StartMessage(self t.ModuleID, data []byte) *messagepb.Message {
-	return Message(self, &cbpb.CBMessage{
-		Type: &cbpb.CBMessage_StartMessage{
-			StartMessage: &cbpb.StartMessage{Data: data},
+func StartMessage(moduleID t.ModuleID, data []byte) *messagepb.Message {
+	return Message(moduleID, &bcbpb.Message{
+		Type: &bcbpb.Message_StartMessage{
+			StartMessage: &bcbpb.StartMessage{Data: data},
 		},
 	})
 }
 
-func EchoMessage(self t.ModuleID, signature []byte) *messagepb.Message {
-	return Message(self, &cbpb.CBMessage{
-		Type: &cbpb.CBMessage_EchoMessage{
-			EchoMessage: &cbpb.EchoMessage{
+func EchoMessage(moduleID t.ModuleID, signature []byte) *messagepb.Message {
+	return Message(moduleID, &bcbpb.Message{
+		Type: &bcbpb.Message_EchoMessage{
+			EchoMessage: &bcbpb.EchoMessage{
 				Signature: signature,
 			},
 		},
 	})
 }
 
-func FinalMessage(self t.ModuleID, data []byte, signers []t.NodeID, signatures [][]byte) *messagepb.Message {
+func FinalMessage(moduleID t.ModuleID, data []byte, signers []t.NodeID, signatures [][]byte) *messagepb.Message {
 	var signersPb []string
 	for _, signer := range signers {
 		signersPb = append(signersPb, signer.Pb())
 	}
 
-	return Message(self, &cbpb.CBMessage{
-		Type: &cbpb.CBMessage_FinalMessage{
-			FinalMessage: &cbpb.FinalMessage{
+	return Message(moduleID, &bcbpb.Message{
+		Type: &bcbpb.Message_FinalMessage{
+			FinalMessage: &bcbpb.FinalMessage{
 				Data:       data,
 				Signers:    signersPb,
 				Signatures: signatures,
 			},
 		},
 	})
-}
-
-func SigVerOriginEcho(signature []byte) *cbpb.CBSigVerOrigin {
-	return &cbpb.CBSigVerOrigin{
-		Type: &cbpb.CBSigVerOrigin_Echo{
-			Echo: &cbpb.SigVerOriginEcho{
-				Signature: signature,
-			},
-		},
-	}
 }

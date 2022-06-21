@@ -20,17 +20,25 @@ type dslModuleImpl struct {
 	outputEvents      *events.EventList
 	// contextStore is used to store and recover context on asynchronous operations such as signature verification.
 	contextStore cs.ContextStore[any]
+	// eventCleanupContextIDs is used to dispose the
+	eventCleanupContextIDs map[ContextID]struct{}
 }
 
-type Handle *dslModuleImpl
+type Handle struct {
+	impl *dslModuleImpl
+}
+
+type ContextID = cs.ItemID
 
 type Module interface {
 	modules.PassiveModule
-	GetDslHandle() Handle
-}
 
-func (m *dslModuleImpl) GetDslHandle() Handle {
-	return m
+	// GetDslHandle returns an object that
+	GetDslHandle() Handle
+
+	// GetModuleID returns the identifier of the module.
+	// TODO: this method probably should be part of modules.Module.
+	GetModuleID() t.ModuleID
 }
 
 func NewModule(moduleID t.ModuleID) *dslModuleImpl {
@@ -40,6 +48,14 @@ func NewModule(moduleID t.ModuleID) *dslModuleImpl {
 		outputEvents:  &events.EventList{},
 		contextStore:  cs.NewSequentialContextStore[any](),
 	}
+}
+
+func (m *dslModuleImpl) GetDslHandle() Handle {
+	return Handle{m}
+}
+
+func (m *dslModuleImpl) GetModuleID() t.ModuleID {
+	return m.moduleID
 }
 
 type evContainer[Ev any] struct{ ev *Ev }
@@ -53,8 +69,8 @@ func UponEvent[EvWrapper, Ev any](m Module, handler func(ev *Ev) error) {
 	evType := reflectutil.TypeOf[Ev]()
 	evContainerType := reflectutil.TypeOf[evContainer[Ev]]()
 
-	m.GetDslHandle().eventHandlers[evTpType] = append(
-		m.GetDslHandle().eventHandlers[evTpType],
+	m.GetDslHandle().impl.eventHandlers[evTpType] = append(
+		m.GetDslHandle().impl.eventHandlers[evTpType],
 		func(ev *eventpb.Event) error {
 			evTp := ev.Type.(EvWrapper)
 			// The safety of this cast is verified by the runtime checks below.
@@ -94,14 +110,41 @@ func UponEvent[EvWrapper, Ev any](m Module, handler func(ev *Ev) error) {
 // The handler is assumed to represent a conditional action: it is supposed to check some predicate on the state
 // and perform actions if the predicate evaluates is satisfied.
 func UponCondition(m Module, handler func() error) {
-	m.GetDslHandle().conditionHandlers = append(m.GetDslHandle().conditionHandlers, handler)
+	impl := m.GetDslHandle().impl
+	impl.conditionHandlers = append(impl.conditionHandlers, handler)
+}
+
+// StoreContext stores the given data and returns an automatically deterministically generated unique id.
+// The data can be later recovered or disposed of using this id.
+func (h Handle) StoreContext(context any) ContextID {
+	return h.impl.contextStore.Store(context)
+}
+
+// CleanupContext schedules a disposal of context with the given id after the current batch of events is processed.
+func (h Handle) CleanupContext(id ContextID) {
+	h.impl.eventCleanupContextIDs[id] = struct{}{}
+}
+
+// RecoverAndRetainContext recovers the context with the given id and retains it in the internal context store so that
+// it can be recovered again later. Only use this function when expect to receive multiple events with the same context.
+// In case of a typical request-response semantic, use RecoverAndCleanupContext.
+func (h Handle) RecoverAndRetainContext(id cs.ItemID) any {
+	return h.impl.contextStore.Recover(id)
+}
+
+// RecoverAndCleanupContext recovers the context with te given id and schedules a disposal of this context after the
+// current batch of events is processed.
+func (h Handle) RecoverAndCleanupContext(id ContextID) any {
+	res := h.RecoverAndRetainContext(id)
+	h.CleanupContext(id)
+	return res
 }
 
 // The ImplementsModule method only serves the purpose of indicating that this is a Module and must not be called.
 func (m *dslModuleImpl) ImplementsModule() {}
 
 func EmitEvent(m Module, ev *eventpb.Event) {
-	m.GetDslHandle().outputEvents.PushBack(ev)
+	m.GetDslHandle().impl.outputEvents.PushBack(ev)
 }
 
 func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, error) {
@@ -128,6 +171,14 @@ func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, e
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Cleanup used up context store entries
+	if len(m.eventCleanupContextIDs) > 0 {
+		for id := range m.eventCleanupContextIDs {
+			m.contextStore.Dispose(id)
+		}
+		m.eventCleanupContextIDs = make(map[ContextID]struct{})
 	}
 
 	outputEvents := m.outputEvents

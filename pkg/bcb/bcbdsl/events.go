@@ -3,13 +3,47 @@ package bcbdsl
 import (
 	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/pb/bcbpb"
+	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	"github.com/filecoin-project/mir/pkg/pb/messagepb"
 	t "github.com/filecoin-project/mir/pkg/types"
+	"github.com/filecoin-project/mir/pkg/util/protoutil"
 )
 
-// Module-specific dsl handler wrappers
+// Module-specific dsl functions for emitting events
 
-func UponBCBMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, msg *bcbpb.BCBMessage) error) {
+func Deliver(m dsl.Module, dest t.ModuleID, data []byte) {
+	dsl.EmitEvent(m, &eventpb.Event{
+		DestModule: dest.Pb(),
+
+		Type: &eventpb.Event_Bcb{
+			Bcb: &bcbpb.Event{
+				Type: &bcbpb.Event_Deliver{
+					Deliver: &bcbpb.Deliver{
+						Data: data,
+					},
+				},
+			},
+		},
+	})
+}
+
+// Module-specific dsl functions for processing events
+
+func UponBCBEvent[EvWrapper, Ev any](m dsl.Module, handler func(ev *Ev) error) {
+	// due to the way protoc generates go code, this check cannot be performed in compile time
+	protoutil.VerifyWrapper[EvWrapper, Ev]()
+	dsl.UponEvent[eventpb.Event_Bcb](m, func(bcbEvent *bcbpb.Event) error {
+		protoutil.Unwrap()
+	})
+}
+
+func UponRequest(m dsl.Module, handler func(data []byte) error) {
+	dsl.UponEvent[Event](m, func(ev *) error {
+
+	})
+}
+
+func UponBCBMessageReceived(m dsl.Module, handler func(from t.NodeID, msg *bcbpb.Message) error) {
 	dsl.UponMessageReceived(m, func(from t.NodeID, msg *messagepb.Message) error {
 		cbMsgWrapper, ok := msg.Type.(*messagepb.Message_Bcb)
 		if !ok {
@@ -20,9 +54,9 @@ func UponBCBMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, msg *bc
 	})
 }
 
-func UponStartMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, data []byte) error) {
-	UponBCBMessageReceived(m, func(from t.NodeID, msg *bcbpb.BCBMessage) error {
-		startMsgWrapper, ok := msg.Type.(*bcbpb.BCBMessage_StartMessage)
+func UponStartMessageReceived(m dsl.Module, handler func(from t.NodeID, data []byte) error) {
+	UponBCBMessageReceived(m, func(from t.NodeID, msg *bcbpb.Message) error {
+		startMsgWrapper, ok := msg.Type.(*bcbpb.Message_StartMessage)
 		if !ok {
 			return nil
 		}
@@ -31,9 +65,9 @@ func UponStartMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, data 
 	})
 }
 
-func UponEchoMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, signature []byte) error) {
-	UponBCBMessageReceived(m, func(from t.NodeID, msg *bcbpb.BCBMessage) error {
-		echoMsgWrapper, ok := msg.Type.(*bcbpb.BCBMessage_EchoMessage)
+func UponEchoMessageReceived(m dsl.Module, handler func(from t.NodeID, signature []byte) error) {
+	UponBCBMessageReceived(m, func(from t.NodeID, msg *bcbpb.Message) error {
+		echoMsgWrapper, ok := msg.Type.(*bcbpb.Message_EchoMessage)
 		if !ok {
 			return nil
 		}
@@ -43,11 +77,11 @@ func UponEchoMessageReceived(m *cbModuleImpl, handler func(from t.NodeID, signat
 }
 
 func UponFinalMessageReceived(
-	m *cbModuleImpl,
+	m dsl.Module,
 	handler func(from t.NodeID, data []byte, signers []t.NodeID, signatures [][]byte) error,
 ) {
-	UponBCBMessageReceived(m, func(from t.NodeID, msg *bcbpb.BCBMessage) error {
-		finalMsgWrapper, ok := msg.Type.(*bcbpb.BCBMessage_FinalMessage)
+	UponBCBMessageReceived(m, func(from t.NodeID, msg *bcbpb.Message) error {
+		finalMsgWrapper, ok := msg.Type.(*bcbpb.Message_FinalMessage)
 		if !ok {
 			return nil
 		}
@@ -62,37 +96,3 @@ func UponFinalMessageReceived(
 		return handler(from, finalMsg.Data, signers, finalMsg.Signatures)
 	})
 }
-
-//func UponCBNodeSigsVerified(m *cbModuleImpl, handler func(origin *cbpb.CBSigVerOrigin, nodeIds []t.NodeID, valid []bool, errs []error, allOk bool) error) {
-//	dsl.UponNodeSigsVerified(m, func(origin *eventpb.SigVerOrigin, nodeIds []t.NodeID, valid []bool, errs []error, allOk bool) error {
-//		cbOriginWrapper, ok := origin.Type.(*eventpb.SigVerOrigin_Cb)
-//		if !ok {
-//			return nil
-//		}
-//
-//		return handler(cbOriginWrapper.Cb, nodeIds, valid, errs, allOk)
-//	})
-//}
-
-//func UponEchoSigsVerified(m *cbModuleImpl, handler func(origin *cbpb.SigVerOriginEcho, nodeIds []t.NodeID, valid []bool, errs []error, allOk bool) error) {
-//	UponCBNodeSigsVerified(m, func(origin *cbpb.CBSigVerOrigin, nodeIds []t.NodeID, valid []bool, errs []error, allOk bool) error {
-//		echoOriginWrapper, ok := origin.Type.(*cbpb.CBSigVerOrigin_Echo)
-//		if !ok {
-//			return nil
-//		}
-//
-//		return handler(echoOriginWrapper.Echo, nodeIds, valid, errs, allOk)
-//	})
-//}
-
-//func UponEchoSignatureVerified(m *cbModuleImpl, handler func(origin *cbpb.SigVerOriginEcho, nodeId t.NodeID, valid bool, err error) error) {
-//	UponEchoSigsVerified(m, func(origin *cbpb.SigVerOriginEcho, nodeIds []t.NodeID, valid []bool, errs []error, allOk bool) error {
-//		for i := range nodeIds {
-//			err := handler(origin, nodeIds[i], valid[i], errs[i])
-//			if err != nil {
-//				return err
-//			}
-//		}
-//		return nil
-//	})
-//}

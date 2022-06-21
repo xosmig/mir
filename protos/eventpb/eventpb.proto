@@ -12,6 +12,7 @@ import "commonpb/commonpb.proto";
 import "requestpb/requestpb.proto";
 import "messagepb/messagepb.proto";
 import "isspb/isspb.proto";
+import "bcbpb/bcbpb.proto";
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/eventpb";
 
@@ -46,6 +47,7 @@ message Event {
     TimerDelay           timer_delay             = 25;
     TimerRepeat          timer_repeat            = 26;
     TimerGarbageCollect  timer_garbage_collect   = 27;
+    bcbpb.Event          bcb                     = 28;
   }
 
   // A list of follow-up events to process after this event has been processed.
@@ -67,6 +69,10 @@ message ContextStoreOrigin {
   uint64 itemID = 1;
 }
 
+message DslOrigin {
+  uint64 contextID = 1;
+}
+
 message HashRequest {
   repeated commonpb.HashData data   = 1;
   HashOrigin                 origin = 2;
@@ -83,7 +89,7 @@ message HashOrigin {
     ContextStoreOrigin  contextStore = 2;
     requestpb.Request   request      = 3;
     isspb.ISSHashOrigin iss          = 4;
-    ContextStoreOrigin  dsl          = 5;
+    DslOrigin           dsl          = 5;
   }
 }
 
@@ -102,7 +108,7 @@ message SignOrigin {
   oneof type {
     ContextStoreOrigin  contextStore = 2;
     isspb.ISSSignOrigin iss          = 3;
-    ContextStoreOrigin  dsl          = 4;
+    DslOrigin           dsl          = 4;
   }
 }
 
@@ -130,7 +136,7 @@ message SigVerOrigin {
   oneof type {
     ContextStoreOrigin    contextStore = 2;
     isspb.ISSSigVerOrigin iss          = 3;
-    ContextStoreOrigin    dsl          = 4;
+    DslOrigin             dsl          = 4;
   }
 }
 

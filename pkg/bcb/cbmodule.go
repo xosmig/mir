@@ -5,22 +5,24 @@ import (
 	"github.com/filecoin-project/mir/pkg/bcb/bcbdsl"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/modules"
-	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/maputil"
+	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
 type ModuleConfig struct {
-	Self   t.ModuleID
-	Net    t.ModuleID
-	Crypto t.ModuleID
+	Self     t.ModuleID // id of this module
+	Consumer t.ModuleID // id of the module to send the "Deliver" event to
+	Net      t.ModuleID
+	Crypto   t.ModuleID
 }
 
-func DefaultModuleConfig() *ModuleConfig {
+func DefaultModuleConfig(consumer t.ModuleID) *ModuleConfig {
 	return &ModuleConfig{
-		Self:   "bcb",
-		Net:    "net",
-		Crypto: "crypto",
+		Self:     "bcb",
+		Consumer: consumer,
+		Net:      "net",
+		Crypto:   "crypto",
 	}
 }
 
@@ -49,12 +51,22 @@ type cbModuleState struct {
 	echoSigs     map[t.NodeID][]byte
 }
 
+type signStartMessageContext struct{}
+
+type verifyEchoContext struct {
+	signature []byte
+}
+
+type verifyFinalContext struct {
+	data []byte
+}
+
 // NewModule returns a passive module for the Signed Echo Broadcast from the textbook "Introduction to reliable and
 // secure distributed programming". It serves as a motivating example for the DSL module interface.
 // The pseudocode can also be found in https://dcl.epfl.ch/site/_media/education/sdc_byzconsensus.pdf (Algorithm 4
 // (Echo broadcast [Rei94]))
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.PassiveModule {
-	m := bcbdsl.NewModule(mc.Self)
+	m := dsl.NewModule(mc.Self)
 
 	state := cbModuleState{
 		request: nil,
@@ -67,7 +79,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	}
 
 	// upon event <bcb, Broadcast | m> do    // only process s
-	dsl.UponRequest(m, func(clientId t.ClientID, reqNo uint64, data []byte, authenticator []byte) error {
+	bcbdsl.UponRequest(m, func(data []byte) error {
 		if nodeId != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
@@ -82,12 +94,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 		if from == params.Leader && !state.sentEcho {
 			// σ := sign(self, bcb||self||ECHO||m);
 			sigMsg := [][]byte{params.InstanceUID, []byte("ECHO"), data}
-			dsl.SignRequest(m, mc.Crypto, sigMsg, state.signStartCS)
+			dsl.SignRequest(m, mc.Crypto, sigMsg, signStartMessageContext{})
 		}
 		return nil
 	})
 
-	dsl.UponSignResult(m, state.signStartCS, func(signature []byte, origin *eventpb.SignOrigin) error {
+	dsl.UponSignResult(m, func(signature []byte, context signStartMessageContext) error {
 		if !state.sentEcho {
 			state.sentEcho = true
 			dsl.SendMessage(m, mc.Net, EchoMessage(mc.Self, signature), []t.NodeID{params.Leader})
@@ -96,29 +108,28 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	})
 
 	// upon event <al, Deliver | p, [ECHO, m, σ]> do    // only process s
-	bcbdsl.UponEchoMessageReceived(m, func(from t.NodeID, msg *cbpb.EchoMessage) error {
+	bcbdsl.UponEchoMessageReceived(m, func(from t.NodeID, signature []byte) error {
 		// if echos[p] = ⊥ ∧ verifysig(p, bcb||p||ECHO||m, σ) then
 		if nodeId == params.Leader && !state.receivedEcho[from] && state.request != nil {
 			state.receivedEcho[from] = true
 			sigMsg := [][]byte{params.InstanceUID, []byte("ECHO"), state.request}
-			bcbdsl.VerifyNodeSignature(m, mc.Crypto, sigMsg, msg.Signature, from, SigVerOriginEcho(msg.Signature))
+			dsl.VerifyOneNodeSig(m, mc.Crypto, sigMsg, signature, from, verifyEchoContext{signature})
 		}
 		return nil
 	})
 
-	bcbdsl.UponEchoSignatureVerified(m, func(origin *cbpb.SigVerOriginEcho, nodeId t.NodeID, valid bool, err error) error {
+	dsl.UponOneNodeSigVerified(m, func(nodeID t.NodeID, valid bool, err error, context verifyEchoContext) error {
 		if valid && err == nil {
-			state.echoSigs[nodeId] = origin.Signature
+			state.echoSigs[nodeId] = context.signature
 		}
 		return nil
 	})
 
 	// upon exists m != ⊥ such that #({p ∈ Π | echos[p] = m}) > (N+f)/2 and sentfinal = FALSE do
 	dsl.UponCondition(m, func() error {
-		if len(state.verifiedEchoSigs) > (params.GetN()+params.GetF())/2 && !state.sentFinal {
+		if len(state.echoSigs) > (params.GetN()+params.GetF())/2 && !state.sentFinal {
 			state.sentFinal = true
-			certSigners := maputil.GetKeys(state.verifiedEchoSigs)
-			certSignatures := maputil.GetValues(state.verifiedEchoSigs)
+			certSigners, certSignatures := maputil.GetKeysAndValues(state.echoSigs)
 			dsl.SendMessage(m, mc.Net,
 				FinalMessage(mc.Self, state.request, certSigners, certSignatures),
 				params.AllNodes)
@@ -127,10 +138,19 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeId t.NodeID) modules.
 	})
 
 	// upon event <al, Deliver | p, [FINAL, m, Σ]> do
-	bcbdsl.UponFinalMessageReceived(m, func(from t.NodeID, msg *cbpb.FinalMessage) error {
+	bcbdsl.UponFinalMessageReceived(m, func(from t.NodeID, data []byte, signers []t.NodeID, signatures [][]byte) error {
 		// if #({p ∈ Π | Σ[p] != ⊥ ∧ verifysig(p, bcb||p||ECHO||m, Σ[p])}) > (N+f)/2 and delivered = FALSE do
-		if len(msg.Signers) == len(msg.Signatures) && len(msg.Signers) > (params.GetN()+params.GetF())/2 && !state.delivered {
+		if len(signers) == len(signatures) && len(signers) > (params.GetN()+params.GetF())/2 && !state.delivered {
+			sigMsgs := sliceutil.Repeat([][]byte{params.InstanceUID, []byte("ECHO"), data}, len(signers))
+			dsl.VerifyNodeSigs(m, mc.Crypto, sigMsgs, signatures, signers, verifyFinalContext{data})
+		}
+		return nil
+	})
 
+	dsl.UponNodeSigsVerified(m, func(nodeIDs []t.NodeID, valid []bool, errs []error, allOK bool, context verifyFinalContext) error {
+		if !state.delivered {
+			state.delivered = true
+			bcbdsl.Deliver(m, mc.Consumer, context.data)
 		}
 		return nil
 	})

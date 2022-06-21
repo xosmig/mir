@@ -17,6 +17,6 @@ message Message {
   string dest_module = 1;
   oneof type {
     isspb.ISSMessage iss = 2;
-    bcbpb.BCBMessage bcb = 3;
+    bcbpb.Message    bcb = 3;
   }
 }
