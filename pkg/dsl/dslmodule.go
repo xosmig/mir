@@ -7,9 +7,9 @@ import (
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
+	"github.com/filecoin-project/mir/pkg/util/protoutil"
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 	"reflect"
-	"unsafe"
 )
 
 // dslModuleImpl allows creating passive modules in a very natural declarative way.
@@ -58,52 +58,32 @@ func (m *dslModuleImpl) GetModuleID() t.ModuleID {
 	return m.moduleID
 }
 
-type evContainer[Ev any] struct{ ev *Ev }
-
 // UponEvent registers an event handler for module m.
 // This event handler will be called every time an event of type Ev is received.
 // Type EvWrapper is the protoc-generated wrapper around Ev -- protobuf representation of the event.
 // Note that the type parameter Ev can be inferred automatically from handler.
+// EvWrapper must be one of the eventpb.Event_XXXX types (in other words, it must implement the (non-exported)
+// eventpb.isEvent_Type interface.
+// TODO: enforce the requirement on EvTp. If not in compile time, then at least at the moment of handler registration, through reflect or protoreflect.
 func UponEvent[EvWrapper, Ev any](m Module, handler func(ev *Ev) error) {
-	evTpType := reflectutil.TypeOf[EvWrapper]()
-	evType := reflectutil.TypeOf[Ev]()
-	evContainerType := reflectutil.TypeOf[evContainer[Ev]]()
+	// This check verifies that EvWrapper is a wrapper around Ev generated for a oneof statement.
+	// It is only performed at the time of registration of the handler (which is supposedly at the very beginning
+	// of the program execution) and it makes sure that UnsafeUnwrapOneofWrapper[EvWrapper, Ev](evWrapper).
+	err := protoutil.VerifyOneofWrapper[EvWrapper, *Ev]()
+	if err != nil {
+		panic(fmt.Errorf("invalid type parameters for the UponEvent function: %w", err))
+	}
 
-	m.GetDslHandle().impl.eventHandlers[evTpType] = append(
-		m.GetDslHandle().impl.eventHandlers[evTpType],
-		func(ev *eventpb.Event) error {
-			evTp := ev.Type.(EvWrapper)
-			// The safety of this cast is verified by the runtime checks below.
-			// This could be done much nicer and without runtime-casts if the protoc-generated wrappers exported a
-			// function with a known name like Elem(), which would return the internal object.
-			evTpPtr := (*evContainer[Ev])(unsafe.Pointer(&evTp))
-			return handler((*evTpPtr).ev)
+	wrapperPtrType := reflect.PointerTo(reflectutil.TypeOf[EvWrapper]())
+
+	m.GetDslHandle().impl.eventHandlers[wrapperPtrType] = append(m.GetDslHandle().impl.eventHandlers[wrapperPtrType],
+		func(event *eventpb.Event) error {
+			evWrapperPtr := ((any)(event.Type)).(*EvWrapper)
+			// The safety of this call to protoutil.UnsafeUnwrapOneofWrapper is verified by a call to
+			// protoutil.VerifyOneofWrapper during the handler registration.
+			ev := protoutil.UnsafeUnwrapOneofWrapper[EvWrapper, *Ev](evWrapperPtr)
+			return handler(ev)
 		})
-
-	// These checks verify that an object of type EvWrapper can be safely interpreted as object of type evContainer[Ev].
-	// They are only performed at the time of registration of the handler (which is supposedly at the very beginning
-	// of the program execution) and make sure that no unexpected runtime errors will happen during later stages
-	// of protocol execution and no memory will be corrupted by the pointer cast between (*EvWrapper) and
-	// (*evContainer[Ev]). These checks may fail in case of a change to the protobuf API or when erroneous type
-	// parameters (EvWrapper and Ev) are provided.
-	const explanationStr = "Most likely, the function was called with an invalid combination of type parameters. " +
-		"This error may also be caused by a change to the API of the protobuf implementation."
-	if evTpType.Kind() != reflect.Struct || evTpType.NumField() != 1 {
-		panic(fmt.Sprintf("%s is supposed to be a struct with a single field of type *%s. %s",
-			evTpType.Name(), evType.Name(), explanationStr))
-	}
-	if evTpType.Field(0).Type.Kind() != reflect.Pointer || evTpType.Field(0).Type.Elem() != evType {
-		panic(fmt.Sprintf("%s is supposed to be a struct with a single field of type *%s. %s",
-			evTpType.Name(), evType.Name(), explanationStr))
-	}
-	if evTpType.Field(0).Offset != evContainerType.Field(0).Offset {
-		panic(fmt.Sprintf("Unexpected field offset for type %s. %s",
-			evTpType.Name(), explanationStr))
-	}
-	if evTpType.Size() != evContainerType.Size() || evTpType.Align() != evContainerType.Align() {
-		panic(fmt.Sprintf("Unexpected size or alignment for type %s. %s",
-			evTpType.Name(), explanationStr))
-	}
 }
 
 // UponCondition registers a special type of handler that will be invoked each time after processing a batch of events.

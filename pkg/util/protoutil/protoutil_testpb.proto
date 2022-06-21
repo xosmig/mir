@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package testpb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/util/protoutil/testpb";
+
+message Bar {}
+
+message Foo {
+  oneof bar_or_baz {
+    Bar bar_option = 1;
+    uint64 baz_option = 2;
+  }
+}
