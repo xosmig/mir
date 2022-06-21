@@ -8,7 +8,23 @@ import (
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
-// Module-specific dsl functions for emitting events
+// Module-specific dsl functions for emitting events.
+
+func Request(m dsl.Module, dest t.ModuleID, data []byte) {
+	dsl.EmitEvent(m, &eventpb.Event{
+		DestModule: dest.Pb(),
+
+		Type: &eventpb.Event_Bcb{
+			Bcb: &bcbpb.Event{
+				Type: &bcbpb.Event_Request{
+					Request: &bcbpb.Request{
+						Data: data,
+					},
+				},
+			},
+		},
+	})
+}
 
 func Deliver(m dsl.Module, dest t.ModuleID, data []byte) {
 	dsl.EmitEvent(m, &eventpb.Event{
@@ -26,17 +42,11 @@ func Deliver(m dsl.Module, dest t.ModuleID, data []byte) {
 	})
 }
 
-// Module-specific dsl functions for processing events
-
-func UponBCBEvent(m dsl.Module, handler func(ev *bcbpb.Event) error) {
-	dsl.RegisterEventHandler(m, func(bcbEvent *eventpb.Event_Bcb) error {
-		return handler(bcbEvent.Bcb)
-	})
-}
+// Module-specific dsl functions for processing events.
 
 func UponRequest(m dsl.Module, handler func(data []byte) error) {
-	UponBCBEvent(m, func(ev *bcbpb.Event) error {
-		requestEvWrapper, ok := ev.Type.(*bcbpb.Event_Request)
+	dsl.RegisterEventHandler(m, func(ev *eventpb.Event_Bcb) error {
+		requestEvWrapper, ok := ev.Bcb.Type.(*bcbpb.Event_Request)
 		if !ok {
 			return nil
 		}
@@ -45,8 +55,8 @@ func UponRequest(m dsl.Module, handler func(data []byte) error) {
 }
 
 func UponDeliver(m dsl.Module, handler func(data []byte) error) {
-	UponBCBEvent(m, func(ev *bcbpb.Event) error {
-		deliverEvWrapper, ok := ev.Type.(*bcbpb.Event_Deliver)
+	dsl.RegisterEventHandler(m, func(ev *eventpb.Event_Bcb) error {
+		deliverEvWrapper, ok := ev.Bcb.Type.(*bcbpb.Event_Deliver)
 		if !ok {
 			return nil
 		}

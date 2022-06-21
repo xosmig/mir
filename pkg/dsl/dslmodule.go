@@ -11,7 +11,6 @@ import (
 	"reflect"
 )
 
-// dslModuleImpl allows creating passive modules in a very natural declarative way.
 type dslModuleImpl struct {
 	moduleID          t.ModuleID
 	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) error
@@ -29,6 +28,7 @@ type Handle struct {
 
 type ContextID = cs.ItemID
 
+// Module allows creating passive modules in a very natural declarative way.
 type Module interface {
 	modules.PassiveModule
 
@@ -36,10 +36,11 @@ type Module interface {
 	GetDslHandle() Handle
 
 	// GetModuleID returns the identifier of the module.
-	// TODO: this method probably should be part of modules.Module.
+	// TODO: consider moving this method to modules.Module.
 	GetModuleID() t.ModuleID
 }
 
+// NewModule creates a new dsl module with a given id.
 func NewModule(moduleID t.ModuleID) *dslModuleImpl {
 	return &dslModuleImpl{
 		moduleID:      moduleID,
@@ -61,14 +62,13 @@ func (m *dslModuleImpl) GetModuleID() t.ModuleID {
 // This event handler will be called every time an event of type EvTp is received.
 // TODO: consider adding a protoc plugin that would augment EvTp with a function Unwrap(), which would return the
 // 		 unwrapped event. Then it will be possible to pass the unwrapped event to the handler.
-func RegisterEventHandler[EvTp EventType](m Module, handler func(ev *EvTp) error) {
+func RegisterEventHandler[EvTp events.EventType](m Module, handler func(ev *EvTp) error) {
 	if !reflectutil.TypeOf[EvTp]().Implements(reflect.TypeOf(eventpb.Event{}.Type)) {
 		panic(fmt.Errorf("invalid value of the type parameter: %s. It should be one of the eventpb.Event_XXXX types",
 			reflectutil.TypeOf[EvTp]().Name()))
 	}
 	evTpPtrType := reflect.PointerTo(reflectutil.TypeOf[EvTp]())
 
-	// this is just a hack to get the type of a field of a struct without using FieldByName("Type")
 	m.GetDslHandle().impl.eventHandlers[evTpPtrType] = append(m.GetDslHandle().impl.eventHandlers[evTpPtrType],
 		func(event *eventpb.Event) error {
 			evTpPtr := ((any)(event.Type)).(*EvTp)

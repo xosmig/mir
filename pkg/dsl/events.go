@@ -8,42 +8,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// EventType represents a set of types assignable to the Type field of eventpb.Event.
-// Copied from pkg/pb/eventpb/eventpb.pb.go.
-// See https://github.com/golang/protobuf/issues/261 to know there is no nicer way to do this.
-// TODO: consider replacing with a protoc plugin that would export such an interface.
-type EventType interface {
-	eventpb.Event_Init |
-		eventpb.Event_Tick |
-		eventpb.Event_WalAppend |
-		eventpb.Event_WalEntry |
-		eventpb.Event_WalTruncate |
-		eventpb.Event_WalLoadAll |
-		eventpb.Event_Request |
-		eventpb.Event_HashRequest |
-		eventpb.Event_HashResult |
-		eventpb.Event_SignRequest |
-		eventpb.Event_SignResult |
-		eventpb.Event_VerifyNodeSigs |
-		eventpb.Event_NodeSigsVerified |
-		eventpb.Event_RequestReady |
-		eventpb.Event_SendMessage |
-		eventpb.Event_MessageReceived |
-		eventpb.Event_Deliver |
-		eventpb.Event_Iss |
-		eventpb.Event_VerifyRequestSig |
-		eventpb.Event_RequestSigVerified |
-		eventpb.Event_StoreVerifiedRequest |
-		eventpb.Event_AppSnapshotRequest |
-		eventpb.Event_AppSnapshot |
-		eventpb.Event_AppRestoreState |
-		eventpb.Event_TimerDelay |
-		eventpb.Event_TimerRepeat |
-		eventpb.Event_TimerGarbageCollect |
-		eventpb.Event_Bcb
-}
-
-// Dsl functions for emitting events
+// Dsl functions for emitting events.
+// TODO: add missing event types.
+// TODO: consider generating this code automatically using a protoc plugin.
 
 func SendMessage(m Module, destModule t.ModuleID, msg *messagepb.Message, dest []t.NodeID) {
 	EmitEvent(m, events.SendMessage(destModule, msg, dest))
@@ -113,17 +80,18 @@ func HashRequest[C any](m Module, destModule t.ModuleID, data [][][]byte, contex
 }
 
 // Dsl functions for processing events
+// TODO: consider generating this code automatically using a protoc plugin.
 
 func UponRequest(m Module, handler func(clientId t.ClientID, reqNo uint64, data []byte, authenticator []byte) error) {
-	RegisterEventHandler(m, func(eventType *eventpb.Event_Request) error {
-		req := eventType.Request
+	RegisterEventHandler(m, func(evTp *eventpb.Event_Request) error {
+		req := evTp.Request
 		return handler(t.ClientID(req.ClientId), req.ReqNo, req.Data, req.Authenticator)
 	})
 }
 
 func UponSignResult[C any](m Module, handler func(signature []byte, context C) error) {
-	RegisterEventHandler(m, func(eventType *eventpb.Event_SignResult) error {
-		res := eventType.SignResult
+	RegisterEventHandler(m, func(evTp *eventpb.Event_SignResult) error {
+		res := evTp.SignResult
 
 		dslOriginWrapper, ok := res.Origin.Type.(*eventpb.SignOrigin_Dsl)
 		if !ok {
@@ -144,8 +112,8 @@ func UponNodeSigsVerified[C any](
 	m Module,
 	handler func(nodeIDs []t.NodeID, valid []bool, errs []error, allOK bool, context C) error,
 ) {
-	RegisterEventHandler(m, func(eventType *eventpb.Event_NodeSigsVerified) error {
-		res := eventType.NodeSigsVerified
+	RegisterEventHandler(m, func(evTp *eventpb.Event_NodeSigsVerified) error {
+		res := evTp.NodeSigsVerified
 
 		dslOriginWrapper, ok := res.Origin.Type.(*eventpb.SigVerOrigin_Dsl)
 		if !ok {
@@ -186,8 +154,8 @@ func UponOneNodeSigVerified[C any](m Module, handler func(nodeID t.NodeID, valid
 }
 
 func UponMessageReceived(m Module, handler func(from t.NodeID, msg *messagepb.Message) error) {
-	RegisterEventHandler(m, func(eventType *eventpb.Event_MessageReceived) error {
-		ev := eventType.MessageReceived
+	RegisterEventHandler(m, func(evTp *eventpb.Event_MessageReceived) error {
+		ev := evTp.MessageReceived
 		return handler(t.NodeID(ev.From), ev.Msg)
 	})
 }
