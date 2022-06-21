@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
-	"github.com/filecoin-project/mir/pkg/util/protoutil"
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 	"reflect"
 )
@@ -59,27 +58,17 @@ func (m *dslModuleImpl) GetModuleID() t.ModuleID {
 }
 
 // UponEvent registers an event handler for module m.
-// This event handler will be called every time an event of type Ev is received.
-// Type EvWrapper is the protoc-generated wrapper around Ev -- protobuf representation of the event.
-// Note that the type parameter Ev can be inferred automatically from handler.
-func UponEvent[EvWrapper, Ev any](m Module, handler func(ev *Ev) error) {
-	// This check verifies that EvWrapper is a wrapper around Ev generated for a oneof statement.
-	// It is only performed at the time of registration of the handler (which is supposedly at the very beginning
-	// of the program execution) and it makes sure that UnsafeUnwrapOneofWrapper[EvWrapper, Ev](evWrapper).
-	err := protoutil.VerifyOneofWrapper[EvWrapper, Ev]()
-	if err != nil {
-		panic(fmt.Errorf("invalid type parameters for the UponEvent function: %w", err))
-	}
+// This event handler will be called every time an event of type EvTp is received.
+// EvTp must be one of the eventpb.Event_XXXX types (in other words, it must implement the (non-exported)
+// eventpb.isEvent_Type interface.
+// TODO: enforce the requirement on EvTp. If not in compile time, then at least at the moment of handler registration, through reflect or protoreflect.
+func UponEvent[EvTp any](m Module, handler func(ev *EvTp) error) {
+	evTpPtrType := reflect.PointerTo(reflectutil.TypeOf[EvTp]())
 
-	wrapperPtrType := reflect.PointerTo(reflectutil.TypeOf[EvWrapper]())
-
-	m.GetDslHandle().impl.eventHandlers[wrapperPtrType] = append(m.GetDslHandle().impl.eventHandlers[wrapperPtrType],
+	m.GetDslHandle().impl.eventHandlers[evTpPtrType] = append(m.GetDslHandle().impl.eventHandlers[evTpPtrType],
 		func(event *eventpb.Event) error {
-			evWrapperPtr := ((any)(event.Type)).(*EvWrapper)
-			// The safety of this call to protoutil.UnsafeUnwrapOneofWrapper is verified by a call to
-			// protoutil.VerifyOneofWrapper during the handler registration.
-			ev := protoutil.UnsafeUnwrapOneofWrapper[EvWrapper, Ev](evWrapperPtr)
-			return handler(ev)
+			evTpPtr := ((any)(event.Type)).(*EvTp)
+			return handler(evTpPtr)
 		})
 }
 
