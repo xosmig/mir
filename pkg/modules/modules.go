@@ -22,3 +22,11 @@ type Module interface {
 
 // The Modules structs groups the modules a Node consists of.
 type Modules map[t.ModuleID]Module
+
+// Forkable modules can create copies of themselves.
+type Forkable interface {
+	Module
+	// Fork creates a new module with the given id. This module may or may not have the same state as the parent module,
+	// depending on the implementation.
+	Fork(newModuleID string) (newModule Module, err error)
+}

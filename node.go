@@ -21,6 +21,8 @@ import (
 
 var ErrStopped = fmt.Errorf("stopped at caller request")
 
+const SystemModuleID t.ModuleID = "mirsystem"
+
 // Node is the local instance of Mir and the application's interface to the mir library.
 type Node struct {
 	ID     t.NodeID    // Protocol-level node ID

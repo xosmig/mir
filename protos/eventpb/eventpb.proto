@@ -13,6 +13,7 @@ import "requestpb/requestpb.proto";
 import "messagepb/messagepb.proto";
 import "isspb/isspb.proto";
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/eventpb";
 
@@ -51,6 +52,19 @@ message Event {
     // for unit-tests
     google.protobuf.StringValue testingString = 301;
     google.protobuf.UInt64Value testingUint   = 302;
+
+    // dispose_request can be used to inform a module that it is no longer needed. Unlike fork_request, dispose_request
+    // is a normal event and is not treated any different from any other event type.
+    DisposeRequest       dispose_request         = 401;
+    // self_destruct event sent to the special system module id informs the core of the framework that the module that
+    // sent this request should be removed.
+    SelfDestruct         self_destruct           = 402;
+    // fork_request event sent to a module informs the core that a new copy of that module should be created. It will
+    // be eventually replied to with a fork_response event. This event is treated specially by the system and is not
+    // delivered to the destination module. Instead, function `Fork(...)` is invoked on the destination module.
+    ForkRequest          fork_request            = 403;
+    // fork_response notifies the module of the outcome of previously issued fork_request.
+    ForkResponse         fork_response           = 404;
   }
 
   // A list of follow-up events to process after this event has been processed.
@@ -62,6 +76,39 @@ message Event {
   repeated Event next = 100;
 
   string dest_module = 200;
+}
+
+message DisposeRequest {
+  // empty
+}
+
+message SelfDestruct {
+  // empty
+}
+
+message ForkRequest {
+  // new_module_id is the id of the new module that will be created after the fork.
+  string new_module_id = 2;
+  // origin can be used to recover the context of the request on response.
+  ForkRequestOrigin origin = 4;
+}
+
+message ForkResponse {
+  // new_module_id is the same as the one provided in ForkRequest. It is always present, even if the request has failed.
+  string new_module_id = 1;
+  // success indicates whether the new module was successfully created.
+  bool success = 2;
+  // error is present only if success is false. If present, describes what went wrong.
+  string error = 3;
+  // origin can be used to recover the context of the request on response.
+  ForkRequestOrigin origin = 4;
+}
+
+message ForkRequestOrigin {
+  oneof Type {
+    google.protobuf.Empty empty         = 1;
+    ContextStoreOrigin    context_store = 2;
+  }
 }
 
 message Init {}
