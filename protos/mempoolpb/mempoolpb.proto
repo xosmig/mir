@@ -15,14 +15,20 @@ import "mir/plugin.proto";
 message Event {
   oneof Type {
     option (mir.event_type) = true;
-    NewTransactions      new_transactions      = 1;
-    RequestTransactions  request_transactions  = 2;
-    TransactionsResponse transactions_response = 3;
+    RequestBatch         request_batch         = 1;
+    NewBatch             new_batch             = 2;
+    RequestTransactions  request_transactions  = 3;
+    TransactionsResponse transactions_response = 4;
   }
 }
 
-message NewTransactions {
-  repeated bytes tx_ids = 1;
+message RequestBatch {
+  RequestBatchOrigin origin = 1;
+}
+
+message NewBatch {
+  repeated bytes     txs    = 1;
+  RequestBatchOrigin origin = 2;
 }
 
 message RequestTransactions {
@@ -36,6 +42,14 @@ message TransactionsResponse {
 }
 
 // TODO: add events related to garbage collection.
+
+message RequestBatchOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
 
 message RequestTransactionsOrigin {
   string module = 1;

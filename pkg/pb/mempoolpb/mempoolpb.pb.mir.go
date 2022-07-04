@@ -7,8 +7,12 @@ type Event_TypeWrapper[Ev any] interface {
 	Unwrap() *Ev
 }
 
-func (p *Event_NewTransactions) Unwrap() *NewTransactions {
-	return p.NewTransactions
+func (p *Event_RequestBatch) Unwrap() *RequestBatch {
+	return p.RequestBatch
+}
+
+func (p *Event_NewBatch) Unwrap() *NewBatch {
+	return p.NewBatch
 }
 
 func (p *Event_RequestTransactions) Unwrap() *RequestTransactions {
