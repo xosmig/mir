@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package availabilitypb.mscpb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb";
+
+// ============================================================
+// Messages
+// ============================================================
+
+message Cert {
+  repeated string node_ids = 1;
+}

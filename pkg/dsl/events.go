@@ -43,6 +43,7 @@ func SignRequest[C any](m Module, destModule t.ModuleID, data [][]byte, context 
 			},
 		},
 	}
+
 	EmitEvent(m, events.SignRequest(destModule, data, origin))
 }
 

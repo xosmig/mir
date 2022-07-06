@@ -11,9 +11,11 @@ import (
 	"reflect"
 )
 
+type EventHandler = func(ev *eventpb.Event) error
+
 type dslModuleImpl struct {
 	moduleID          t.ModuleID
-	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) error
+	eventHandlers     map[reflect.Type][]EventHandler
 	conditionHandlers []func() error
 	outputEvents      *events.EventList
 	// contextStore is used to store and recover context on asynchronous operations such as signature verification.

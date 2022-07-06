@@ -40,7 +40,7 @@ func (params *ModuleParams) GetF() int {
 	return (params.GetN() - 1) / 3
 }
 
-type cbModuleState struct {
+type moduleState struct {
 	// this variable is not part of the original protocol description, but it greatly simplifies the code
 	request []byte
 
@@ -68,7 +68,7 @@ type verifyFinalContext struct {
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.PassiveModule {
 	m := dsl.NewModule(mc.Self)
 
-	state := cbModuleState{
+	state := moduleState{
 		request: nil,
 
 		sentEcho:     false,
