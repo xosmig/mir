@@ -69,7 +69,9 @@ message Event {
   string dest_module = 200;
 }
 
-message Init {}
+message Init {
+  option (mir.event) = true;
+}
 
 message Tick {}
 
@@ -78,6 +80,7 @@ message NewRequests {
 }
 
 message ContextStoreOrigin {
+  option (mir.event) = true;
   uint64 itemID = 1;
 }
 

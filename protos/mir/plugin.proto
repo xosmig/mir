@@ -7,5 +7,11 @@ option go_package = "github.com/filecoin-project/mir/pkg/pb/mir";
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.OneofOptions {
-  bool event_type = 50000;
+  bool oneof      = 50000;
+  bool event_type = 50001;
+}
+
+extend google.protobuf.MessageOptions {
+  bool struct = 50000;
+  bool event  = 50001;
 }
