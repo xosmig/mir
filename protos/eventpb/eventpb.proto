@@ -81,11 +81,12 @@ message NewRequests {
 
 message ContextStoreOrigin {
   option (mir.event) = true;
-  uint64 itemID = 1;
+  uint64 itemID = 1 [(mir.type_wrapper) = "github.com/filecoin-project/mir/pkg/contextstore.ItemID"];
 }
 
 message DslOrigin {
-  uint64 contextID = 1;
+  option (mir.event) = true;
+  uint64 contextID = 1 [(mir.type_wrapper) = "github.com/filecoin-project/mir/pkg/dsl.ContextID"];
 }
 
 message HashRequest {

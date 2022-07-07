@@ -15,3 +15,7 @@ extend google.protobuf.MessageOptions {
   bool struct = 50000;
   bool event  = 50001;
 }
+
+extend google.protobuf.FieldOptions {
+  string type_wrapper = 50000;
+}

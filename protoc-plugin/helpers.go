@@ -2,11 +2,55 @@ package main
 
 import (
 	"fmt"
+	"github.com/filecoin-project/mir/pkg/pb/mir"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
+	"strings"
 )
 
-func GoType(field *protogen.Field) (string, error) {
+type GoType struct {
+	UserType        string
+	PbType          string
+	NeedsConversion bool
+}
+
+func GetGoType(g *protogen.GeneratedFile, field *protogen.Field) (GoType, error) {
+	pbType, err := GetPbType(field)
+	if err != nil {
+		return GoType{}, err
+	}
+
+	fieldOptions := field.Desc.Options().(*descriptorpb.FieldOptions)
+	goTypeExt := proto.GetExtension(fieldOptions, mir.E_TypeWrapper).(string)
+	if goTypeExt != "" {
+		ident, err := GoIdentFromString(goTypeExt)
+		if err != nil {
+			return GoType{}, err
+		}
+		return GoType{
+			UserType:        g.QualifiedGoIdent(ident),
+			PbType:          pbType,
+			NeedsConversion: true,
+		}, nil
+	}
+
+	return GoType{
+		UserType:        pbType,
+		PbType:          pbType,
+		NeedsConversion: false,
+	}, nil
+}
+
+//func GetPbType(field *protogen.Field) (string, error) {
+//	if field.Desc.Message() != nil {
+//		return string(field.Desc.Message().FullName()), nil
+//	}
+//	return field.Desc.Kind().String(), nil
+//}
+
+func GetPbType(field *protogen.Field) (string, error) {
 	switch field.Desc.Kind() {
 	case protoreflect.BoolKind:
 		return "bool", nil
@@ -49,4 +93,17 @@ func GoType(field *protogen.Field) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown field kind %v", field.Desc.Kind())
 	}
+}
+
+func GoIdentFromString(s string) (protogen.GoIdent, error) {
+	delimeterIdx := strings.LastIndex(s, ".")
+	if delimeterIdx == -1 || delimeterIdx == 0 || delimeterIdx == len(s)-1 {
+		return protogen.GoIdent{},
+			fmt.Errorf("invalid type identified: %v. Expected format: full/package/name.TypeName", s)
+	}
+
+	return protogen.GoIdent{
+		GoName:       s[delimeterIdx+1:],
+		GoImportPath: protogen.GoImportPath(s[:delimeterIdx]),
+	}, nil
 }
