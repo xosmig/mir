@@ -1,4 +1,4 @@
-package events
+package eventpbevents
 
 import (
 	contextstore "github.com/filecoin-project/mir/pkg/contextstore"

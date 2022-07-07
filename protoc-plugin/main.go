@@ -83,7 +83,7 @@ func generateEventConstructors(plugin *protogen.Plugin, file *protogen.File) err
 			prefix := path.Join(path.Dir(file.GeneratedFilenamePrefix), "events", path.Base(file.GeneratedFilenamePrefix))
 			filename := fmt.Sprintf("%s.pb.mirevents.go", prefix)
 			g = plugin.NewGeneratedFile(filename, file.GoImportPath+"/events")
-			g.P("package events")
+			g.P("package ", file.GoPackageName, "events")
 			g.P()
 			g.P("// convertSlice is an auxiliary functions to wrap / unwrap slices.")
 			g.P("func convertSlice[T, R any](ts []T, f func(T) R) []R {")
