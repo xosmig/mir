@@ -11,16 +11,61 @@ import (
 )
 
 type GoType struct {
-	UserType        string
-	PbType          string
+	BaseUserType    string
+	BasePbType      string
 	NeedsConversion bool
+	Repeated        bool
+}
+
+func (tp *GoType) UserType() string {
+	if tp.Repeated {
+		return "[]" + tp.BaseUserType
+	} else {
+		return tp.BaseUserType
+	}
+}
+
+func (tp *GoType) PbType() string {
+	if tp.Repeated {
+		return "[]" + tp.BasePbType
+	} else {
+		return tp.BasePbType
+	}
+}
+
+func (tp *GoType) ConvertToUserType(expr string) string {
+	if !tp.NeedsConversion {
+		return expr
+	}
+
+	if !tp.Repeated {
+		return fmt.Sprintf("%s(%s)", tp.BaseUserType, expr)
+	}
+
+	conversionFunc := fmt.Sprintf("func(t %s) %s { %s(%s) }", tp.BasePbType, tp.BaseUserType, tp.BaseUserType, tp.BasePbType)
+	return fmt.Sprintf("convertSlice(%s, %s)", expr, conversionFunc)
+}
+
+func (tp *GoType) ConvertToPbType(expr string) string {
+	if !tp.NeedsConversion {
+		return expr
+	}
+
+	if !tp.Repeated {
+		return fmt.Sprintf("%s(%s)", tp.BasePbType, expr)
+	}
+
+	conversionFunc := fmt.Sprintf("func(t %s) %s { return %s(t) }", tp.BaseUserType, tp.BasePbType, tp.BasePbType)
+	return fmt.Sprintf("convertSlice(%s, %s)", expr, conversionFunc)
 }
 
 func GetGoType(g *protogen.GeneratedFile, field *protogen.Field) (GoType, error) {
-	pbType, err := GetPbType(field)
+	pbType, err := GetBasePbType(g, field)
 	if err != nil {
 		return GoType{}, err
 	}
+
+	repeated := field.Desc.Cardinality() == protoreflect.Repeated
 
 	fieldOptions := field.Desc.Options().(*descriptorpb.FieldOptions)
 	goTypeExt := proto.GetExtension(fieldOptions, mir.E_TypeWrapper).(string)
@@ -30,16 +75,18 @@ func GetGoType(g *protogen.GeneratedFile, field *protogen.Field) (GoType, error)
 			return GoType{}, err
 		}
 		return GoType{
-			UserType:        g.QualifiedGoIdent(ident),
-			PbType:          pbType,
+			BaseUserType:    g.QualifiedGoIdent(ident),
+			BasePbType:      pbType,
 			NeedsConversion: true,
+			Repeated:        repeated,
 		}, nil
 	}
 
 	return GoType{
-		UserType:        pbType,
-		PbType:          pbType,
+		BaseUserType:    pbType,
+		BasePbType:      pbType,
 		NeedsConversion: false,
+		Repeated:        repeated,
 	}, nil
 }
 
@@ -50,7 +97,7 @@ func GetGoType(g *protogen.GeneratedFile, field *protogen.Field) (GoType, error)
 //	return field.Desc.Kind().String(), nil
 //}
 
-func GetPbType(field *protogen.Field) (string, error) {
+func GetBasePbType(g *protogen.GeneratedFile, field *protogen.Field) (string, error) {
 	switch field.Desc.Kind() {
 	case protoreflect.BoolKind:
 		return "bool", nil
@@ -85,8 +132,7 @@ func GetPbType(field *protogen.Field) (string, error) {
 	case protoreflect.BytesKind:
 		return "[]byte", nil
 	case protoreflect.MessageKind:
-		// TODO
-		return "", fmt.Errorf("TODO")
+		return "*" + g.QualifiedGoIdent(field.Message.GoIdent), nil
 	case protoreflect.GroupKind:
 		// TODO
 		return "", fmt.Errorf("TODO")

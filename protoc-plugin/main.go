@@ -85,6 +85,15 @@ func generateEventConstructors(plugin *protogen.Plugin, file *protogen.File) err
 			g = plugin.NewGeneratedFile(filename, file.GoImportPath+"/events")
 			g.P("package events")
 			g.P()
+			g.P("// convertSlice is an auxiliary functions to wrap / unwrap slices.")
+			g.P("func convertSlice[T, R any](ts []T, f func(T) R) []R {")
+			g.P("\trs := make([]R, len(ts))")
+			g.P("\tfor i := range ts {")
+			g.P("\t\trs[i] = f(ts[i])")
+			g.P("\n\t}")
+			g.P("\treturn rs")
+			g.P("}")
+			g.P()
 		}
 
 		var uppercaseFieldNames []string
@@ -100,7 +109,7 @@ func generateEventConstructors(plugin *protogen.Plugin, file *protogen.File) err
 			uppercaseFieldNames = append(uppercaseFieldNames, field.GoName)
 			lowercaseFieldNames = append(lowercaseFieldNames, strings.ToLower(field.GoName[0:1])+field.GoName[1:])
 			fieldGoTypes = append(fieldGoTypes, goType)
-			fieldNamesWithTypes = append(fieldNamesWithTypes, lowercaseFieldNames[i]+" "+goType.UserType)
+			fieldNamesWithTypes = append(fieldNamesWithTypes, lowercaseFieldNames[i]+" "+goType.UserType())
 		}
 
 		msgName := msg.GoIdent.GoName
@@ -108,11 +117,7 @@ func generateEventConstructors(plugin *protogen.Plugin, file *protogen.File) err
 		g.P("func ", msgName, "(", strings.Join(fieldNamesWithTypes, ", "), ") *", msgIdent, " {")
 		g.P("\treturn &", msgIdent, "{")
 		for i := range msg.Fields {
-			if fieldGoTypes[i].NeedsConversion {
-				g.P("\t\t", uppercaseFieldNames[i], ": ", fieldGoTypes[i].PbType, "(", lowercaseFieldNames[i], "),")
-			} else {
-				g.P("\t\t", uppercaseFieldNames[i], ": ", lowercaseFieldNames[i], ",")
-			}
+			g.P("\t\t", uppercaseFieldNames[i], ": ", fieldGoTypes[i].ConvertToPbType(lowercaseFieldNames[i]), ",")
 		}
 		g.P("\t}")
 		g.P("}")

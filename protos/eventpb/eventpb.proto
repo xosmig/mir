@@ -115,6 +115,7 @@ message SignRequest {
 }
 
 message SignResult {
+  option (mir.event) = true;
   bytes signature = 1;
   SignOrigin origin = 2;
 }
@@ -129,14 +130,16 @@ message SignOrigin {
 }
 
 message SigVerData {
+  option (mir.event) = true;
   repeated bytes data = 1;
 }
 
 message VerifyNodeSigs {
+  option (mir.event) = true;
   repeated SigVerData data       = 1;
   repeated bytes      signatures = 2;
   SigVerOrigin        origin     = 3;
-  repeated string     node_ids   = 4;
+  repeated string     node_ids   = 4 [(mir.type_wrapper) = "github.com/filecoin-project/mir/pkg/types.NodeID"];
 }
 
 message NodeSigsVerified {
