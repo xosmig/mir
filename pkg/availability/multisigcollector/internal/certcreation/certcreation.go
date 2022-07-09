@@ -81,21 +81,21 @@ func ProcessEventsForCreatingCertificates(
 	})
 
 	// When the hashes of the received transactions are computed, store the transactions and compute the hash of the batch.
-	dsl.UponHashResult(m, func(txHashes [][]byte, context *computeHashOfReceivedTxsContext) error {
-		for i := range context.txs {
-			state.TransactionStore[common.TxHash(txHashes[i])] = context.txs[i]
+	dsl.UponHashResult(m, func(hashes [][]byte, context *computeHashOfReceivedTxsContext) error {
+		txHashes := make([]common.TxHash, len(hashes))
+		for i := range hashes {
+			txHashes[i] = common.TxHash(hashes[i])
+			state.TransactionStore[txHashes[i]] = context.txs[i]
 		}
 
-		dsl.OneHashRequest(m, mc.Hasher, txHashes,
+		dsl.OneHashRequest(m, mc.Hasher, hashes,
 			&computeHashOfReceivedBatchContext{context.sourceID, txHashes, context.csItemID})
 		return nil
 	})
 
 	// When the hash of the batch is computed, store the batch and generate a signature.
 	dsl.UponOneHashResult(m, func(batchHash []byte, context *computeHashOfReceivedBatchContext) error {
-		for i := range context.txs {
-			state.BatchStore[common.BatchHash(batchHash)] = context.txIDs
-		}
+		state.BatchStore[common.BatchHash(batchHash)] = context.txHashes
 
 		sigMsg := sigMessage(params.InstanceUID, context.sourceID, context.reqID, batchHash)
 		dsl.SignRequest(m, mc.Crypto, sigMsg, &signReceivedBatchContext{context.sourceID, context.reqID})
@@ -199,7 +199,7 @@ type computeHashOfReceivedTxsContext struct {
 
 type computeHashOfReceivedBatchContext struct {
 	sourceID t.NodeID
-	txIDs    [][]byte
+	txHashes []common.TxHash
 	csItemID cs.ItemID
 }
 
