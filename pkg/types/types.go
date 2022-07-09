@@ -26,6 +26,10 @@ func (nid NodeID) Pb() string {
 	return string(nid)
 }
 
+func (nid NodeID) Bytes() []byte {
+	return []byte(nid)
+}
+
 // NodeIDSlice converts a slice of NodeIDs represented directly as their underlying native type
 // to a slice of abstractly typed node IDs.
 func NodeIDSlice(nids []string) []NodeID {

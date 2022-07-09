@@ -232,7 +232,7 @@ func newContextTestingModule(mc *contextTestingModuleModuleConfig) Module {
 
 	UponTestingString(m, func(s string) error {
 		SignRequest(m, mc.Crypto, [][]byte{[]byte(s)}, &testingStringContext{s})
-		HashOneMessage(m, mc.Hasher, [][]byte{[]byte(s)}, &testingStringContext{s})
+		OneHashRequest(m, mc.Hasher, [][]byte{[]byte(s)}, &testingStringContext{s})
 		return nil
 	})
 

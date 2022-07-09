@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package availabilitypb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/availabilitypb";
+
+import "contextstorepb/contextstorepb.proto";
+import "dslpb/dslpb.proto";
+import "availabilitypb/mscpb/mscpb.proto";
+import "mir/plugin.proto";
+
+// ============================================================
+// Events
+// ============================================================
+
+message Event {
+  oneof Type {
+    option (mir.event_type) = true;
+
+    RequestCert request_cert = 1;
+    NewCert      new_cert    = 2;
+
+    VerifyCert   verify_cert   = 3;
+    CertVerified cert_verified = 4;
+
+    RequestTransactions request_transactions = 5;
+    ProvideTransactions provide_transactions = 6;
+  }
+}
+
+message RequestCert {
+  RequestCertOrigin origin = 1;
+}
+
+message NewCert {
+  Cert  cert    = 1;
+  RequestCertOrigin origin = 2;
+}
+
+message VerifyCert {
+  Cert cert               = 1;
+  VerifyCertOrigin origin = 2;
+}
+
+message CertVerified {
+  bool             valid  = 1;
+  VerifyCertOrigin origin = 2;
+}
+
+message RequestTransactions {
+  Cert                      cert   = 1;
+  RequestTransactionsOrigin origin = 2;
+}
+
+message ProvideTransactions {
+  repeated bytes            txs    = 1;
+  RequestTransactionsOrigin origin = 2;
+}
+
+// TODO: add events related to garbage collection.
+
+// ============================================================
+// Data structures
+// ============================================================
+
+message RequestCertOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message RequestTransactionsOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message VerifyCertOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message Cert {
+  oneof Type {
+    availabilitypb.mscpb.Cert msc = 1;
+  }
+}

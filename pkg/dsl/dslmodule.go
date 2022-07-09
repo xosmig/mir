@@ -11,9 +11,11 @@ import (
 	"reflect"
 )
 
+type EventHandler = func(ev *eventpb.Event) error
+
 type dslModuleImpl struct {
 	moduleID          t.ModuleID
-	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) error
+	eventHandlers     map[reflect.Type][]EventHandler
 	conditionHandlers []func() error
 	outputEvents      *events.EventList
 	// contextStore is used to store and recover context on asynchronous operations such as signature verification.
@@ -99,7 +101,11 @@ func (h Handle) CleanupContext(id ContextID) {
 // it can be recovered again later. Only use this function when expecting to receive multiple events with the same
 // context. In case of a typical request-response semantic, use RecoverAndCleanupContext.
 func (h Handle) RecoverAndRetainContext(id cs.ItemID) any {
-	return h.impl.contextStore.Recover(id)
+	context, ok := h.impl.contextStore.Recover(id)
+	if !ok {
+		panic(fmt.Errorf("unknown context id: %v", id))
+	}
+	return context
 }
 
 // RecoverAndCleanupContext recovers the context with te given id and schedules a disposal of this context after the

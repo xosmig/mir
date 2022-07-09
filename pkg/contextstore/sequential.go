@@ -1,7 +1,5 @@
 package contextstore
 
-import "fmt"
-
 type sequentialContextStoreImpl[T any] struct {
 	nextID  ItemID
 	storage map[ItemID]T
@@ -27,13 +25,9 @@ func (s *sequentialContextStoreImpl[T]) Store(t T) ItemID {
 // Recover returns the data stored under the provided id.
 // Note that the data will continue to exist in the ContextStore.
 // In order to dispose of the data, call s.Dispose(id) or s.RecoverAndDispose(id).
-func (s *sequentialContextStoreImpl[T]) Recover(id ItemID) T {
-	item, present := s.storage[id]
-	if !present {
-		panic(fmt.Errorf("item with id '%v' is not present in the ContextStore", id))
-	}
-
-	return item
+func (s *sequentialContextStoreImpl[T]) Recover(id ItemID) (item T, ok bool) {
+	item, ok = s.storage[id]
+	return
 }
 
 // Dispose removes the data from the ContextStore.
@@ -42,8 +36,8 @@ func (s *sequentialContextStoreImpl[T]) Dispose(id ItemID) {
 }
 
 // RecoverAndDispose returns the data stored under the provided id and removes it from the ContextStore.
-func (s *sequentialContextStoreImpl[T]) RecoverAndDispose(id ItemID) T {
-	t := s.Recover(id)
+func (s *sequentialContextStoreImpl[T]) RecoverAndDispose(id ItemID) (item T, ok bool) {
+	item, ok = s.Recover(id)
 	s.Dispose(id)
-	return t
+	return
 }

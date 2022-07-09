@@ -9,13 +9,13 @@ type ContextStore[T any] interface {
 	// Recover returns the data stored under the provided id.
 	// Note that the data will continue to exist in the ContextStore.
 	// In order to dispose of the data, call s.Dispose(id) or s.RecoverAndDispose(id).
-	Recover(id ItemID) T
+	Recover(id ItemID) (item T, ok bool)
 
 	// Dispose removes the data from the ContextStore.
 	Dispose(id ItemID)
 
 	// RecoverAndDispose returns the data stored under the provided id and removes it from the ContextStore.
-	RecoverAndDispose(id ItemID) T
+	RecoverAndDispose(id ItemID) (item T, ok bool)
 }
 
 // ItemID is used to uniquely identify entries of the ContextStore.

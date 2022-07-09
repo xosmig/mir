@@ -10,18 +10,27 @@ func TestSequentialContextStoreImpl_RecoverAndDispose(t *testing.T) {
 	helloID := cs.Store("Hello")
 	worldID := cs.Store("World")
 
-	assert.Equal(t, "World", cs.Recover(worldID))
-	assert.Equal(t, "Hello", cs.Recover(helloID))
+	item, ok := cs.Recover(worldID)
+	assert.True(t, ok)
+	assert.Equal(t, "World", item)
+
+	item, ok = cs.Recover(helloID)
+	assert.True(t, ok)
+	assert.Equal(t, "Hello", item)
 
 	cs.Dispose(worldID)
-	assert.Panics(t, func() {
-		cs.Recover(worldID)
-	})
 
-	assert.Equal(t, "Hello", cs.RecoverAndDispose(helloID))
-	assert.Panics(t, func() {
-		cs.RecoverAndDispose(helloID)
-	})
+	item, ok = cs.Recover(worldID)
+	assert.False(t, ok)
+	assert.Equal(t, "", item)
+
+	item, ok = cs.RecoverAndDispose(helloID)
+	assert.True(t, ok)
+	assert.Equal(t, "Hello", item)
+
+	item, ok = cs.RecoverAndDispose(helloID)
+	assert.False(t, ok)
+	assert.Equal(t, "", item)
 
 	assert.NotPanics(t, func() {
 		cs.Dispose(worldID)

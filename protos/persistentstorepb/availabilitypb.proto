@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package availabilitypb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/availabilitypb";
+
+import "contextstorepb/contextstorepb.proto";
+import "dslpb/dslpb.proto";
+import "availabilitypb/mscpb/mscpb.proto";
+import "mir/plugin.proto";
+
+// ============================================================
+// Messages
+// ============================================================
+
+message Event {
+  oneof Type {
+    option (mir.event_type) = true;
+    RequestBatch         request_batch         = 1;
+    NewBatch             new_batch             = 2;
+  }
+}
+
+message RequestBatch {
+  RequestBatchOrigin origin = 1;
+}
+
+message NewBatch {
+  bytes batch_id = 1;
+  Cert  cert     = 2;
+
+  RequestBatchOrigin origin = 3;
+}
+
+// TODO: add events related to garbage collection.
+
+message RequestBatchOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message Cert {
+  oneof Type {
+    availabilitypb.mscpb.Cert msc = 1;
+  }
+}

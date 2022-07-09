@@ -5,9 +5,11 @@ package dslpb;
 option go_package = "github.com/filecoin-project/mir/pkg/pb/dslpb";
 
 // ============================================================
-// Messages
+// Data structures
 // ============================================================
 
 message Origin {
   uint64 contextID = 1;
 }
+
+

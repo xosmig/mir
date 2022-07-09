@@ -40,7 +40,7 @@ func (params *ModuleParams) GetF() int {
 	return (params.GetN() - 1) / 3
 }
 
-type cbModuleState struct {
+type moduleState struct {
 	// this variable is not part of the original protocol description, but it greatly simplifies the code
 	request []byte
 
@@ -51,7 +51,7 @@ type cbModuleState struct {
 	echoSigs     map[t.NodeID][]byte
 }
 
-type signStartMessageContext struct{}
+type signEchoMessageContext struct{}
 
 type verifyEchoContext struct {
 	signature []byte
@@ -68,7 +68,7 @@ type verifyFinalContext struct {
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.PassiveModule {
 	m := dsl.NewModule(mc.Self)
 
-	state := cbModuleState{
+	state := moduleState{
 		request: nil,
 
 		sentEcho:     false,
@@ -99,12 +99,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 		if from == params.Leader && !state.sentEcho {
 			// σ := sign(self, bcb||self||ECHO||m);
 			sigMsg := [][]byte{params.InstanceUID, []byte("ECHO"), data}
-			dsl.SignRequest(m, mc.Crypto, sigMsg, &signStartMessageContext{})
+			dsl.SignRequest(m, mc.Crypto, sigMsg, &signEchoMessageContext{})
 		}
 		return nil
 	})
 
-	dsl.UponSignResult(m, func(signature []byte, context *signStartMessageContext) error {
+	dsl.UponSignResult(m, func(signature []byte, context *signEchoMessageContext) error {
 		if !state.sentEcho {
 			state.sentEcho = true
 			dsl.SendMessage(m, mc.Net, EchoMessage(mc.Self, signature), []t.NodeID{params.Leader})

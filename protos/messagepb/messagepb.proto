@@ -10,13 +10,22 @@ package messagepb;
 
 import "isspb/isspb.proto";
 import "bcbpb/bcbpb.proto";
+import "availabilitypb/mscpb/mscpb.proto";
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/messagepb";
 
 message Message {
   string dest_module = 1;
   oneof type {
-    isspb.ISSMessage iss = 2;
-    bcbpb.Message    bcb = 3;
+    isspb.ISSMessage             iss                = 2;
+    bcbpb.Message                bcb                = 3;
+    availabilitypb.mscpb.Message multisig_collector = 4;
+    DslMessage                   dsl                = 5;
   }
+}
+
+// This has to be placed in the same file to avoid cyclic dependencies.
+message DslMessage {
+  uint64  contextID = 1;
+  Message user_msg  = 2;
 }

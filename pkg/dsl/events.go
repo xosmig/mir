@@ -26,6 +26,23 @@ func SendMessage(m Module, destModule t.ModuleID, msg *messagepb.Message, dest [
 	EmitEvent(m, events.SendMessage(destModule, msg, dest))
 }
 
+//// SendMessageWithContext
+//func SendMessageWithContext[C any](m Module, destModule t.ModuleID, msg *messagepb.Message, dest []t.NodeID, context *C) {
+//	contextID := m.DslHandle().StoreContext(context)
+//
+//	wrappedMsg := &messagepb.Message{
+//		DestModule: destModule.Pb(),
+//		Type: &messagepb.Message_Dsl{
+//			Dsl: &messagepb.DslMessage{
+//				ContextID: contextID.Pb(),
+//				UserMsg:   msg,
+//			},
+//		},
+//	}
+//
+//	SendMessage(m, destModule, wrappedMsg, dest)
+//}
+
 // SignRequest emits a request event to sign the given message.
 // The response should be processed using UponSignResult with the same context type C.
 // C can be an arbitrary type and does not have to be serializable.
@@ -43,6 +60,7 @@ func SignRequest[C any](m Module, destModule t.ModuleID, data [][]byte, context 
 			},
 		},
 	}
+
 	EmitEvent(m, events.SignRequest(destModule, data, origin))
 }
 
@@ -103,10 +121,10 @@ func HashRequest[C any](m Module, destModule t.ModuleID, data [][][]byte, contex
 	EmitEvent(m, events.HashRequest(destModule, data, origin))
 }
 
-// HashOneMessage emits a request event to compute hash one message.
+// OneHashRequest emits a request event to compute hash one message.
 // This is a wrapper around HashRequest.
 // May be useful in combination with UponOneHashResult.
-func HashOneMessage[C any](m Module, destModule t.ModuleID, data [][]byte, context *C) {
+func OneHashRequest[C any](m Module, destModule t.ModuleID, data [][]byte, context *C) {
 	HashRequest(m, destModule, [][][]byte{data}, context)
 }
 
@@ -205,7 +223,7 @@ func UponHashResult[C any](m Module, handler func(hashes [][]byte, context *C) e
 }
 
 // UponOneHashResult is a wrapper around UponHashResult that invokes handler on each response in a batch separately.
-// May be useful in combination with HashOneMessage.
+// May be useful in combination with OneHashRequest.
 func UponOneHashResult[C any](m Module, handler func(hash []byte, context *C) error) {
 	UponHashResult(m, func(hashes [][]byte, context *C) error {
 		for _, hash := range hashes {

@@ -27,11 +27,7 @@ func EmptyList() *EventList {
 
 // ListOf returns EventList containing the given elements.
 func ListOf(events ...*eventpb.Event) *EventList {
-	res := &EventList{}
-	for _, ev := range events {
-		res.PushBack(ev)
-	}
-	return res
+	return (&EventList{}).PushBackSlice(events)
 }
 
 // Len returns the number of events in the EventList.

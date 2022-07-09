@@ -9,7 +9,7 @@ import "dslpb/dslpb.proto";
 import "mir/plugin.proto";
 
 // ============================================================
-// Messages
+// Events
 // ============================================================
 
 message Event {
@@ -27,8 +27,9 @@ message RequestBatch {
 }
 
 message NewBatch {
-  repeated bytes     txs    = 1;
-  RequestBatchOrigin origin = 2;
+  repeated bytes     tx_ids = 1;
+  repeated bytes     txs    = 2;
+  RequestBatchOrigin origin = 3;
 }
 
 message RequestTransactions {
@@ -42,6 +43,10 @@ message TransactionsResponse {
 }
 
 // TODO: add events related to garbage collection.
+
+// ============================================================
+// Data structures
+// ============================================================
 
 message RequestBatchOrigin {
   string module = 1;
