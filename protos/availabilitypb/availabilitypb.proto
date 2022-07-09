@@ -44,7 +44,8 @@ message VerifyCert {
 
 message CertVerified {
   bool             valid  = 1;
-  VerifyCertOrigin origin = 2;
+  string           err    = 2;
+  VerifyCertOrigin origin = 3;
 }
 
 message RequestTransactions {

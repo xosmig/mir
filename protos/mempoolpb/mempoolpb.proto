@@ -57,7 +57,7 @@ message TransactionIDsResponse {
 }
 
 message RequestBatchID {
-  repeated bytes       tx_ids = 1;
+  repeated string       tx_ids = 1;
   RequestBatchIDOrigin origin = 2;
 }
 

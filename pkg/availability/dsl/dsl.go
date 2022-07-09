@@ -57,8 +57,8 @@ func VerifyCert[C any](m dsl.Module, dest t.ModuleID, cert *apb.Cert, context *C
 	dsl.EmitEvent(m, aevents.VerifyCert(dest, cert, origin))
 }
 
-func CertVerified(m dsl.Module, dest t.ModuleID, valid bool, origin *apb.VerifyCertOrigin) {
-	dsl.EmitEvent(m, aevents.CertVerified(dest, valid, origin))
+func CertVerified(m dsl.Module, dest t.ModuleID, err error, origin *apb.VerifyCertOrigin) {
+	dsl.EmitEvent(m, aevents.CertVerified(dest, err, origin))
 }
 
 // Module-specific dsl functions for processing events.
@@ -125,7 +125,7 @@ func UponVerifyCert(m dsl.Module, handler func(cert *apb.Cert, origin *apb.Verif
 	})
 }
 
-func UponCertVerified[C any](m dsl.Module, handler func(valid bool, context *C) error) {
+func UponCertVerified[C any](m dsl.Module, handler func(err error, context *C) error) {
 	UponEvent[*apb.Event_CertVerified](m, func(ev *apb.CertVerified) error {
 		originWrapper, ok := ev.Origin.Type.(*apb.VerifyCertOrigin_Dsl)
 		if !ok {
@@ -138,6 +138,6 @@ func UponCertVerified[C any](m dsl.Module, handler func(valid bool, context *C) 
 			return nil
 		}
 
-		return handler(ev.Valid, context)
+		return handler(t.ErrorFromPb(ev.Valid, ev.Err), context)
 	})
 }

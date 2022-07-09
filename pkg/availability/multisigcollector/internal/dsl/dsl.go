@@ -3,8 +3,6 @@ package Mscdsl
 import (
 	"fmt"
 	adsl "github.com/filecoin-project/mir/pkg/availability/dsl"
-	msc "github.com/filecoin-project/mir/pkg/availability/multisigcollector"
-	cs "github.com/filecoin-project/mir/pkg/contextstore"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	apb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 	"github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
@@ -25,7 +23,7 @@ func UponMscMessageReceived(m dsl.Module, handler func(from t.NodeID, msg *mscpb
 	})
 }
 
-func UponRequestSigMessageReceived(m dsl.Module, handler func(from t.NodeID, txs [][]byte, id cs.ItemID) error) {
+func UponRequestSigMessageReceived(m dsl.Module, handler func(from t.NodeID, txs [][]byte, reqID uint64) error) {
 	UponMscMessageReceived(m, func(from t.NodeID, msg *mscpb.Message) error {
 		requestSigMsgWrapper, ok := msg.Type.(*mscpb.Message_RequestSig)
 		if !ok {
@@ -33,11 +31,11 @@ func UponRequestSigMessageReceived(m dsl.Module, handler func(from t.NodeID, txs
 		}
 		requestSigMsg := requestSigMsgWrapper.RequestSig
 
-		return handler(from, requestSigMsg.Txs, cs.ItemID(requestSigMsg.CsItemId))
+		return handler(from, requestSigMsg.Txs, requestSigMsg.ReqId)
 	})
 }
 
-func UponSigMessageReceived(m dsl.Module, handler func(from t.NodeID, reqID msc.RequestID, signature []byte) error) {
+func UponSigMessageReceived(m dsl.Module, handler func(from t.NodeID, signature []byte, reqID uint64) error) {
 	UponMscMessageReceived(m, func(from t.NodeID, msg *mscpb.Message) error {
 		sigMsgWrapper, ok := msg.Type.(*mscpb.Message_Sig)
 		if !ok {
@@ -45,11 +43,11 @@ func UponSigMessageReceived(m dsl.Module, handler func(from t.NodeID, reqID msc.
 		}
 		sigMsg := sigMsgWrapper.Sig
 
-		return handler(from, msc.RequestID(sigMsg.ReqId), sigMsg.Signature)
+		return handler(from, sigMsg.Signature, sigMsg.ReqId)
 	})
 }
 
-func UponRequestBatchMessageReceived(m dsl.Module, handler func(from t.NodeID, sourceID t.NodeID, certReqID msc.RequestID, csItemID cs.ItemID) error) {
+func UponRequestBatchMessageReceived(m dsl.Module, handler func(from t.NodeID, batchID t.BatchID, reqID uint64) error) {
 	UponMscMessageReceived(m, func(from t.NodeID, msg *mscpb.Message) error {
 		requestBatchMsgWrapper, ok := msg.Type.(*mscpb.Message_RequestBatch)
 		if !ok {
@@ -57,11 +55,11 @@ func UponRequestBatchMessageReceived(m dsl.Module, handler func(from t.NodeID, s
 		}
 		requestBatchMsg := requestBatchMsgWrapper.RequestBatch
 
-		return handler(from, t.NodeID(requestBatchMsg.SourceId), msc.RequestID(requestBatchMsg.CertReqId), cs.ItemID(requestBatchMsg.CsItemId))
+		return handler(from, t.BatchID(requestBatchMsg.BatchId), uint64(requestBatchMsg.ReqId))
 	})
 }
 
-func UponProvideBatchMessageReceived(m dsl.Module, handler func(from t.NodeID, txs [][]byte, csItemID cs.ItemID) error) {
+func UponProvideBatchMessageReceived(m dsl.Module, handler func(from t.NodeID, txs [][]byte, reqID uint64) error) {
 	UponMscMessageReceived(m, func(from t.NodeID, msg *mscpb.Message) error {
 		provideBatchMsgWrapper, ok := msg.Type.(*mscpb.Message_ProvideBatch)
 		if !ok {
@@ -69,7 +67,7 @@ func UponProvideBatchMessageReceived(m dsl.Module, handler func(from t.NodeID, t
 		}
 		provideBatchMsg := provideBatchMsgWrapper.ProvideBatch
 
-		return handler(from, provideBatchMsg.Txs, cs.ItemID(provideBatchMsg.CsItemId))
+		return handler(from, provideBatchMsg.Txs, provideBatchMsg.ReqId)
 	})
 }
 

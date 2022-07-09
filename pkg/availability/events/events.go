@@ -69,11 +69,13 @@ func VerifyCert(dest t.ModuleID, cert *apb.Cert, origin *apb.VerifyCertOrigin) *
 	})
 }
 
-func CertVerified(dest t.ModuleID, valid bool, origin *apb.VerifyCertOrigin) *eventpb.Event {
+func CertVerified(dest t.ModuleID, err error, origin *apb.VerifyCertOrigin) *eventpb.Event {
+	valid, errStr := t.ErrorPb(err)
 	return Event(dest, &apb.Event{
 		Type: &apb.Event_CertVerified{
 			CertVerified: &apb.CertVerified{
 				Valid:  valid,
+				Err:    errStr,
 				Origin: origin,
 			},
 		},
