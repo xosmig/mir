@@ -17,12 +17,12 @@ func Message(moduleID t.ModuleID, msg *mscpb.Message) *messagepb.Message {
 	}
 }
 
-func RequestSigMessage(moduleID t.ModuleID, reqID RequestID, txs [][]byte) *messagepb.Message {
+func RequestSigMessage(moduleID t.ModuleID, txs [][]byte, csItemID cs.ItemID) *messagepb.Message {
 	return Message(moduleID, &mscpb.Message{
 		Type: &mscpb.Message_RequestSig{
 			RequestSig: &mscpb.RequestSigMessage{
-				ReqId: reqID.Pb(),
-				Txs:   txs,
+				Txs:      txs,
+				CsItemId: csItemID.Pb(),
 			},
 		},
 	})

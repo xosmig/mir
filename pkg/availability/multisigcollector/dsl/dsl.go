@@ -25,7 +25,7 @@ func UponMscMessageReceived(m dsl.Module, handler func(from t.NodeID, msg *mscpb
 	})
 }
 
-func UponRequestSigMessageReceived(m dsl.Module, handler func(from t.NodeID, reqID msc.RequestID, txs [][]byte) error) {
+func UponRequestSigMessageReceived(m dsl.Module, handler func(from t.NodeID, txs [][]byte, id cs.ItemID) error) {
 	UponMscMessageReceived(m, func(from t.NodeID, msg *mscpb.Message) error {
 		requestSigMsgWrapper, ok := msg.Type.(*mscpb.Message_RequestSig)
 		if !ok {
@@ -33,7 +33,7 @@ func UponRequestSigMessageReceived(m dsl.Module, handler func(from t.NodeID, req
 		}
 		requestSigMsg := requestSigMsgWrapper.RequestSig
 
-		return handler(from, msc.RequestID(requestSigMsg.ReqId), requestSigMsg.Txs)
+		return handler(from, requestSigMsg.Txs, cs.ItemID(requestSigMsg.CsItemId))
 	})
 }
 

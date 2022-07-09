@@ -5,6 +5,7 @@ import (
 	msc "github.com/filecoin-project/mir/pkg/availability/multisigcollector"
 	mscdsl "github.com/filecoin-project/mir/pkg/availability/multisigcollector/dsl"
 	"github.com/filecoin-project/mir/pkg/availability/multisigcollector/internal/common"
+	cs "github.com/filecoin-project/mir/pkg/contextstore"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	mempooldsl "github.com/filecoin-project/mir/pkg/mempool/dsl"
 	apb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
@@ -15,15 +16,14 @@ import (
 
 type localState struct {
 	*common.State
-	nextReqID   msc.RequestID
-	sourceState map[msc.RequestID]*sourceState
+	RequestContextStore cs.ContextStore[*sourceState]
 }
 
 // sourceState represents the state of the broadcaster (leader) in an instance of consistent broadcast.
 // The source can dispose of the state of the request as soon as the request is completed.
 type sourceState struct {
-	reqOrigin *apb.RequestCertOrigin
-	batchHash []byte
+	ReqOrigin *apb.RequestCertOrigin
+	BatchHash common.BatchHash
 
 	receivedSig map[t.NodeID]bool
 	sigs        map[t.NodeID][]byte
@@ -36,9 +36,8 @@ func ProcessEventsForCreatingCertificates(
 	commonState *common.State,
 ) {
 	state := localState{
-		State:       commonState,
-		nextReqID:   0,
-		sourceState: make(map[msc.RequestID]*sourceState),
+		State:               commonState,
+		RequestContextStore: cs.NewSequentialContextStore[*sourceState](),
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,58 +47,56 @@ func ProcessEventsForCreatingCertificates(
 	// When a batch is requested by the consensus layer, initialize an instance of the broadcast protocol and ask
 	// mempool for a batch.
 	adsl.UponRequestCert(m, func(origin *apb.RequestCertOrigin) error {
-		reqID := state.nextReqID
-		state.nextReqID++
-
-		state.sourceState[reqID] = &sourceState{
-			reqOrigin:   origin,
+		csItemID := state.RequestContextStore.Store(&sourceState{
+			ReqOrigin:   origin,
 			receivedSig: make(map[t.NodeID]bool),
 			sigs:        make(map[t.NodeID][]byte),
-		}
+		})
 
-		mempooldsl.RequestBatch(m, mc.Mempool, &requestBatchFromMempoolContext{reqID})
+		mempooldsl.RequestBatch(m, mc.Mempool, &requestBatchFromMempoolContext{csItemID})
 		return nil
 	})
 
 	// When the mempool provides a batch, compute its hash.
 	mempooldsl.UponNewBatch(m, func(txIDs [][]byte, txs [][]byte, context *requestBatchFromMempoolContext) error {
-		dsl.OneHashRequest(m, mc.Hasher, txIDs, &computeHashOfOwnBatchContext{context.reqID, txs})
+		// TODO: add persistent storage for crash-recovery.
+		dsl.OneHashRequest(m, mc.Hasher, txIDs, &computeHashOfOwnBatchContext{context.csItemID, txs})
 		return nil
 	})
 
 	// When the hash of the batch is computed, request signatures for the batch from all nodes.
 	dsl.UponOneHashResult(m, func(batchHash []byte, context *computeHashOfOwnBatchContext) error {
-		state.sourceState[context.reqID].batchHash = batchHash
+		requestState, _ := state.RequestContextStore.Recover(context.csItemID)
+		requestState.BatchHash = common.BatchHash(batchHash)
 		// TODO: add persistent storage for crash-recovery.
-		dsl.SendMessage(m, mc.Net, msc.RequestSigMessage(mc.Self, context.reqID, context.txs), params.AllNodes)
+		dsl.SendMessage(m, mc.Net, msc.RequestSigMessage(mc.Self, context.txs, context.csItemID), params.AllNodes)
 		return nil
 	})
 
-	// When receive a request for a signature, store the received transactions and compute their hashes.
-	mscdsl.UponRequestSigMessageReceived(m, func(from t.NodeID, reqID msc.RequestID, txs [][]byte) error {
-		if _, ok := state.replicaState[from][reqID]; ok {
-			// Already received a request with the same source and reqID.
-			return nil
-		}
-		// TODO: replicaState should be persisted for crash-recovery.
-		state.replicaState[from][reqID] = &replicaState{
-			sentSig: false,
-			txs:     txs,
-		}
-
+	// When receive a request for a signature, compute the hashes of the received transactions.
+	mscdsl.UponRequestSigMessageReceived(m, func(from t.NodeID, txs [][]byte, id cs.ItemID) error {
 		txsMsgs := sliceutil.Transform(txs, func(tx []byte) [][]byte { return [][]byte{tx} })
-		dsl.HashRequest(m, mc.Hasher, txsMsgs, &computeHashOfReceivedTxsContext{from, reqID})
+		dsl.HashRequest(m, mc.Hasher, txsMsgs, &computeHashOfReceivedTxsContext{from, txs, id})
 		return nil
 	})
 
-	// When the hashes of the received transactions are computed, compute the hash of the batch.
-	dsl.UponHashResult(m, func(hashes [][]byte, context *computeHashOfReceivedTxsContext) error {
-		dsl.OneHashRequest(m, mc.Hasher, hashes, &computeHashOfReceivedBatchContext{context.sourceID, context.reqID})
+	// When the hashes of the received transactions are computed, store the transactions and compute the hash of the batch.
+	dsl.UponHashResult(m, func(txHashes [][]byte, context *computeHashOfReceivedTxsContext) error {
+		for i := range context.txs {
+			state.TransactionStore[common.TxHash(txHashes[i])] = context.txs[i]
+		}
+
+		dsl.OneHashRequest(m, mc.Hasher, txHashes,
+			&computeHashOfReceivedBatchContext{context.sourceID, txHashes, context.csItemID})
 		return nil
 	})
 
-	// When the hash of the batch is computed, persistently store the batch and generate a signature.
+	// When the hash of the batch is computed, store the batch and generate a signature.
 	dsl.UponOneHashResult(m, func(batchHash []byte, context *computeHashOfReceivedBatchContext) error {
+		for i := range context.txs {
+			state.BatchStore[common.BatchHash(batchHash)] = context.txIDs
+		}
+
 		sigMsg := sigMessage(params.InstanceUID, context.sourceID, context.reqID, batchHash)
 		dsl.SignRequest(m, mc.Crypto, sigMsg, &signReceivedBatchContext{context.sourceID, context.reqID})
 		return nil
@@ -186,25 +183,27 @@ func ProcessEventsForCreatingCertificates(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type requestBatchFromMempoolContext struct {
-	reqID msc.RequestID
+	csItemID cs.ItemID
 }
 
 type computeHashOfOwnBatchContext struct {
-	reqID msc.RequestID
-	txs   [][]byte
+	csItemID cs.ItemID
+	txs      [][]byte
 }
 
 type computeHashOfReceivedTxsContext struct {
 	sourceID t.NodeID
-	reqID    msc.RequestID
+	txs      [][]byte
+	csItemID cs.ItemID
 }
 
 type computeHashOfReceivedBatchContext struct {
 	sourceID t.NodeID
-	reqID    msc.RequestID
+	txIDs    [][]byte
+	csItemID cs.ItemID
 }
 
 type verifySigContext struct {
-	reqID     msc.RequestID
+	csItemID  cs.ItemID
 	signature []byte
 }

@@ -18,8 +18,8 @@ message Message {
 }
 
 message RequestSigMessage {
-  uint64         req_id = 1;
-  repeated bytes txs    = 2;
+  repeated bytes txs        = 1;
+  uint64         cs_item_id = 2;
 }
 
 message SigMessage {
