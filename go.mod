@@ -26,6 +26,8 @@ require (
 require github.com/golang/mock v1.6.0
 
 require (
+	github.com/budougumi0617/cmpmock v0.0.4
+	github.com/google/go-cmp v0.5.6
 	github.com/ipfs/go-cid v0.1.0
 	github.com/multiformats/go-multiaddr v0.5.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20220514204315-f29c37e9c44c
