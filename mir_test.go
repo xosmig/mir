@@ -49,10 +49,10 @@ func testIntegrationWithISS(t *testing.T) {
 			}},
 		1: {"Do nothing with 4 nodes, one of them slow",
 			&deploytest.TestConfig{
-				NumReplicas:         4,
-				Transport:           "fake",
-				Duration:            20 * time.Second,
-				SlowProposeReplicas: map[int]bool{0: true},
+				NumReplicas:      4,
+				Transport:        "fake",
+				Duration:         20 * time.Second,
+				SlowProposeNodes: map[int]bool{0: true},
 			}},
 		2: {"Submit 10 fake requests with 1 node",
 			&deploytest.TestConfig{
@@ -73,12 +73,12 @@ func testIntegrationWithISS(t *testing.T) {
 			}},
 		4: {"Submit 100 fake requests with 4 nodes, one of them slow",
 			&deploytest.TestConfig{
-				NumReplicas:         4,
-				NumClients:          0,
-				Transport:           "fake",
-				NumFakeRequests:     100,
-				Duration:            20 * time.Second,
-				SlowProposeReplicas: map[int]bool{0: true},
+				NumReplicas:      4,
+				NumClients:       0,
+				Transport:        "fake",
+				NumFakeRequests:  100,
+				Duration:         20 * time.Second,
+				SlowProposeNodes: map[int]bool{0: true},
 			}},
 
 		5: {"Submit 10 fake requests with 4 nodes and gRPC networking",
@@ -202,7 +202,7 @@ func runIntegrationWithISSConfig(tb testing.TB, conf *deploytest.TestConfig) (he
 	defer cancel()
 
 	// Create new test deployment.
-	deployment, err := deploytest.NewDeployment(conf)
+	deployment, err := newDeployment(conf)
 	require.NoError(tb, err)
 
 	// Schedule shutdown of test deployment
