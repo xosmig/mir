@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	"github.com/filecoin-project/mir/pkg/util/cmputil"
 	"github.com/golang/mock/gomock"
+	"github.com/xosmig/placeholders"
 )
 
 // MockPassiveModule is a slightly more user-friendly wrapper around gomock_modules.MockPassiveModule.
@@ -39,14 +40,14 @@ type MockPassiveModuleMockRecorder struct {
 }
 
 // Event indicates that the module is expected to receive an event that matches the argument.
-// The argument is either an event or a gomock.Matcher.
+// The argument is either an event (potentially, with placeholders created with placeholders.Make) or a gomock.Matcher.
 // If the argument is an event, it is matched against the events received by the mock module using cmp.Diff with
-// option cmputil.IgnoreAllUnexported().
+// options placeholders.Ignore() and cmputil.IgnoreAllUnexported().
 func (mr *MockPassiveModuleMockRecorder) Event(arg0 interface{}) *gomock.Call {
 	if expectedEvent, ok := arg0.(*eventpb.Event); ok {
 		// Instead of letting gomock to compare events with reflect.DeepEqual, compare them using the go-cmp package,
-		// ignoring the unexported fields.
-		arg0 = cmpmock.DiffEq(expectedEvent, cmputil.IgnoreAllUnexported())
+		// ignoring the unexported fields and with enabled placeholders.
+		arg0 = cmpmock.DiffEq(expectedEvent, placeholders.Ignore(), cmputil.IgnoreAllUnexported())
 	}
 	return mr.implRecorder.Event(arg0)
 }
