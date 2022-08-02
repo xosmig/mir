@@ -1,7 +1,8 @@
-package storageclient
+package client
 
 import (
 	"github.com/filecoin-project/mir/pkg/dsl"
+	"github.com/filecoin-project/mir/pkg/pb/requestpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
@@ -22,4 +23,9 @@ func DefaultModuleConfig() *ModuleConfig {
 func NewModule(mc *ModuleConfig) {
 	m := dsl.NewModule(mc.Self)
 
+	dsl.UponNewRequests(m, func(requests []*requestpb.Request) error {
+		for _, req := range requests {
+			dsl.SendMessage(mc.Net)
+		}
+	})
 }

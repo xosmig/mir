@@ -12,6 +12,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/requestpb"
 	t "github.com/filecoin-project/mir/pkg/types"
+	storageclient "github.com/filecoin-project/mir/samples/dsl-demo/crash-faults/storage/client"
 )
 
 func main() {
@@ -49,7 +50,7 @@ func readDataAndInjectToNode(node *mir.Node) {
 	text := scanner.Text()
 
 	// Inject the request
-	request := &requestpb.Request{ClientId: "client 1", Data: []byte(text)}
+	request := &requestpb.Request{Data: []byte(text)}
 	event := events.NewClientRequests("storage-client", []*requestpb.Request{request})
 	err := node.InjectEvents(context.Background(), events.ListOf(event))
 	if err != nil {
