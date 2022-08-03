@@ -1,6 +1,8 @@
 package certcreation
 
 import (
+	"github.com/filecoin-project/mir/samples/dsl-demo/storage/internal/dsl"
+
 	adsl "github.com/filecoin-project/mir/pkg/availability/dsl"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	mempooldsl "github.com/filecoin-project/mir/pkg/mempool/dsl"
@@ -10,7 +12,6 @@ import (
 	"github.com/filecoin-project/mir/samples/dsl-demo/crash-faults/storage/internal/common"
 	"github.com/filecoin-project/mir/samples/dsl-demo/crash-faults/storage/internal/dsl"
 	"github.com/filecoin-project/mir/samples/dsl-demo/crash-faults/storage/internal/protobuf"
-	"github.com/filecoin-project/mir/samples/dsl-demo/storage/internal/dsl"
 )
 
 // State represents the state related to this part of the module.
@@ -52,7 +53,7 @@ func IncludeCreatingCertificates(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// When a batch is requested by the consensus layer, request a batch of transactions from the mempool.
-	adsl.UponRequestCert(m, func(origin *apb.RequestCertOrigin) error {
+	adsl.UponStoreRequest(m, func(origin *apb.RequestCertOrigin) error {
 		reqID := state.NextReqID
 		state.NextReqID++
 

@@ -84,7 +84,7 @@ func UponEvent[EvWrapper apb.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handle
 }
 
 // UponRequestCert registers a handler for the RequestCert events.
-func UponRequestCert(m dsl.Module, handler func(origin *apb.RequestCertOrigin) error) {
+func UponStoreRequest(m dsl.Module, handler func(origin *apb.RequestCertOrigin) error) {
 	UponEvent[*apb.Event_RequestCert](m, func(ev *apb.RequestCert) error {
 		return handler(ev.Origin)
 	})

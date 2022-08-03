@@ -1,15 +1,15 @@
 package certcreation
 
 import (
+	"github.com/filecoin-project/mir/pkg/availability/cft-storage/internal/common"
+	mscdsl "github.com/filecoin-project/mir/pkg/availability/cft-storage/internal/dsl"
+	"github.com/filecoin-project/mir/pkg/availability/cft-storage/internal/protobuf"
 	adsl "github.com/filecoin-project/mir/pkg/availability/dsl"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	mempooldsl "github.com/filecoin-project/mir/pkg/mempool/dsl"
 	apb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/maputil"
-	"github.com/filecoin-project/mir/samples/dsl-demo/storage-bft/internal/common"
-	"github.com/filecoin-project/mir/samples/dsl-demo/storage-bft/internal/dsl"
-	"github.com/filecoin-project/mir/samples/dsl-demo/storage-bft/internal/protobuf"
 )
 
 // State represents the state related to this part of the module.

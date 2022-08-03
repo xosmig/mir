@@ -51,7 +51,7 @@ func IncludeCreatingCertificates(
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// When a batch is requested by the consensus layer, request a batch of transactions from the mempool.
-	adsl.UponRequestCert(m, func(origin *apb.RequestCertOrigin) error {
+	adsl.UponStoreRequest(m, func(origin *apb.RequestCertOrigin) error {
 		reqID := state.NextReqID
 		state.NextReqID++
 
