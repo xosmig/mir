@@ -14,8 +14,8 @@ import (
 
 type dslModuleImpl struct {
 	moduleID          t.ModuleID
-	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) error
-	conditionHandlers []func() error
+	eventHandlers     map[reflect.Type][]func(ev *eventpb.Event) Result
+	conditionHandlers []func() Result
 	outputEvents      *events.EventList
 	// contextStore is used to store and recover context on asynchronous operations such as signature verification.
 	contextStore cs.ContextStore[any]
@@ -47,7 +47,7 @@ type Module interface {
 func NewModule(moduleID t.ModuleID) Module {
 	return &dslModuleImpl{
 		moduleID:               moduleID,
-		eventHandlers:          make(map[reflect.Type][]func(ev *eventpb.Event) error),
+		eventHandlers:          make(map[reflect.Type][]func(ev *eventpb.Event) Result),
 		outputEvents:           &events.EventList{},
 		contextStore:           cs.NewSequentialContextStore[any](),
 		eventCleanupContextIDs: make(map[ContextID]struct{}),
@@ -66,11 +66,11 @@ func (m *dslModuleImpl) ModuleID() t.ModuleID {
 
 // UponEvent registers an event handler for module m.
 // This event handler will be called every time an event of type EvWrapper is received.
-func UponEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) error) {
+func UponEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) Result) {
 	evWrapperType := reflectutil.TypeOf[EvWrapper]()
 
 	m.DslHandle().impl.eventHandlers[evWrapperType] = append(m.DslHandle().impl.eventHandlers[evWrapperType],
-		func(evWrapper *eventpb.Event) error {
+		func(evWrapper *eventpb.Event) Result {
 			return handler(evWrapper.Type.(EvWrapper).Unwrap())
 		})
 }
@@ -78,7 +78,7 @@ func UponEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, handle
 // UponCondition registers a special type of handler that will be invoked each time after processing a batch of events.
 // The handler is assumed to represent a conditional action: it is supposed to check some predicate on the state
 // and perform actions if the predicate is satisfied.
-func UponCondition(m Module, handler func() error) {
+func UponCondition(m Module, handler func() Result) {
 	impl := m.DslHandle().impl
 	impl.conditionHandlers = append(impl.conditionHandlers, handler)
 }
@@ -126,7 +126,10 @@ func EmitEvent(m Module, ev *eventpb.Event) {
 func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, error) {
 	// Run event handlers.
 	iter := evs.Iterator()
+
 	for ev := iter.Next(); ev != nil; ev = iter.Next() {
+		matched := false
+
 		handlers, ok := m.eventHandlers[reflect.TypeOf(ev.Type)]
 
 		// For convenience, it is not considered an error to not have handlers for the Init event.
@@ -134,24 +137,56 @@ func (m *dslModuleImpl) ApplyEvents(evs *events.EventList) (*events.EventList, e
 			return nil, fmt.Errorf("unknown event type '%T'", ev.Type)
 		}
 
-		for _, h := range handlers {
-			err := h(ev)
-			if err != nil {
-				return nil, err
+		for i := 0; i < len(handlers); i++ {
+			res := handlers[i](ev)
+			if res.err != nil {
+				return nil, fmt.Errorf("error processing event of type %T: %w", ev.Type, res.err)
 			}
+
+			if res.matched {
+				matched = true
+			}
+
+			if !res.repeat {
+				// Remove the handler from the list.
+				handlers[i], handlers[len(handlers)-1] = handlers[len(handlers)-1], handlers[i]
+				handlers = handlers[:len(handlers)-1]
+				// Since there is now a different handler on position i, we need to process position i again.
+				i--
+			}
+		}
+
+		// Update the list of handlers.
+		m.eventHandlers[reflect.TypeOf(ev.Type)] = handlers
+
+		// For convenience, it is not considered an error to not handle the Init event.
+		if !matched && reflect.TypeOf(ev.Type) != reflectutil.TypeOf[*eventpb.Event_Init]() {
+			return nil, fmt.Errorf("no handler for event: %v", ev)
 		}
 	}
 
 	// Run condition handlers.
-	for _, condition := range m.conditionHandlers {
-		err := condition()
+	handlers := m.conditionHandlers
+	for i := 0; i < len(handlers); i++ {
+		res := handlers[i]()
 
-		if err != nil {
-			return nil, err
+		if res.err != nil {
+			return nil, fmt.Errorf("error processing a condition handler: %w", res.err)
+		}
+
+		if !res.repeat {
+			// Remove the handler from the list.
+			handlers[i], handlers[len(handlers)-1] = handlers[len(handlers)-1], handlers[i]
+			handlers = handlers[:len(handlers)-1]
+			// Since there is now a different handler on position i, we need to process position i again.
+			i--
 		}
 	}
 
-	// Cleanup used up context store entries
+	// Update the list of handlers.
+	m.conditionHandlers = handlers
+
+	// Cleanup used up ContextStore entries.
 	if len(m.eventCleanupContextIDs) > 0 {
 		for id := range m.eventCleanupContextIDs {
 			m.contextStore.Dispose(id)
