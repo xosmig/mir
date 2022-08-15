@@ -40,36 +40,38 @@ func newSimpleTestingModule(mc *simpleModuleConfig) modules.PassiveModule {
 	var uintsSum uint64
 	var lastReportedUint uint64
 
-	UponTestingString(m, func(s string) error {
+	UponTestingString(m, func(s string) Result {
 		if s == "hello" {
 			EmitTestingString(m, mc.Replies, "world")
 			EmitTestingUint(m, mc.Replies, 42)
+			return OK()
 		}
-		return nil
+		return NoMatch()
 	})
 
-	UponTestingString(m, func(s string) error {
+	UponTestingString(m, func(s string) Result {
 		if s == "good" {
 			// By design, this event will be lost due to the error.
 			EmitTestingString(m, mc.Replies, "lost")
-			return fmt.Errorf("bye")
+			return Error("bye")
 		}
-		return nil
+		return NoMatch()
 	})
 
-	UponTestingUint(m, func(u uint64) error {
+	UponTestingUint(m, func(u uint64) Result {
 		if u < 100 {
 			EmitTestingString(m, mc.Replies, strconv.FormatUint(u, 10))
+			return OK()
 		}
-		return nil
+		return NoMatch()
 	})
 
-	UponTestingString(m, func(s string) error {
+	UponTestingString(m, func(s string) Result {
 		testingStrings = append(testingStrings, s)
-		return nil
+		return OK()
 	})
 
-	UponCondition(m, func() error {
+	UponCondition(m, func() Result {
 		if len(testingStrings) >= 3 {
 			EmitEvent(m, &eventpb.Event{
 				DestModule: "reports",
@@ -79,15 +81,15 @@ func newSimpleTestingModule(mc *simpleModuleConfig) modules.PassiveModule {
 				},
 			})
 		}
-		return nil
+		return OK()
 	})
 
-	UponTestingUint(m, func(u uint64) error {
+	UponTestingUint(m, func(u uint64) Result {
 		uintsSum += u
-		return nil
+		return OK()
 	})
 
-	UponCondition(m, func() error {
+	UponCondition(m, func() Result {
 		for uintsSum >= lastReportedUint+100 {
 			lastReportedUint += 100
 			EmitEvent(m, &eventpb.Event{
@@ -97,14 +99,14 @@ func newSimpleTestingModule(mc *simpleModuleConfig) modules.PassiveModule {
 				},
 			})
 		}
-		return nil
+		return OK()
 	})
 
-	UponCondition(m, func() error {
+	UponCondition(m, func() Result {
 		if uintsSum > 1000 {
-			return errors.New("too much")
+			return Error("too much")
 		}
-		return nil
+		return OK()
 	})
 
 	return m
@@ -131,7 +133,7 @@ func TestDslModule_ApplyEvents(t *testing.T) {
 		"test error": {
 			eventsIn:  events.ListOf(events.TestingString(mc.Self, "good")),
 			eventsOut: events.EmptyList(),
-			err:       errors.New("bye"),
+			err:       errors.New("error processing event of type *eventpb.Event_TestingString: bye"),
 		},
 		"test simple condition": {
 			eventsIn: events.ListOf(
@@ -163,7 +165,7 @@ func TestDslModule_ApplyEvents(t *testing.T) {
 		"test failed condition": {
 			eventsIn:  events.ListOf(events.TestingUint(mc.Self, 2000)),
 			eventsOut: events.EmptyList(),
-			err:       errors.New("too much"),
+			err:       errors.New("error processing a condition handler: too much"),
 		},
 	}
 
@@ -234,26 +236,26 @@ type testingStringContext struct {
 func newContextTestingModule(mc *contextTestingModuleModuleConfig) Module {
 	m := NewModule(mc.Self)
 
-	UponTestingString(m, func(s string) error {
+	UponTestingString(m, func(s string) Result {
 		SignRequest(m, mc.Crypto, [][]byte{[]byte(s)}, &testingStringContext{s})
 		HashOneMessage(m, mc.Hasher, [][]byte{[]byte(s)}, &testingStringContext{s})
-		return nil
+		return OK()
 	})
 
-	UponSignResult(m, func(signature []byte, context *testingStringContext) error {
+	UponSignResult(m, func(signature []byte, context *testingStringContext) Result {
 		EmitTestingString(m, mc.Signed, fmt.Sprintf("%s: %s", context.s, string(signature)))
-		return nil
+		return OK()
 	})
 
-	UponHashResult(m, func(hashes [][]byte, context *testingStringContext) error {
+	UponHashResult(m, func(hashes [][]byte, context *testingStringContext) Result {
 		if len(hashes) != 1 {
-			return fmt.Errorf("unexpected number of hashes: %v", hashes)
+			return Errorf("unexpected number of hashes: %v", hashes)
 		}
 		EmitTestingString(m, mc.Hashed, fmt.Sprintf("%s: %s", context.s, string(hashes[0])))
-		return nil
+		return OK()
 	})
 
-	UponTestingUint(m, func(u uint64) error {
+	UponTestingUint(m, func(u uint64) Result {
 		if u < 10 {
 			msg := [][]byte{[]byte("uint"), []byte(strconv.FormatUint(u, 10))}
 
@@ -268,21 +270,21 @@ func newContextTestingModule(mc *contextTestingModuleModuleConfig) Module {
 			//     remember that the context type is used to match requests with responses.
 			VerifyNodeSigs(m, mc.Crypto, sliceutil.Repeat(msg, int(u)), signatures, nodeIDs, &u)
 		}
-		return nil
+		return OK()
 	})
 
-	UponOneNodeSigVerified(m, func(nodeID types.NodeID, err error, context *uint64) error {
+	UponOneNodeSigVerified(m, func(nodeID types.NodeID, err error, context *uint64) Result {
 		if err == nil {
 			EmitTestingString(m, mc.Verified, fmt.Sprintf("%v: %v verified", *context, nodeID))
 		}
-		return nil
+		return OK()
 	})
 
-	UponNodeSigsVerified(m, func(nodeIDs []types.NodeID, errs []error, allOK bool, context *uint64) error {
+	UponNodeSigsVerified(m, func(nodeIDs []types.NodeID, errs []error, allOK bool, context *uint64) Result {
 		if allOK {
 			EmitTestingUint(m, mc.Verified, *context)
 		}
-		return nil
+		return OK()
 	})
 
 	return m
@@ -418,14 +420,14 @@ func EmitTestingUint(m Module, dest types.ModuleID, u uint64) {
 	EmitEvent(m, events.TestingUint(dest, u))
 }
 
-func UponTestingString(m Module, handler func(s string) error) {
-	UponEvent[*eventpb.Event_TestingString](m, func(ev *wrapperspb.StringValue) error {
+func UponTestingString(m Module, handler func(s string) Result) {
+	UponEvent[*eventpb.Event_TestingString](m, func(ev *wrapperspb.StringValue) Result {
 		return handler(ev.Value)
 	})
 }
 
-func UponTestingUint(m Module, handler func(u uint64) error) {
-	UponEvent[*eventpb.Event_TestingUint](m, func(ev *wrapperspb.UInt64Value) error {
+func UponTestingUint(m Module, handler func(u uint64) Result) {
+	UponEvent[*eventpb.Event_TestingUint](m, func(ev *wrapperspb.UInt64Value) Result {
 		return handler(ev.Value)
 	})
 }
