@@ -3,6 +3,7 @@ package eventpb
 import (
 	availabilitypb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 	batchdbpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb"
+	quorumstoragepb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/quorumstoragepb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	mempoolpb "github.com/filecoin-project/mir/pkg/pb/mempoolpb"
@@ -142,6 +143,10 @@ func (p *Event_NewConfig) Unwrap() *NewConfig {
 
 func (p *Event_BatchDb) Unwrap() *batchdbpb.Event {
 	return p.BatchDb
+}
+
+func (p *Event_QuorumStorage) Unwrap() *quorumstoragepb.Event {
+	return p.QuorumStorage
 }
 
 func (p *Event_TestingString) Unwrap() *wrapperspb.StringValue {
