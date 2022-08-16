@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package quorumstoragepb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/availabilitypb/quorumstoragepb";
+
+import "contextstorepb/contextstorepb.proto";
+import "dslpb/dslpb.proto";
+import "mir/plugin.proto";
+import "requestpb/requestpb.proto";
+//import "batchstoragepb/simple/simple.proto";
+
+// ============================================================
+// Events
+// ============================================================
+
+message Event {
+  oneof type {
+      option (mir.event_type) = true;
+
+      StoreBatchOnQuorum    store                  = 1;
+      BatchStoredOnQuorum   stored                 = 2;
+      VerifyBatch           verify_batch           = 3;
+      BatchVerified         batch_verified         = 4;
+      VerifyCert            verify_cert            = 5;
+      CertVerified          cert_verified          = 6;
+      RetrieveTransactions  retrieve_transactions  = 7;
+      TransactionsRetrieved transactions_retrieved = 8;
+  }
+}
+
+// StoreBatchOnQuorum can be used to create a batch and store in on a quorum of nodes wit the given metadata.
+message StoreBatchOnQuorum {
+  bytes                    metadata = 1;
+  StoreBatchOnQuorumOrigin origin   = 2;
+}
+
+// BatchStoredOnQuorum is a response to a StoreBatchOnQuorum event.
+message BatchStoredOnQuorum {
+  RetrieveCert             cert   = 1;
+  StoreBatchOnQuorumOrigin origin = 2;
+}
+
+// VerifyBatch is used by the quorum storage to check the validity of the batch metadata.
+message VerifyBatch {
+  bytes             metadata = 1;
+  VerifyBatchOrigin origin   = 2;
+}
+
+// BatchVerified is a response to a VerifyBatch event.
+message BatchVerified {
+  bool              valid  = 1;
+  string            err    = 2;
+  VerifyBatchOrigin origin = 3;
+}
+
+// VerifyCert can be used to verify the validity of the retrieval certifcate.
+message VerifyCert {
+  RetrieveCert     cert   = 1;
+  VerifyCertOrigin origin = 2;
+}
+
+// CertVerified is a response to a VerifyCert event.
+message CertVerified {
+  bool             valid  = 1;
+  string           err    = 2;
+  VerifyCertOrigin origin = 3;
+}
+
+// RetrieveTransactions can be used to retrieve the transactions in a batch.
+message RetrieveTransactions {
+  RetrieveCert               cert   = 1;
+  RetrieveTransactionsOrigin origin = 2;
+}
+
+// TransactionsRetrieved is a response to a RetrieveTransactions event.
+message TransactionsRetrieved {
+  repeated bytes             tx_ids = 1;
+  repeated requestpb.Request txs    = 2;
+  RetrieveTransactionsOrigin origin = 3;
+}
+
+// ============================================================
+// Data structures
+// ============================================================
+
+message StoreBatchOnQuorumOrigin {
+  string module = 1;
+  oneof type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message RetrieveTransactionsOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message VerifyCertOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message VerifyBatchOrigin {
+  string module = 1;
+  oneof Type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message RetrieveCert {
+//  oneof type {
+//    simplebatchstoragepb.Cert simple = 1;
+//  }
+}
