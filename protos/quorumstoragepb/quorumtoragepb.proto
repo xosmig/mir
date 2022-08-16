@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package batchstoragepb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/narwhalpb";
+
+import "contextstorepb/contextstorepb.proto";
+import "dslpb/dslpb.proto";
+import "mir/plugin.proto";
+import "quorumstoragepb/simplebatchstoragepb/simple.proto";
+
+// ============================================================
+// Events
+// ============================================================
+
+message Event {
+  oneof type {
+      StoreDataOnQuorum  store     = 1;
+      DataStoredOnQuorum stored    = 2;
+      VerifyData         verify    = 3;
+      DataVerified       verified  = 4;
+      RetrieveData       retrieve  = 5;
+      DataRetrieved      retrieved = 6;
+  }
+}
+
+message StoreDataOnQuorum {
+  bytes                   data   = 1;
+  StoreDataOnQuorumOrigin origin = 2;
+}
+
+message DataStoredOnQuorum {
+  RetrieveCert            cert   = 1;
+  StoreDataOnQuorumOrigin origin = 2;
+}
+
+message VerifyData {
+  bytes  data       = 1;
+  uint64 request_id = 2;
+}
+
+message DataVerified {
+  bool   accept     = 1;
+  uint64 request_id = 2;
+}
+
+message RetrieveData {
+  RetrieveCert       cert   = 1;
+  RetrieveDataOrigin origin = 2;
+}
+
+message DataRetrieved {
+  bytes              data   = 1;
+  RetrieveDataOrigin origin = 2;
+}
+
+// ============================================================
+// Data structures
+// ============================================================
+
+message StoreDataOnQuorumOrigin {
+  string module = 1;
+  oneof type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message RetrieveDataOrigin {
+  string module = 1;
+  oneof type {
+    contextstorepb.Origin context_store = 2;
+    dslpb.Origin          dsl           = 3;
+  }
+}
+
+message RetrieveCert {
+  oneof type {
+    simplebatchstoragepb.Cert simple = 1;
+  }
+}

@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package simplebatchstoragepb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/narwhalpb";
+
+import "contextstorepb/contextstorepb.proto";
+import "dslpb/dslpb.proto";
+import "mir/plugin.proto";
+import "requestpb/requestpb.proto";
+import "availabilitypb/availabilitypb.proto";
+
+// ============================================================
+// Messages
+// ============================================================
+
+message Message {
+  oneof type {
+    RequestSigMessage   request_sig   = 1;
+    SigMessage          sig           = 2;
+    RequestBatchMessage request_batch = 3;
+    ProvideBatchMessage provide_batch = 4;
+  }
+}
+
+message RequestSigMessage {
+  bytes  data   = 1;
+  uint64 req_id = 2;
+}
+
+message SigMessage {
+  bytes  signature  = 1;
+  uint64 req_id     = 2;
+}
+
+message RequestBatchMessage {
+  bytes  batch_id = 1;
+  uint64 req_id   = 2;
+}
+
+message ProvideBatchMessage {
+  repeated requestpb.Request txs     = 1;
+  uint64                     req_id  = 2;
+}
+
+// ============================================================
+// Events
+// ============================================================
+
+// ============================================================
+// Data structures
+// ============================================================
+
+message Cert {
+  bytes           batch_id   = 1;
+  // TODO: can be encoded as n bits
+  repeated string signers    = 2;
+  repeated bytes  signatures = 3;
+}
