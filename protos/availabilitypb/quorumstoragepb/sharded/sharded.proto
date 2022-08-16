@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package simplebatchstoragepb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/narwhalpb";
+
+import "contextstorepb/contextstorepb.proto";
+import "dslpb/dslpb.proto";
+import "mir/plugin.proto";
+import "requestpb/requestpb.proto";
+import "availabilitypb/availabilitypb.proto";
+
+// ============================================================
+// Messages
+// ============================================================
+
+message Message {
+  oneof type {
+    RequestSigMessage   request_sig   = 1;
+    SigMessage          sig           = 2;
+    RequestBatchMessage request_batch = 3;
+    ProvideBatchMessage provide_batch = 4;
+  }
+}
+
+// RequestBatchMessage is sent by the primary to its worker to request a new set of batches.
+message RequestBatchMessage {
+  uint64 req_id = 1;
+  bytes  metadata = 2;
+}
+
+// BatchReady is sent by the worker to its primary to notify it that a batch was prepared and broadcast.
+message BatchReady {
+  bytes  batch_id = 1;
+  uint64 req_id   = 2;
+}
+
+message
+
+message RequestBatchMessage {
+  bytes  batch_id = 1;
+  uint64 req_id   = 2;
+}
+
+message ProvideBatchMessage {
+  repeated requestpb.Request txs     = 1;
+  uint64                     req_id  = 2;
+}
+
+// ============================================================
+// Data structures
+// ============================================================
+
+message Cert {
+  bytes           batch_id   = 1;
+  // TODO: can be encoded as n bits
+  repeated string signers    = 2;
+  repeated bytes  signatures = 3;
+}
