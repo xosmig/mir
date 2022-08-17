@@ -19,7 +19,7 @@ chat-demo-wal
 *.log
 
 # Ignore the protoc plugin binary
-protoc-plugin/protoc-gen-mir
+codegen/protoc-plugin/protoc-gen-mir
 
 # Ignore backup files
 *~
