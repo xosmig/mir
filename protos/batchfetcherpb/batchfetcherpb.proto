@@ -5,7 +5,7 @@ package batchfetcherpb;
 option go_package = "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb";
 
 import "requestpb/requestpb.proto";
-import "mir/plugin.proto";
+import "mir/codegen_extensions.proto";
 
 message Event {
   oneof Type {

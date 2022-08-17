@@ -6,9 +6,14 @@ SPDX-License-Identifier: Apache-2.0
 
 package protos
 
-//go:generate go build -o ../protoc-plugin/protoc-gen-mir ../protoc-plugin
-//go:generate -command protoc-events protoc --proto_path=. --go_out=../pkg/pb/ --go_opt=paths=source_relative --plugin=../protoc-plugin/protoc-gen-mir --mir_out=../pkg/pb --mir_opt=paths=source_relative
-//go:generate protoc-events mir/plugin.proto
+//go:generate -command protoc-events protoc --proto_path=. --go_out=../pkg/pb/ --go_opt=paths=source_relative --plugin=../codegen/protoc-plugin/protoc-gen-mir --mir_out=../pkg/pb --mir_opt=paths=source_relative
+
+// Generate the code for codegen extensions.
+//go:generate protoc-events mir/codegen_extensions.proto
+//go:generate protoc-events mir/dsl/codegen_extensions.proto
+//go:generate protoc-events net/codegen_extensions.proto
+
+// Generate the protoc-generated code for events and messages.
 //go:generate protoc-events commonpb/commonpb.proto
 //go:generate protoc-events messagepb/messagepb.proto
 //go:generate protoc-events requestpb/requestpb.proto
@@ -27,6 +32,19 @@ package protos
 //go:generate protoc-events batchfetcherpb/batchfetcherpb.proto
 //go:generate protoc-events threshcryptopb/threshcryptopb.proto
 
+// Build the custom code generators.
+//go:generate go build -o ../codegen/generators/mir-std-gen/mir-std-gen.bin ../codegen/generators/mir-std-gen
+//go:generate go build -o ../codegen/protoc-plugin/protoc-gen-mir ../codegen/protoc-plugin
+
+// Generate the Mir-generated code for events and messages.
+//go:generate -command std-gen ../codegen/generators/mir-std-gen/mir-std-gen.bin
+//go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/eventpb"
+//go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/messagepb"
+//go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/bcbpb"
+//go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
+//go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
+
+// Generate other things.
 //go:generate protoc --proto_path=. --go_out=:../pkg/ --go_opt=paths=source_relative simplewal/simplewal.proto
 //go:generate protoc --proto_path=. --go_out=:../samples/ --go_opt=paths=source_relative chat-demo/chatdemo.proto
 //go:generate protoc --go_out=../pkg/ --go_opt=paths=source_relative --go-grpc_out=../pkg/ --go-grpc_opt=paths=source_relative requestreceiver/requestreceiver.proto
