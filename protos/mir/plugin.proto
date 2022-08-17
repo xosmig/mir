@@ -8,7 +8,8 @@ import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.MessageOptions {
   bool event = 51200;
-  bool struct = 51201;
+  bool message = 51201;
+  bool struct = 51202;
 }
 
 extend google.protobuf.OneofOptions {

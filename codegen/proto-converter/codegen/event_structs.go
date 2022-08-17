@@ -114,6 +114,7 @@ func getMirType(goField reflect.StructField, protoField protoreflect.FieldDescri
 	protoFieldOptions := protoField.Options().(*descriptorpb.FieldOptions)
 	mirType := proto.GetExtension(protoFieldOptions, mir.E_Type).(string)
 
+	// If option (mir.type) is specified, use it.
 	if mirType != "" {
 		sepIdx := strings.LastIndex(mirType, ".")
 
