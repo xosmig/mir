@@ -40,34 +40,26 @@ func generateMirType(g *jen.File, pbGoStructPtrType reflect.Type) error {
 	}
 
 	g.Type().Id(msg.Name).Struct(fields.StructParamsMirTypes()...)
-	g.Line()
 
 	// Generate FromPb function.
-	structInit := jen.Dict{}
-	for _, field := range fields {
-		// Generates the code of form `Foo: MirType(protoMsg.Foo)`
-		structInit[jen.Id(field.Name)] =
-			jen.Add(field.FromPb).Params(jen.Id(msg.LowercaseName()).Dot(field.Name))
-	}
-
-	g.Func().Add(msg.FromPbFunc()).Params(msg.FuncParamPbType()).Add(msg.MirTypePtr()).
-		Block(
-			jen.Return().Op("&").Add(msg.MirType).Values(structInit),
-		)
-	g.Line()
+	g.Func().Add(msg.FromPbFunc()).Params(msg.FuncParamPbType()).Add(msg.MirTypePtr()).Block(
+		jen.Return().Op("&").Add(msg.mirType).ValuesFunc(func(group *jen.Group) {
+			for _, field := range fields {
+				group.Id(field.Name).Op(":").Add(field.FromPb).Params(jen.Id(msg.LowercaseName()).Dot(field.Name))
+			}
+		}),
+	)
 
 	// Generate ToPb function.
-	structInit = jen.Dict{}
-	for _, field := range fields {
-		// Generates the code of form `Foo: MirType(protoMsg.Foo)`
-		structInit[jen.Id(field.Name)] =
-			jen.Add(field.ToPb).Params(jen.Id(msg.LowercaseName()).Dot(field.Name))
-	}
+	g.Func().Add(msg.ToPbFunc()).Params(msg.FuncParamMirType()).Add(msg.PbTypePtr()).Block(
+		jen.Return().Op("&").Add(msg.pbType).ValuesFunc(func(group *jen.Group) {
+			for _, field := range fields {
+				group.Id(field.Name).Op(":").Add(field.ToPb).Params(jen.Id(msg.LowercaseName()).Dot(field.Name))
+			}
+		}),
+	)
 
-	g.Func().Add(msg.ToPbFunc()).Params(msg.FuncParamMirType()).Add(msg.PbTypePtr()).
-		Block(
-			jen.Return().Op("&").Add(msg.PbType).Values(structInit),
-		)
+	// TODO: generate FromPbSlice and ToPbSlice functions.
 
 	return nil
 }

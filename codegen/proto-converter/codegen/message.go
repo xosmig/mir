@@ -15,39 +15,48 @@ import (
 
 // Message contains the information needed to generate code for a protobuf message.
 type Message struct {
-	fields Fields
+	fields               Fields
+	mirPkgPath           string
+	pbType               jen.Code
+	mirType              jen.Code
+	protoDesc            protoreflect.MessageDescriptor
+	reflectPbGoStructPtr reflect.Type
+}
 
-	PkgPath              string
-	Name                 string
-	PbType               jen.Code
-	MirType              jen.Code
-	ProtoDesc            protoreflect.MessageDescriptor
-	ReflectPbGoStructPtr reflect.Type
+func (m *Message) Name() string {
+	return m.reflectPbGoStructPtr.Name()
+}
+
+func (m *Message) PbType() jen.Code {
+	return m.pbType
+}
+
+func (m *Message) MirType() jen.Code {
+	return m.mirType
 }
 
 // PbTypePtr returns the code corresponding to the type of the pointer to the protoc-generated struct.
 func (m *Message) PbTypePtr() jen.Code {
-	return jen.Op("*").Add(m.PbType)
+	return jen.Op("*").Add(m.pbType)
 }
 
 // MirTypePtr returns the code corresponding to the type of the pointer to the Mir-generated struct.
 func (m *Message) MirTypePtr() jen.Code {
-	return jen.Op("*").Add(m.MirType)
+	return jen.Op("*").Add(m.mirType)
 }
 
-// FromPbFunc returns the name of the function that converts a protobuf-generated struct to a Mir-generated struct.
-func (m *Message) FromPbFunc() jen.Code {
-	return jen.Qual(m.PkgPath, m.Name+"FromPb")
+func (m *Message) FromPbType(code jen.Code) jen.Code {
+	return jen.Qual(m.mirPkgPath, m.Name()+"FromPb").Params(code)
 }
 
 // ToPbFunc returns the name of the function that converts a Mir-generated struct to a protobuf-generated struct.
-func (m *Message) ToPbFunc() jen.Code {
-	return jen.Qual(m.PkgPath, m.Name+"ToPb")
+func (m *Message) ToPbFunc(code jen.Code) jen.Code {
+	return jen.Qual(m.mirPkgPath, m.Name()+"ToPb").Params(code)
 }
 
 // LowercaseName returns the name of the message in lowercase.
 func (m *Message) LowercaseName() string {
-	return astutil.ToUnexported(m.Name)
+	return astutil.ToUnexported(m.Name())
 }
 
 func (m *Message) FuncParamPbType() jen.Code {
@@ -55,15 +64,15 @@ func (m *Message) FuncParamPbType() jen.Code {
 }
 
 func (m *Message) FuncParamMirType() jen.Code {
-	return jen.Id(m.LowercaseName()).Add(m.MirType)
+	return jen.Id(m.LowercaseName()).Add(m.mirType)
 }
 
 func (m *Message) StructParamPbType() jen.Code {
-	return jen.Id(m.Name).Add(m.PbType)
+	return jen.Id(m.Name()).Add(m.pbType)
 }
 
 func (m *Message) StructParamMirType() jen.Code {
-	return jen.Id(m.Name).Add(m.MirType)
+	return jen.Id(m.Name()).Add(m.mirType)
 }
 
 // MessageFromPbGoType returns the message corresponding to the given protobuf-generated struct type.
@@ -90,12 +99,12 @@ func MessageFromPbGoType(pbGoStructPtr reflect.Type) (*Message, error) {
 	}
 
 	return &Message{
-		PkgPath:              pkgPath,
-		Name:                 pbGoStructPtr.Elem().Name(),
-		PbType:               pbType,
-		MirType:              mirType,
-		ProtoDesc:            protoDesc,
-		ReflectPbGoStructPtr: pbGoStructPtr,
+		mirPkgPath:           pkgPath,
+		name:                 pbGoStructPtr.Elem().Name(),
+		pbType:               pbType,
+		mirType:              mirType,
+		protoDesc:            protoDesc,
+		reflectPbGoStructPtr: pbGoStructPtr,
 	}, nil
 }
 
@@ -105,9 +114,9 @@ func (m *Message) Fields() (Fields, error) {
 		return m.fields, nil
 	}
 
-	for i := 0; i < m.ReflectPbGoStructPtr.Elem().NumField(); i++ {
+	for i := 0; i < m.reflectPbGoStructPtr.Elem().NumField(); i++ {
 		// Get go representation of the field.
-		goField := m.ReflectPbGoStructPtr.Elem().Field(i)
+		goField := m.reflectPbGoStructPtr.Elem().Field(i)
 		if !ast.IsExported(goField.Name) {
 			// Skip unexported fields.
 			continue
@@ -124,7 +133,7 @@ func (m *Message) Fields() (Fields, error) {
 		if err != nil {
 			return nil, err
 		}
-		protoField := m.ProtoDesc.Fields().ByName(protoreflect.Name(protoName))
+		protoField := m.protoDesc.Fields().ByName(protoreflect.Name(protoName))
 
 		// Create the Field struct.
 		field, err := GetField(goField, protoField)
@@ -139,18 +148,18 @@ func (m *Message) Fields() (Fields, error) {
 }
 
 func (m *Message) IsMirEvent() bool {
-	return IsMirEvent(m.ProtoDesc)
+	return IsMirEvent(m.protoDesc)
 }
 
 func (m *Message) IsMirMessage() bool {
-	return IsMirMessage(m.ProtoDesc)
+	return IsMirMessage(m.protoDesc)
 }
 
 func (m *Message) IsMirStruct() bool {
-	return IsMirStruct(m.ProtoDesc)
+	return IsMirStruct(m.protoDesc)
 }
 
 // ShouldGenerateMirType returns true if Mir should generate a struct for the message type.
 func (m *Message) ShouldGenerateMirType() bool {
-	return ShouldGenerateMirType(m.ProtoDesc)
+	return ShouldGenerateMirType(m.protoDesc)
 }

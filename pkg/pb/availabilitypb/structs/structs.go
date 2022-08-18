@@ -12,19 +12,10 @@ type CertVerified struct {
 }
 
 func CertVerifiedFromPb(certVerified *availabilitypb.CertVerified) *CertVerified {
-	return &CertVerified{
-		Err:    (string)(certVerified.Err),
-		Origin: (*availabilitypb.VerifyCertOrigin)(certVerified.Origin),
-		Valid:  (bool)(certVerified.Valid),
-	}
+	return &CertVerified{Valid: (bool)(certVerified.Valid), Err: (string)(certVerified.Err), Origin: (*availabilitypb.VerifyCertOrigin)(certVerified.Origin)}
 }
-
 func CertVerifiedToPb(certVerified CertVerified) *availabilitypb.CertVerified {
-	return &availabilitypb.CertVerified{
-		Err:    (string)(certVerified.Err),
-		Origin: (*availabilitypb.VerifyCertOrigin)(certVerified.Origin),
-		Valid:  (bool)(certVerified.Valid),
-	}
+	return &availabilitypb.CertVerified{Valid: (bool)(certVerified.Valid), Err: (string)(certVerified.Err), Origin: (*availabilitypb.VerifyCertOrigin)(certVerified.Origin)}
 }
 
 type RequestCertOrigin struct {
@@ -34,7 +25,6 @@ type RequestCertOrigin struct {
 func RequestCertOriginFromPb(requestCertOrigin *availabilitypb.RequestCertOrigin) *RequestCertOrigin {
 	return &RequestCertOrigin{Module: (types.ModuleID)(requestCertOrigin.Module)}
 }
-
 func RequestCertOriginToPb(requestCertOrigin RequestCertOrigin) *availabilitypb.RequestCertOrigin {
 	return &availabilitypb.RequestCertOrigin{Module: (string)(requestCertOrigin.Module)}
 }
