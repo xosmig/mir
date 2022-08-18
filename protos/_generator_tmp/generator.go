@@ -3,18 +3,18 @@ package main
 import (
 	"log"
 	"os"
+	"reflect"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen"
 	"github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 )
 
 func main() {
-	err := codegen.ProduceFile(
-		"availabilitypb",
-		"./pkg/pb/availabilitypb/structs/availabilitypb.mir.go",
-		[]any{
-			&availabilitypb.CertVerified{},
-			&availabilitypb.RequestCertOrigin{},
+	err := codegen.GenerateMirTypes(
+		"pkg/pb/availabilitypb",
+		[]reflect.Type{
+			reflect.TypeOf(&availabilitypb.CertVerified{}),
+			reflect.TypeOf(&availabilitypb.RequestCertOrigin{}),
 		})
 
 	if err != nil {

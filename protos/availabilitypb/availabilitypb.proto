@@ -95,6 +95,8 @@ message RequestTransactionsOrigin {
 }
 
 message VerifyCertOrigin {
+  option (mir.struct) = true;
+
   string module = 1;
   oneof Type {
     contextstorepb.Origin context_store = 2;
