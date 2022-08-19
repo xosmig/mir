@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -11,22 +12,18 @@ import (
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/astutil"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
+	"github.com/filecoin-project/mir/codegen/proto-converter/util/protoreflectutil"
 	"github.com/filecoin-project/mir/pkg/pb/mir"
 	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
 // Field represents a field in a protobuf message.
 type Field struct {
-	// Name is the name of the field.
+	// Name is the name of the field .
 	Name string
-	// PbType is the type of the field in the protobuf-generated struct.
-	PbType jen.Code
-	// MirType is the type of the field in the Mir-generated struct.
-	MirType jen.Code
-	// FromPb is a function that converts a protobuf value to a Mir value.
-	FromPb jen.Code
-	// ToPb is a function that converts a Mir value to a protobuf value.
-	ToPb jen.Code
+
+	// Type contains type-related information about the field.
+	Type Type
 }
 
 // LowercaseName returns the lowercase name of the field.
@@ -35,60 +32,31 @@ func (f *Field) LowercaseName() string {
 }
 
 func (f *Field) FuncParamPbType() jen.Code {
-	return jen.Id(f.LowercaseName()).Add(f.PbType)
+	return jen.Id(f.LowercaseName()).Add(f.Type.PbType())
 }
 
 func (f *Field) FuncParamMirType() jen.Code {
-	return jen.Id(f.LowercaseName()).Add(f.MirType)
+	return jen.Id(f.LowercaseName()).Add(f.Type.MirType())
 }
 
 func (f *Field) StructParamPbType() jen.Code {
-	return jen.Id(f.Name).Add(f.PbType)
+	return jen.Id(f.Name).Add(f.Type.PbType())
 }
 
 func (f *Field) StructParamMirType() jen.Code {
-	return jen.Id(f.Name).Add(f.MirType)
+	return jen.Id(f.Name).Add(f.Type.MirType())
 }
 
 // GetField extracts the information about the field necessary for code generation.
 func GetField(goField reflect.StructField, protoField protoreflect.FieldDescriptor) (*Field, error) {
-	// If the field is a Mir-annotated message, use the Mir type.
-	if protoField.Kind() == protoreflect.MessageKind {
-		msg, err := MessageFromPbGoType(goField.Type)
-		if err != nil {
-			return nil, err
-		}
-		if msg.ShouldGenerateMirType() {
-			return &Field{
-				Name:    goField.Name,
-				PbType:  msg.PbTypePtr(),
-				MirType: msg.MirTypePtr(),
-				ToPb:    msg.ToPbFunc(),
-				FromPb:  msg.FromPbFunc(),
-			}, nil
-		}
-	}
-
-	// Otherwise, check if the field has (mir.type) option specified.
-	protoFieldOptions := protoField.Options().(*descriptorpb.FieldOptions)
-	mirTypeOption := proto.GetExtension(protoFieldOptions, mir.E_Type).(string)
-
-	// If the option is specified, use it. Otherwise, use pb type.
-	pbType := jenutil.QualFromType(goField.Type)
-	var mirType jen.Code
-	if mirTypeOption != "" {
-		sepIdx := strings.LastIndex(mirTypeOption, ".")
-		mirType = jen.Qual(mirTypeOption[:sepIdx], mirTypeOption[sepIdx+1:])
-	} else {
-		mirType = pbType
+	tp, err := getFieldType(goField.Type, protoField)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Field{
-		Name:    goField.Name,
-		PbType:  pbType,
-		MirType: mirType,
-		ToPb:    jen.Parens(pbType),
-		FromPb:  jen.Parens(mirType),
+		Name: goField.Name,
+		Type: tp,
 	}, nil
 }
 
@@ -108,4 +76,43 @@ func (fs Fields) StructParamsPbTypes() []jen.Code {
 
 func (fs Fields) StructParamsMirTypes() []jen.Code {
 	return sliceutil.Transform(fs, func(i int, f *Field) jen.Code { return f.StructParamMirType() })
+}
+
+func getFieldType(goType reflect.Type, protoField protoreflect.FieldDescriptor) (Type, error) {
+	// TODO: Since maps are not currently used, I didn't bother supporting them yet.
+	if goType.Kind() == reflect.Map {
+		return nil, fmt.Errorf("map fields are not supported yet")
+	}
+
+	// Check if the field is repeated.
+	if goType.Kind() == reflect.Slice {
+		underlying, err := getFieldType(goType.Elem(), protoField)
+		if err != nil {
+			return nil, err
+		}
+		return Slice{underlying}, nil
+	}
+
+	// Check if the field has (mir.type) option specified.
+	protoFieldOptions := protoField.Options().(*descriptorpb.FieldOptions)
+	mirTypeOption := proto.GetExtension(protoFieldOptions, mir.E_Type).(string)
+	if mirTypeOption != "" {
+		sepIdx := strings.LastIndex(mirTypeOption, ".")
+		return Castable{
+			pbType:  jenutil.QualFromType(goType),
+			mirType: jen.Qual(mirTypeOption[:sepIdx], mirTypeOption[sepIdx+1:]),
+		}, nil
+	}
+
+	// Check if the field is a message.
+	if protoreflectutil.IsMessageType(goType) {
+		msg, err := MessageFromPbGoType(goType)
+		if err != nil {
+			return nil, err
+		}
+
+		return msg, nil
+	}
+
+	return Same{jenutil.QualFromType(goType)}, nil
 }

@@ -206,7 +206,7 @@ import (
 )
 
 func main() {
-	err := codegen.GenerateMirTypes(
+	err := codegen.GenerateAll(
 		"pkg/pb/availabilitypb",
 		[]reflect.Type{
 			{{range .StructNames}}
