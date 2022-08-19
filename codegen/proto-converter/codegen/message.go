@@ -26,6 +26,10 @@ func (m *Message) Name() string {
 	return m.pbGoStructPtrReflect.Elem().Name()
 }
 
+func (m *Message) MirPkgPath() string {
+	return StructsPackagePath(m.pbGoStructPtrReflect.Elem().PkgPath())
+}
+
 func (m *Message) PbType() jen.Code {
 	return jen.Op("*").Add(m.pbStructType)
 }
@@ -43,11 +47,11 @@ func (m *Message) MirType() jen.Code {
 }
 
 func (m *Message) ToMir(code jen.Code) jen.Code {
-	return jen.Add(code).Dot("ToMir").Call()
+	return jen.Qual(m.MirPkgPath(), m.Name()+"FromPb").Call(code)
 }
 
 func (m *Message) ToPb(code jen.Code) jen.Code {
-	return jen.Add(code).Dot("ToPb").Call()
+	return jen.Add(code).Dot("Pb").Call()
 }
 
 // LowercaseName returns the name of the message in lowercase.
