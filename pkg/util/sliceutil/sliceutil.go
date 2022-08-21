@@ -24,3 +24,12 @@ func Transform[T, R any](ts []T, f func(i int, t T) R) []R {
 	}
 	return rs
 }
+
+func Index[T comparable](slice []T, elem T) int {
+	for i, t := range slice {
+		if t == elem {
+			return i
+		}
+	}
+	return -1
+}

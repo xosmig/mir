@@ -95,6 +95,7 @@ func runInDir(program []byte, dir string) error {
 
 	progSource := "generator.go"
 	progBinary := "generator.bin"
+	//goland:noinspection GoBoolExpressions
 	if runtime.GOOS == "windows" {
 		// Windows won't execute a program unless it has a ".exe" suffix.
 		progBinary += ".exe"

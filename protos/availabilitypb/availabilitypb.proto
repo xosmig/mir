@@ -78,6 +78,7 @@ message ProvideTransactions {
 
 message RequestCertOrigin {
   option (mir.struct) = true;
+  option (mir.parent_oneof) = "eventpb.Event.Type";
 
   string module = 1 [(mir.type) = "github.com/filecoin-project/mir/pkg/types.ModuleID"];
   oneof Type {

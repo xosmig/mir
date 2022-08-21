@@ -2,140 +2,32 @@ package codegen
 
 import (
 	"fmt"
-	"os"
-	"path"
 	"reflect"
-	"strings"
 
-	"github.com/dave/jennifer/jen"
-
-	"github.com/filecoin-project/mir/codegen/proto-converter/util/protoreflectutil"
+	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 )
 
-const StructsPackageName = "structs"
-
-func StructsPackagePath(pbPackagePath string) string {
-	return pbPackagePath + "/" + StructsPackageName
-}
-
-func generateMirType(g *jen.File, msg *Message) error {
-	if !msg.ShouldGenerateMirType() {
-		// Ignore non-annotated messages.
-		return nil
-	}
-
-	fields, err := msg.Fields()
-	if err != nil {
-		return err
-	}
-
-	g.Type().Id(msg.Name()).Struct(fields.StructParamsMirTypes()...).Line()
-
-	// Generate the constructors
-	g.Func().Id("New" + msg.Name()).Params(fields.FuncParamsMirTypes()...).Add(msg.MirType()).Block(
-		jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
-			for _, field := range fields {
-				group.Id(field.Name).Op(":").Id(field.LowercaseName())
-			}
-		}),
-	).Line()
-
-	// Generate Pb() method.
-	g.Func().Params(jen.Id("m").Add(msg.MirType())).Id("Pb").Params().Add(msg.PbType()).Block(
-		jen.Return().Add(msg.NewPbType()).ValuesFunc(func(group *jen.Group) {
-			for _, field := range fields {
-				group.Id(field.Name).Op(":").Add(field.Type.ToPb(jen.Id("m").Dot(field.Name)))
-			}
-		}),
-	).Line()
-
-	// Generate FromPb function.
-	g.Func().Id(msg.Name() + "FromPb").Params(jen.Id("pb").Add(msg.PbType())).Add(msg.MirType()).Block(
-		jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
-			for _, field := range fields {
-				group.Id(field.Name).Op(":").Add(field.Type.ToMir(jen.Id("pb").Dot(field.Name)))
-			}
-		}),
-	).Line()
-
-	return nil
-}
-
-func getProtoNameOfField(field reflect.StructField) (protoName string, err error) {
-	protobufTag, ok := field.Tag.Lookup("protobuf")
-	if !ok {
-		return "", fmt.Errorf("field %v has no protobuf tag", field.Name)
-	}
-
-	for _, tagPart := range strings.Split(protobufTag, ",") {
-		if strings.HasPrefix(tagPart, "name=") {
-			return strings.TrimPrefix(tagPart, "name="), nil
-		}
-	}
-
-	return "", fmt.Errorf("proto name of field %v is not specified in the tag", field.Name)
-}
-
-func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*Message) (err error) {
-	// Determine the output package and path.
-	outputPackagePath := StructsPackagePath(inputPackagePath)
-	outputDir := path.Join(inputDir, StructsPackageName)
-	outputFile := path.Join(outputDir, StructsPackageName+".mir.go")
-
-	// Generate the code.
-	g := jen.NewFilePath(outputPackagePath)
-	for _, msg := range msgs {
-		err := generateMirType(g, msg)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Create the directory if needed.
-	err = os.MkdirAll(outputDir, 0755)
-	if err != nil {
-		return fmt.Errorf("error creating output directory: %w", err)
-	}
-
-	// Open the output file.
-	f, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("error creating output file: %w", err)
-	}
-
-	defer func() {
-		_ = f.Close()
-		// Remove the output directory in case of a failure to avoid causing compilation errors.
-		if err != nil {
-			_ = os.RemoveAll(outputDir)
-		}
-	}()
-
-	// Render the file.
-	return g.Render(f)
-}
-
-func generateToMirMethod(g *jen.File, msg *Message) error {
-	if !msg.ShouldGenerateMirType() {
-		// Ignore non-annotated messages.
-		return nil
-	}
-
-	fields, err := msg.Fields()
-	if err != nil {
-		return err
-	}
-
-	g.Func().Params(jen.Id("pb").Add(msg.PbType())).Id("ToMir").Params().Add(msg.MirType()).Block(
-		jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
-			for _, field := range fields {
-				group.Id(field.Name).Op(":").Add(field.Type.ToMir(jen.Id("pb").Dot(field.Name)))
-			}
-		}),
-	)
-
-	return nil
-}
+//func generateToMirMethod(g *jen.File, msg *Message) error {
+//	if !msg.ShouldGenerateMirType() {
+//		// Ignore non-annotated messages.
+//		return nil
+//	}
+//
+//	fields, err := msg.Fields()
+//	if err != nil {
+//		return err
+//	}
+//
+//	g.Func().Params(jen.Id("pb").Add(msg.PbType())).Id("ToMir").Params().Add(msg.MirType()).Block(
+//		jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
+//			for _, field := range fields {
+//				group.Id(field.Name).Op(":").Add(field.Type.ToMir(jen.Id("pb").Dot(field.Name)))
+//			}
+//		}),
+//	)
+//
+//	return nil
+//}
 
 //func GenerateToMirMethods(inputDir string, inputPackagePath string, msgs []*Message) error {
 //	// Generate the code.
@@ -166,25 +58,6 @@ func generateToMirMethod(g *jen.File, msg *Message) error {
 //	return g.Render(f)
 //}
 
-func GetMessagesFromGoTypes(pbGoStructPtrTypes []reflect.Type) ([]*Message, error) {
-	var msgs []*Message
-	for _, ptrType := range pbGoStructPtrTypes {
-		if _, ok := protoreflectutil.DescriptorForType(ptrType); !ok {
-			// Ignore types that aren't protobuf messages.
-			continue
-		}
-
-		msg, err := MessageFromPbGoType(ptrType)
-		if err != nil {
-			return nil, err
-		}
-
-		msgs = append(msgs, msg)
-	}
-
-	return msgs, nil
-}
-
 // GenerateAll is used by the generator program (which, in turn, is generated by proto-converter).
 func GenerateAll(inputDir string, pbGoStructPtrTypes []reflect.Type) error {
 	if len(pbGoStructPtrTypes) == 0 {
@@ -203,12 +76,12 @@ func GenerateAll(inputDir string, pbGoStructPtrTypes []reflect.Type) error {
 		}
 	}
 
-	msgs, err := GetMessagesFromGoTypes(pbGoStructPtrTypes)
+	msgs, oneofOptions, err := model.ParseGoTypes(pbGoStructPtrTypes)
 	if err != nil {
 		return err
 	}
 
-	err = GenerateMirTypes(inputDir, inputPackagePath, msgs)
+	err = GenerateMirTypes(inputDir, inputPackagePath, msgs, oneofOptions)
 	if err != nil {
 		return err
 	}

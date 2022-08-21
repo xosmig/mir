@@ -5,11 +5,7 @@ import (
 	"fmt"
 
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
-
-	"github.com/filecoin-project/mir/pkg/pb/mir"
 )
 
 // generateGenericFriendlyEnumsForEventTypes generates public interfaces of the form "[Msg]_[Oneof]" and
@@ -26,11 +22,11 @@ func generateGenericFriendlyEnumsForEventTypes(plugin *protogen.Plugin, file *pr
 
 	for _, msg := range file.Messages {
 		for _, oneof := range msg.Oneofs {
-			oneofOptions := oneof.Desc.Options().(*descriptorpb.OneofOptions)
-			markedAsEventType := proto.GetExtension(oneofOptions, mir.E_EventType).(bool)
-			if !markedAsEventType {
-				continue
-			}
+			//oneofOptions := oneof.Desc.Options().(*descriptorpb.OneofOptions)
+			//markedAsEventType := proto.GetExtension(oneofOptions, mir.E_EventType).(bool)
+			//if !markedAsEventType {
+			//	continue
+			//}
 
 			if g == nil {
 				filename := fmt.Sprintf("%s.pb.mir.go", file.GeneratedFilenamePrefix)
@@ -64,6 +60,10 @@ func generateGenericFriendlyEnumsForEventTypes(plugin *protogen.Plugin, file *pr
 				g.P("\treturn p.", field.GoName)
 				g.P("}")
 				g.P()
+
+				g.P("func (*", wrapperTypeName, ") OneofName() string {")
+				g.P("\treturn ", interfaceName)
+				g.P("}")
 			}
 		}
 	}
