@@ -1,32 +1,36 @@
 package availabilitypb
 
-type Event_Type = isEvent_Type
+import (
+	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
+	dslpb "github.com/filecoin-project/mir/pkg/pb/dslpb"
+)
 
-type Event_TypeWrapper[Ev any] interface {
-	Event_Type
+type RequestCertOrigin_Type = isRequestCertOrigin_Type
+
+type RequestCertOrigin_TypeWrapper[Ev any] interface {
+	RequestCertOrigin_Type
 	Unwrap() *Ev
 }
 
-func (p *Event_RequestCert) Unwrap() *RequestCert {
-	return p.RequestCert
+func (p *RequestCertOrigin_ContextStore) Unwrap() *contextstorepb.Origin {
+	return p.ContextStore
 }
 
-func (p *Event_NewCert) Unwrap() *NewCert {
-	return p.NewCert
+func (p *RequestCertOrigin_Dsl) Unwrap() *dslpb.Origin {
+	return p.Dsl
 }
 
-func (p *Event_VerifyCert) Unwrap() *VerifyCert {
-	return p.VerifyCert
+type VerifyCertOrigin_Type = isVerifyCertOrigin_Type
+
+type VerifyCertOrigin_TypeWrapper[Ev any] interface {
+	VerifyCertOrigin_Type
+	Unwrap() *Ev
 }
 
-func (p *Event_CertVerified) Unwrap() *CertVerified {
-	return p.CertVerified
+func (p *VerifyCertOrigin_ContextStore) Unwrap() *contextstorepb.Origin {
+	return p.ContextStore
 }
 
-func (p *Event_RequestTransactions) Unwrap() *RequestTransactions {
-	return p.RequestTransactions
-}
-
-func (p *Event_ProvideTransactions) Unwrap() *ProvideTransactions {
-	return p.ProvideTransactions
+func (p *VerifyCertOrigin_Dsl) Unwrap() *dslpb.Origin {
+	return p.Dsl
 }
