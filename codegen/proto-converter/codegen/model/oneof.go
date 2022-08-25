@@ -57,6 +57,10 @@ type OneofOption struct {
 	Field            *Field
 }
 
+func (opt *OneofOption) PbWrapperType() jen.Code {
+	return jen.Op("*").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
+}
+
 func (opt *OneofOption) NewPbWrapperType() jen.Code {
 	return jen.Op("&").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
 }

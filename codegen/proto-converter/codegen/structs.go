@@ -37,6 +37,11 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 				jen.Id("Pb").Params().Add(oneof.PbType()),
 			).Line()
 
+			g.Func().Id(oneof.MirInterfaceName()+"FromPb").Params(jen.Id("pb").Add(oneof.PbType())).Add(oneof.MirType()).Block(
+				jen.Comment("TODO"),
+				jen.Return(jen.Nil()),
+			).Line()
+
 			// Generate the wrappers.
 			for _, opt := range oneof.Options {
 				g.Type().Id(opt.WrapperName).Struct(

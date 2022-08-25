@@ -47,6 +47,11 @@ type RequestCertOrigin_Type interface {
 	Pb() availabilitypb.RequestCertOrigin_Type
 }
 
+func RequestCertOrigin_TypeFromPb(pb availabilitypb.RequestCertOrigin_Type) RequestCertOrigin_Type {
+	// TODO
+	return nil
+}
+
 type RequestCertOrigin_ContextStore struct {
 	ContextStore *contextstorepb.Origin
 }
@@ -96,6 +101,11 @@ type VerifyCertOrigin struct {
 type VerifyCertOrigin_Type interface {
 	isVerifyCertOrigin_Type()
 	Pb() availabilitypb.VerifyCertOrigin_Type
+}
+
+func VerifyCertOrigin_TypeFromPb(pb availabilitypb.VerifyCertOrigin_Type) VerifyCertOrigin_Type {
+	// TODO
+	return nil
 }
 
 type VerifyCertOrigin_ContextStore struct {
