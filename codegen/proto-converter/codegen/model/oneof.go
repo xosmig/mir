@@ -64,3 +64,15 @@ func (opt *OneofOption) PbWrapperType() jen.Code {
 func (opt *OneofOption) NewPbWrapperType() jen.Code {
 	return jen.Op("&").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
 }
+
+func (opt *OneofOption) MirWrapperStructType() jen.Code {
+	return jen.Qual(StructsPackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
+}
+
+func (opt *OneofOption) MirWrapperType() jen.Code {
+	return jen.Op("*").Add(opt.MirWrapperStructType())
+}
+
+func (opt *OneofOption) NewMirWrapperType() jen.Code {
+	return jen.Op("&").Add(opt.MirWrapperStructType())
+}

@@ -38,7 +38,15 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 			).Line()
 
 			g.Func().Id(oneof.MirInterfaceName()+"FromPb").Params(jen.Id("pb").Add(oneof.PbType())).Add(oneof.MirType()).Block(
-				jen.Comment("TODO"),
+				jen.Switch(jen.Id("pb").Op(":=").Id("pb").Dot("(type)")).BlockFunc(func(group *jen.Group) {
+					for _, opt := range oneof.Options {
+						group.Case(opt.PbWrapperType()).Block(
+							jen.Return(jen.Add(opt.NewMirWrapperType()).Values(
+								jen.Id(opt.Field.Name).Op(":").Add(opt.Field.Type.ToMir(jen.Id("pb").Dot(opt.Field.Name))),
+							)),
+						)
+					}
+				}),
 				jen.Return(jen.Nil()),
 			).Line()
 
@@ -48,9 +56,9 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 					jen.Id(opt.Field.Name).Add(opt.Field.Type.MirType()),
 				).Line()
 
-				g.Func().Params(jen.Op("*").Id(opt.WrapperName)).Id(oneof.MirMethodName()).Params().Block().Line()
+				g.Func().Params(opt.MirWrapperType()).Id(oneof.MirMethodName()).Params().Block().Line()
 
-				g.Func().Params(jen.Id("w").Op("*").Id(opt.WrapperName)).Id("Pb").Params().Add(oneof.PbType()).Block(
+				g.Func().Params(jen.Id("w").Add(opt.MirWrapperType())).Id("Pb").Params().Add(oneof.PbType()).Block(
 					jen.Return(jen.Add(opt.NewPbWrapperType()).Values(
 						jen.Id(opt.Field.Name).Op(":").Add(opt.Field.Type.ToPb(jen.Id("w").Dot(opt.Field.Name))),
 					)),
@@ -105,8 +113,8 @@ func generateOneofOption(g *jen.File, opt *model.OneofOption) error {
 func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, oneofOptions []*model.OneofOption) (err error) {
 	// Determine the output package and path.
 	outputPackagePath := model.StructsPackagePath(inputPackagePath)
-	outputDir := path.Join(inputDir, model.StructsPackageName)
-	outputFile := path.Join(outputDir, model.StructsPackageName+".mir.go")
+	outputDir := path.Join(inputDir, model.StructsPackageName(inputPackagePath))
+	outputFile := path.Join(outputDir, model.StructsPackageName(inputPackagePath)+".mir.go")
 
 	g := jen.NewFilePath(outputPackagePath)
 

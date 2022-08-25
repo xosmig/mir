@@ -2,7 +2,7 @@ package structs
 
 import (
 	availabilitypb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
-	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
+	structs "github.com/filecoin-project/mir/pkg/pb/contextstorepb/structs"
 	dslpb "github.com/filecoin-project/mir/pkg/pb/dslpb"
 	types "github.com/filecoin-project/mir/pkg/types"
 )
@@ -48,18 +48,23 @@ type RequestCertOrigin_Type interface {
 }
 
 func RequestCertOrigin_TypeFromPb(pb availabilitypb.RequestCertOrigin_Type) RequestCertOrigin_Type {
-	// TODO
+	switch pb := pb.(type) {
+	case *availabilitypb.RequestCertOrigin_ContextStore:
+		return &RequestCertOrigin_ContextStore{ContextStore: structs.OriginFromPb(pb.ContextStore)}
+	case *availabilitypb.RequestCertOrigin_Dsl:
+		return &RequestCertOrigin_Dsl{Dsl: pb.Dsl}
+	}
 	return nil
 }
 
 type RequestCertOrigin_ContextStore struct {
-	ContextStore *contextstorepb.Origin
+	ContextStore *structs.Origin
 }
 
 func (*RequestCertOrigin_ContextStore) isRequestCertOrigin_Type() {}
 
 func (w *RequestCertOrigin_ContextStore) Pb() availabilitypb.RequestCertOrigin_Type {
-	return &availabilitypb.RequestCertOrigin_ContextStore{ContextStore: w.ContextStore}
+	return &availabilitypb.RequestCertOrigin_ContextStore{ContextStore: w.ContextStore.Pb()}
 }
 
 type RequestCertOrigin_Dsl struct {
@@ -104,18 +109,23 @@ type VerifyCertOrigin_Type interface {
 }
 
 func VerifyCertOrigin_TypeFromPb(pb availabilitypb.VerifyCertOrigin_Type) VerifyCertOrigin_Type {
-	// TODO
+	switch pb := pb.(type) {
+	case *availabilitypb.VerifyCertOrigin_ContextStore:
+		return &VerifyCertOrigin_ContextStore{ContextStore: structs.OriginFromPb(pb.ContextStore)}
+	case *availabilitypb.VerifyCertOrigin_Dsl:
+		return &VerifyCertOrigin_Dsl{Dsl: pb.Dsl}
+	}
 	return nil
 }
 
 type VerifyCertOrigin_ContextStore struct {
-	ContextStore *contextstorepb.Origin
+	ContextStore *structs.Origin
 }
 
 func (*VerifyCertOrigin_ContextStore) isVerifyCertOrigin_Type() {}
 
 func (w *VerifyCertOrigin_ContextStore) Pb() availabilitypb.VerifyCertOrigin_Type {
-	return &availabilitypb.VerifyCertOrigin_ContextStore{ContextStore: w.ContextStore}
+	return &availabilitypb.VerifyCertOrigin_ContextStore{ContextStore: w.ContextStore.Pb()}
 }
 
 type VerifyCertOrigin_Dsl struct {

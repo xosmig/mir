@@ -208,7 +208,6 @@ import (
 
 func main() {
 	err := codegen.GenerateAll(
-		"pkg/pb/availabilitypb",
 		[]reflect.Type{
 			{{range .StructNames}}
 			reflect.TypeOf((*pkg_.{{.}})(nil)),
