@@ -12,6 +12,8 @@ extend google.protobuf.MessageOptions {
   bool struct = 51202;
   string parent_event = 51203;
   bool event_root = 51204;
+  string parent_oneof = 51205;
+  string oneof_wrapper = 51206;
 }
 
 extend google.protobuf.OneofOptions {

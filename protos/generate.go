@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package protos
 
 // Build the custom code generator.
-//go:generate go build -o ../codegen/proto-converter/proto-converter.bin ../codegen/proto-converter
+// go:generate go build -o ../codegen/proto-converter/proto-converter.bin ../codegen/proto-converter
 
 // Define some helpful shorthands.
 //go:generate -command protoc-events protoc --proto_path=. --go_out=../pkg/pb/ --go_opt=paths=source_relative
@@ -23,11 +23,11 @@ package protos
 //go:generate protoc-events bcbpb/bcbpb.proto
 //go:generate protoc-events isspbftpb/isspbftpb.proto
 //go:generate protoc-events contextstorepb/contextstorepb.proto
-//go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
+// go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
 //go:generate protoc-events dslpb/dslpb.proto
 //go:generate protoc-events mempoolpb/mempoolpb.proto
 //go:generate protoc-events availabilitypb/availabilitypb.proto
-//go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
+// go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 //go:generate protoc-events availabilitypb/mscpb/mscpb.proto
 
 //go:generate protoc --proto_path=. --go_out=:../pkg/ --go_opt=paths=source_relative simplewal/simplewal.proto

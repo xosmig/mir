@@ -14,6 +14,7 @@ import (
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/astutil"
 	"github.com/filecoin-project/mir/pkg/pb/mir"
+	"github.com/filecoin-project/mir/pkg/util/stringsutil"
 )
 
 func StructsPackageName(pbPackagePath string) string {
@@ -42,6 +43,29 @@ func (m *Message) Name() string {
 
 func (m *Message) PbPkgPath() string {
 	return m.pbGoStructPtrReflect.Elem().PkgPath()
+}
+
+func (m *Message) OneofWrapper() (jen.Code, bool, error) {
+	ext := proto.GetExtension(m.protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_OneofWrapper).(string)
+	if ext == "" {
+		return nil, false, nil
+	}
+
+	typeIdent, fieldName, ok := stringsutil.CutLast(ext, ".")
+	if !ok {
+		return nil, false, fmt.Errorf("inavid value for option (mir.oneof_wrapper): %v", ext)
+	}
+
+	typePackage, typeName, _ := stringsutil.CutLast(typeIdent, ".")
+	if typePackage == "" {
+		typePackage = m.PbPkgPath()
+	}
+
+	if typeName == "" {
+		return nil, false, fmt.Errorf("inavid value for option (mir.oneof_wrapper): %v", ext)
+	}
+
+	return jen.Op("*").Qual(typePackage, typeName+"_"+fieldName), true, nil
 }
 
 func (m *Message) MirPkgPath() string {

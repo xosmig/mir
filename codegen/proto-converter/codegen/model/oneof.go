@@ -10,9 +10,9 @@ import (
 )
 
 type Oneof struct {
-	Name    string
-	Parent  *Message
-	Options []*OneofOption
+	Name   string
+	Parent *Message
+	// To simplify parsing, Oneof doesn't store a list of its options.
 }
 
 func (t *Oneof) Same() bool {
