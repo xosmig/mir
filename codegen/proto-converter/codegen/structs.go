@@ -101,15 +101,6 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 	return nil
 }
 
-func generateOneofOption(g *jen.File, opt *model.OneofOption) error {
-	//g.Type().Id(opt.WrapperName).Struct(
-	//	jen.Id(opt.FieldName).Add(opt.Type.MirType()),
-	//).Line()
-	//
-	//g.Func().Params(jen.Op("*").Id(opt.WrapperName)).Id(opt.MethodName).Params().Block().Line()
-	return nil
-}
-
 func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, oneofOptions []*model.OneofOption) (err error) {
 	// Determine the output package and path.
 	outputPackagePath := model.StructsPackagePath(inputPackagePath)
@@ -121,14 +112,6 @@ func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, 
 	// Generate Mir types for messages.
 	for _, msg := range msgs {
 		err := generateMirType(g, msg, oneofOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Generate Mir types for oneof options.
-	for _, opt := range oneofOptions {
-		err := generateOneofOption(g, opt)
 		if err != nil {
 			return err
 		}

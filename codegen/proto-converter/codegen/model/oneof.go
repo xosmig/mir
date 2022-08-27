@@ -19,8 +19,12 @@ func (t *Oneof) Same() bool {
 	return t.Parent.Same()
 }
 
-func (t *Oneof) PbInterfaceName() string {
+func (t *Oneof) PbExportedInterfaceName() string {
 	return fmt.Sprintf("%v_%v", t.Parent.Name(), t.Name)
+}
+
+func (t *Oneof) PbNativeInterfaceName() string {
+	return fmt.Sprintf("is%v_%v", t.Parent.Name(), t.Name)
 }
 
 func (t *Oneof) MirInterfaceName() string {
@@ -28,7 +32,7 @@ func (t *Oneof) MirInterfaceName() string {
 }
 
 func (t *Oneof) PbMethodName() string {
-	return "is" + t.PbInterfaceName()
+	return "is" + t.PbExportedInterfaceName()
 }
 
 func (t *Oneof) MirMethodName() string {
@@ -36,7 +40,7 @@ func (t *Oneof) MirMethodName() string {
 }
 
 func (t *Oneof) PbType() jen.Code {
-	return jen.Qual(t.Parent.PbPkgPath(), t.PbInterfaceName())
+	return jen.Qual(t.Parent.PbPkgPath(), t.PbExportedInterfaceName())
 }
 
 func (t *Oneof) MirType() jen.Code {

@@ -88,6 +88,11 @@ func GenerateAll(pbGoStructPtrTypes []reflect.Type) error {
 		return err
 	}
 
+	err = GenerateOneofInterfaces(inputDir, inputPackagePath, msgs, oneofOptions)
+	if err != nil {
+		return err
+	}
+
 	err = GenerateMirTypes(inputDir, inputPackagePath, msgs, oneofOptions)
 	if err != nil {
 		return err
