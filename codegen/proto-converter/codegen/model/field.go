@@ -62,6 +62,10 @@ func (fs Fields) FuncParamsMirTypes() []jen.Code {
 	return sliceutil.Transform(fs, func(i int, f *Field) jen.Code { return f.FuncParamMirType() })
 }
 
+func (fs Fields) FuncParamsIDs() []jen.Code {
+	return sliceutil.Transform(fs, func(i int, f *Field) jen.Code { return jen.Id(f.Name) })
+}
+
 func getFieldType(goType reflect.Type, protoField protoreflect.FieldDescriptor) (Type, error) {
 	// TODO: Since maps are not currently used, I didn't bother supporting them yet.
 	if goType.Kind() == reflect.Map {

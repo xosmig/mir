@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"go/ast"
+	"go/types"
 	"reflect"
 	"strings"
 
@@ -26,11 +27,13 @@ func StructsPackagePath(pbPackagePath string) string {
 // Message contains the information needed to generate code for a protobuf message.
 type Message struct {
 	shouldGenerateMirType bool
-	fields                Fields
-	pbStructType          jen.Code
-	mirStructType         jen.Code
-	protoDesc             protoreflect.MessageDescriptor
-	pbGoStructPtrReflect  reflect.Type
+	mirPkgPath            string
+
+	fields               Fields
+	pbStructType         jen.Code
+	mirStructType        jen.Code
+	protoDesc            protoreflect.MessageDescriptor
+	pbGoStructPtrReflect reflect.Type
 }
 
 func (m *Message) Name() string {
@@ -42,7 +45,13 @@ func (m *Message) PbPkgPath() string {
 }
 
 func (m *Message) MirPkgPath() string {
-	return StructsPackagePath(m.PbPkgPath())
+	// Return the cached value if present.
+	if m.mirPkgPath != "" {
+		return m.mirPkgPath
+	}
+
+	m.mirPkgPath = StructsPackagePath(m.PbPkgPath())
+	return m.mirPkgPath
 }
 
 func (m *Message) Same() bool {
@@ -79,32 +88,37 @@ func (m *Message) ToPb(code jen.Code) jen.Code {
 	return jen.Add(code).Dot("Pb").Call()
 }
 
+func (m *Message) ConstructorName() string {
+	return "New" + m.Name()
+}
+
+func (m *Message) Constructor() *jen.Statement {
+	return jen.Qual(m.MirPkgPath(), m.ConstructorName())
+}
+
 // LowercaseName returns the name of the message in lowercase.
 func (m *Message) LowercaseName() string {
 	return astutil.ToUnexported(m.Name())
 }
 
-func (m *Message) FuncParamPbType() jen.Code {
-	return jen.Id(m.LowercaseName()).Add(m.PbType())
-}
-
-func (m *Message) FuncParamMirType() jen.Code {
-	return jen.Id(m.LowercaseName()).Add(m.MirType())
-}
-
-func (m *Message) StructParamPbType() jen.Code {
-	return jen.Id(m.Name()).Add(m.PbType())
-}
-
-func (m *Message) StructParamMirType() jen.Code {
-	return jen.Id(m.Name()).Add(m.MirType())
-}
+//func (m *Message) FuncParamPbType() jen.Code {
+//	return jen.Id(m.LowercaseName()).Add(m.PbType())
+//}
+//
+//func (m *Message) FuncParamMirType() jen.Code {
+//	return jen.Id(m.LowercaseName()).Add(m.MirType())
+//}
+//
+//func (m *Message) StructParamPbType() jen.Code {
+//	return jen.Id(m.Name()).Add(m.PbType())
+//}
+//
+//func (m *Message) StructParamMirType() jen.Code {
+//	return jen.Id(m.Name()).Add(m.MirType())
+//}
 
 // Fields parses the fields of the message.
-// Since there is no information about the oneof options stored in the message
-// type itself, an exhaustive list of all possible oneof options is passed as
-// an argument.
-func (m *Message) Fields(oneofOptions []*OneofOption) (Fields, error) {
+func (m *Message) Fields() (Fields, error) {
 	// Return the cached value if present.
 	if m.fields != nil {
 		return m.fields, nil
@@ -119,7 +133,9 @@ func (m *Message) Fields(oneofOptions []*OneofOption) (Fields, error) {
 		}
 
 		// Process oneof fields.
-		if _, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
+		if pbOneofName, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
+			oneofDesc := m.protoDesc.Oneofs().ByName(protoreflect.Name(pbOneofName))
+			types.Interface{}
 			var options []*OneofOption
 			for _, opt := range oneofOptions {
 				if opt.PbWrapperReflect.Implements(goField.Type) {
@@ -173,6 +189,31 @@ func (m *Message) IsMirStruct() bool {
 func (m *Message) ShouldGenerateMirType() bool {
 	return m.shouldGenerateMirType
 }
+
+//func (m *Message) ParentEvent() (*Message, error) {
+//	// Return the cached version if present.
+//	if m.parentEvent != nil {
+//		return m.parentEvent, nil
+//	}
+//
+//	ext := proto.GetExtension(m.protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_ParentEvent).(string)
+//	if ext == "" {
+//		return nil, nil
+//	}
+//
+//	sepIdx := strings.LastIndex(ext, ".")
+//	parentPackage, parentType := ext[:sepIdx], ext[sepIdx+1:]
+//	if parentType == "" {
+//		return nil, fmt.Errorf("invalid format for option (mir.parent_event)")
+//	}
+//
+//	// If the parent package is not specified, the same package is used.
+//	if parentPackage == "" {
+//		parentPackage = m.PbPkgPath()
+//	}
+//
+//	return
+//}
 
 func IsMirEvent(protoDesc protoreflect.MessageDescriptor) bool {
 	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_Event).(bool)

@@ -12,6 +12,29 @@ import (
 	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
+type Parser struct {
+	cache map[reflect.Type]Type
+}
+
+func messageCacheLookup(tp reflect.Type) (*Message, bool) {
+	parsedMessagesCache.mutex.Lock()
+	defer parsedMessagesCache.mutex.Unlock()
+
+	if parsedMessagesCache.cache == nil {
+		parsedMessagesCache.cache = make(map[reflect.Type]*Message)
+	}
+
+	msg, ok := parsedMessagesCache.cache[tp]
+	return msg, ok
+}
+
+func storeMessageInCache(tp reflect.Type, msg *Message) {
+	parsedMessagesCache.mutex.Lock()
+	defer parsedMessagesCache.mutex.Unlock()
+
+	parsedMessagesCache.cache[tp] = msg
+}
+
 func ParseGoTypes(pbGoStructPtrTypes []reflect.Type) ([]*Message, []*OneofOption, error) {
 	var msgs []*Message
 	var oneofOptions []*OneofOption
@@ -67,6 +90,10 @@ func IsOneofOption(ptrType reflect.Type) bool {
 
 // ParseMessage returns the message corresponding to the given protobuf-generated struct type.
 func ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
+	if msg, ok := messageCacheLookup(pbGoStructPtr); ok {
+		return msg, nil
+	}
+
 	protoDesc, ok := protoreflectutil.DescriptorForType(pbGoStructPtr)
 	if !ok {
 		return nil, fmt.Errorf("%T is not a protobuf message", pbGoStructPtr)
@@ -89,13 +116,16 @@ func ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
 		mirStructType = pbStructType
 	}
 
-	return &Message{
+	msg := &Message{
 		shouldGenerateMirType: shouldGenerateMirType,
 		pbStructType:          pbStructType,
 		mirStructType:         mirStructType,
 		protoDesc:             protoDesc,
 		pbGoStructPtrReflect:  pbGoStructPtr,
-	}, nil
+	}
+
+	storeMessageInCache(pbGoStructPtr, msg)
+	return msg, nil
 }
 
 func ParseOneofOption(ptrType reflect.Type) (*OneofOption, error) {
@@ -120,4 +150,9 @@ func ParseOneofOption(ptrType reflect.Type) (*OneofOption, error) {
 			Type: fieldType,
 		},
 	}, nil
+}
+
+func ParseGoIdent(ident string) (packagePath, typeName string) {
+	sepIdx := strings.LastIndex(ident, ".")
+	return ident[:sepIdx], ident[:sepIdx+1]
 }

@@ -68,7 +68,7 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 	}
 
 	// Generate New[Name] function.
-	g.Func().Id("New" + msg.Name()).Params(fields.FuncParamsMirTypes()...).Add(msg.MirType()).Block(
+	g.Func().Id(msg.ConstructorName()).Params(fields.FuncParamsMirTypes()...).Add(msg.MirType()).Block(
 		jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
 			for _, field := range fields {
 				group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
