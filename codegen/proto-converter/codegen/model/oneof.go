@@ -2,11 +2,8 @@ package model
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/dave/jennifer/jen"
-
-	"github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
 )
 
 type Oneof struct {
@@ -35,10 +32,6 @@ func (t *Oneof) PbMethodName() string {
 	return "is" + t.PbExportedInterfaceName()
 }
 
-func (t *Oneof) MirMethodName() string {
-	return t.PbMethodName()
-}
-
 func (t *Oneof) PbType() jen.Code {
 	return jen.Qual(t.Parent.PbPkgPath(), t.PbExportedInterfaceName())
 }
@@ -48,35 +41,35 @@ func (t *Oneof) MirType() jen.Code {
 }
 
 func (t *Oneof) ToMir(code jen.Code) jen.Code {
-	return jen.Qual(t.Parent.MirPkgPath(), t.MirInterfaceName()+"FromPb").Call(code)
+	return jen.Qual(t.Parent.MirPkgPath(), t.MirInterfaceName()+"FromPb").Call(jen.Add(code))
 }
 
 func (t *Oneof) ToPb(code jen.Code) jen.Code {
-	return jen.Add(code).Dot("Pb").Call()
+	return jen.Add(code).Dot("PbWrapper").Call()
 }
 
-type OneofOption struct {
-	PbWrapperReflect reflect.Type
-	WrapperName      string
-	Field            *Field
-}
-
-func (opt *OneofOption) PbWrapperType() jen.Code {
-	return jen.Op("*").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
-}
-
-func (opt *OneofOption) NewPbWrapperType() jen.Code {
-	return jen.Op("&").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
-}
-
-func (opt *OneofOption) MirWrapperStructType() jen.Code {
-	return jen.Qual(StructsPackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
-}
-
-func (opt *OneofOption) MirWrapperType() jen.Code {
-	return jen.Op("*").Add(opt.MirWrapperStructType())
-}
-
-func (opt *OneofOption) NewMirWrapperType() jen.Code {
-	return jen.Op("&").Add(opt.MirWrapperStructType())
-}
+//type OneofOption struct {
+//	PbWrapperReflect reflect.Type
+//	WrapperName      string
+//	Field            *Field
+//}
+//
+//func (opt *OneofOption) PbWrapperType() jen.Code {
+//	return jen.Op("*").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
+//}
+//
+//func (opt *OneofOption) NewPbWrapperType() jen.Code {
+//	return jen.Op("&").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
+//}
+//
+//func (opt *OneofOption) MirWrapperStructType() jen.Code {
+//	return jen.Qual(StructsPackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
+//}
+//
+//func (opt *OneofOption) MirWrapperType() jen.Code {
+//	return jen.Op("*").Add(opt.MirWrapperStructType())
+//}
+//
+//func (opt *OneofOption) NewMirWrapperType() jen.Code {
+//	return jen.Op("&").Add(opt.MirWrapperStructType())
+//}

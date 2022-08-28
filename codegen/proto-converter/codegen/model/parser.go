@@ -6,92 +6,52 @@ import (
 	"strings"
 
 	"github.com/dave/jennifer/jen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/protoreflectutil"
-	"github.com/filecoin-project/mir/pkg/util/sliceutil"
+	"github.com/filecoin-project/mir/pkg/pb/mir"
 )
 
 type Parser struct {
-	cache map[reflect.Type]Type
+	cache map[reflect.Type]*Message
 }
 
-func messageCacheLookup(tp reflect.Type) (*Message, bool) {
-	parsedMessagesCache.mutex.Lock()
-	defer parsedMessagesCache.mutex.Unlock()
-
-	if parsedMessagesCache.cache == nil {
-		parsedMessagesCache.cache = make(map[reflect.Type]*Message)
+func NewParser() *Parser {
+	return &Parser{
+		cache: make(map[reflect.Type]*Message),
 	}
-
-	msg, ok := parsedMessagesCache.cache[tp]
-	return msg, ok
 }
 
-func storeMessageInCache(tp reflect.Type, msg *Message) {
-	parsedMessagesCache.mutex.Lock()
-	defer parsedMessagesCache.mutex.Unlock()
-
-	parsedMessagesCache.cache[tp] = msg
-}
-
-func ParseGoTypes(pbGoStructPtrTypes []reflect.Type) ([]*Message, []*OneofOption, error) {
+func (p *Parser) ParseMessages(pbGoStructPtrTypes []reflect.Type) ([]*Message, error) {
 	var msgs []*Message
-	var oneofOptions []*OneofOption
 
 	for _, ptrType := range pbGoStructPtrTypes {
 		if ptrType.Kind() != reflect.Pointer || ptrType.Elem().Kind() != reflect.Struct {
-			return nil, nil, fmt.Errorf("expected a pointer to a struct, got %v", ptrType)
+			return nil, fmt.Errorf("expected a pointer to a struct, got %v", ptrType)
 		}
 
 		// Parse messages.
-		if IsProtoMessage(ptrType) {
-			msg, err := ParseMessage(ptrType)
+		if protoreflectutil.IsMessageType(ptrType) {
+			msg, err := p.ParseMessage(ptrType)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 
 			msgs = append(msgs, msg)
 			continue
 		}
-
-		// Parse oneof options
-		if IsOneofOption(ptrType) {
-			opt, err := ParseOneofOption(ptrType)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			oneofOptions = append(oneofOptions, opt)
-		}
 	}
 
-	return msgs, oneofOptions, nil
-}
-
-func IsProtoMessage(ptrType reflect.Type) bool {
-	_, ok := protoreflectutil.DescriptorForType(ptrType)
-	return ok
-}
-
-func IsOneofOption(ptrType reflect.Type) bool {
-	if ptrType.Kind() != reflect.Pointer || ptrType.Elem().Kind() != reflect.Struct || ptrType.Elem().NumField() != 1 {
-		// Oneof wrapper is a pointer to a struct with a single field.
-		return false
-	}
-
-	tag, ok := ptrType.Elem().Field(0).Tag.Lookup("protobuf")
-	if !ok {
-		return false
-	}
-
-	return sliceutil.Index(strings.Split(tag, ","), "oneof") != -1
+	return msgs, nil
 }
 
 // ParseMessage returns the message corresponding to the given protobuf-generated struct type.
-func ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
-	if msg, ok := messageCacheLookup(pbGoStructPtr); ok {
-		return msg, nil
+func (p *Parser) ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
+	if tp, ok := p.cache[pbGoStructPtr]; ok {
+		return tp, nil
 	}
 
 	protoDesc, ok := protoreflectutil.DescriptorForType(pbGoStructPtr)
@@ -117,6 +77,7 @@ func ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
 	}
 
 	msg := &Message{
+		parser:                p,
 		shouldGenerateMirType: shouldGenerateMirType,
 		pbStructType:          pbStructType,
 		mirStructType:         mirStructType,
@@ -124,35 +85,58 @@ func ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
 		pbGoStructPtrReflect:  pbGoStructPtr,
 	}
 
-	storeMessageInCache(pbGoStructPtr, msg)
+	p.cache[pbGoStructPtr] = msg
 	return msg, nil
 }
 
-func ParseOneofOption(ptrType reflect.Type) (*OneofOption, error) {
-	if !IsOneofOption(ptrType) {
-		return nil, fmt.Errorf("%v is not a oneof option", ptrType)
-	}
-
-	if !IsProtoMessage(ptrType.Elem().Field(0).Type) {
-		return nil, fmt.Errorf("currently, only message types are supported in oneof options")
-	}
-
-	fieldType, err := ParseMessage(ptrType.Elem().Field(0).Type)
+// parseField extracts the information about the field necessary for code generation.
+func (p *Parser) parseField(goField reflect.StructField, protoField protoreflect.FieldDescriptor) (*Field, error) {
+	tp, err := p.getFieldType(goField.Type, protoField)
 	if err != nil {
 		return nil, err
 	}
 
-	return &OneofOption{
-		PbWrapperReflect: ptrType,
-		WrapperName:      ptrType.Elem().Name(),
-		Field: &Field{
-			Name: ptrType.Elem().Field(0).Name,
-			Type: fieldType,
-		},
+	return &Field{
+		Name: goField.Name,
+		Type: tp,
 	}, nil
 }
 
-func ParseGoIdent(ident string) (packagePath, typeName string) {
-	sepIdx := strings.LastIndex(ident, ".")
-	return ident[:sepIdx], ident[:sepIdx+1]
+func (p *Parser) getFieldType(goType reflect.Type, protoField protoreflect.FieldDescriptor) (Type, error) {
+	// TODO: Since maps are not currently used, I didn't bother supporting them yet.
+	if goType.Kind() == reflect.Map {
+		return nil, fmt.Errorf("map fields are not supported yet")
+	}
+
+	// Check if the field is repeated.
+	if goType.Kind() == reflect.Slice {
+		underlying, err := p.getFieldType(goType.Elem(), protoField)
+		if err != nil {
+			return nil, err
+		}
+		return Slice{underlying}, nil
+	}
+
+	// Check if the field has (mir.type) option specified.
+	protoFieldOptions := protoField.Options().(*descriptorpb.FieldOptions)
+	mirTypeOption := proto.GetExtension(protoFieldOptions, mir.E_Type).(string)
+	if mirTypeOption != "" {
+		sepIdx := strings.LastIndex(mirTypeOption, ".")
+		return Castable{
+			pbType:  jenutil.QualFromType(goType),
+			mirType: jen.Qual(mirTypeOption[:sepIdx], mirTypeOption[sepIdx+1:]),
+		}, nil
+	}
+
+	// Check if the field is a message.
+	if protoreflectutil.IsMessageType(goType) {
+		msg, err := p.ParseMessage(goType)
+		if err != nil {
+			return nil, err
+		}
+
+		return msg, nil
+	}
+
+	return Same{jenutil.QualFromType(goType)}, nil
 }

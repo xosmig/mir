@@ -83,17 +83,13 @@ func GenerateAll(pbGoStructPtrTypes []reflect.Type) error {
 		}
 	}
 
-	msgs, oneofOptions, err := model.ParseGoTypes(pbGoStructPtrTypes)
+	parser := model.NewParser()
+	msgs, err := parser.ParseMessages(pbGoStructPtrTypes)
 	if err != nil {
 		return err
 	}
 
-	err = GenerateOneofInterfaces(inputDir, inputPackagePath, msgs, oneofOptions)
-	if err != nil {
-		return err
-	}
-
-	err = GenerateMirTypes(inputDir, inputPackagePath, msgs, oneofOptions)
+	err = GenerateMirTypes(inputDir, inputPackagePath, msgs)
 	if err != nil {
 		return err
 	}

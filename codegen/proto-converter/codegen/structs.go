@@ -10,13 +10,13 @@ import (
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 )
 
-func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.OneofOption) error {
+func generateMirType(g *jen.File, msg *model.Message) error {
 	if !msg.ShouldGenerateMirType() {
 		// Ignore non-annotated messages.
 		return nil
 	}
 
-	fields, err := msg.Fields(oneofOptions)
+	fields, err := msg.Fields()
 	if err != nil {
 		return err
 	}
@@ -28,42 +28,40 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 		}
 	}).Line()
 
-	// Generate the code for oneof fields.
+	// Generate the interfaces for oneof fields.
 	for _, field := range fields {
 		if oneof, ok := field.Type.(*model.Oneof); ok {
-			// Generate the interface.
 			g.Type().Id(oneof.MirInterfaceName()).Interface(
-				jen.Id(oneof.MirMethodName()).Params(),
-				jen.Id("Pb").Params().Add(oneof.PbType()),
+				jen.Id("PbWrapper").Params().Add(oneof.PbType()),
 			).Line()
 
-			g.Func().Id(oneof.MirInterfaceName()+"FromPb").Params(jen.Id("pb").Add(oneof.PbType())).Add(oneof.MirType()).Block(
-				jen.Switch(jen.Id("pb").Op(":=").Id("pb").Dot("(type)")).BlockFunc(func(group *jen.Group) {
-					for _, opt := range oneof.Options {
-						group.Case(opt.PbWrapperType()).Block(
-							jen.Return(jen.Add(opt.NewMirWrapperType()).Values(
-								jen.Id(opt.Field.Name).Op(":").Add(opt.Field.Type.ToMir(jen.Id("pb").Dot(opt.Field.Name))),
-							)),
-						)
-					}
-				}),
-				jen.Return(jen.Nil()),
-			).Line()
-
-			// Generate the wrappers.
-			for _, opt := range oneof.Options {
-				g.Type().Id(opt.WrapperName).Struct(
-					jen.Id(opt.Field.Name).Add(opt.Field.Type.MirType()),
-				).Line()
-
-				g.Func().Params(opt.MirWrapperType()).Id(oneof.MirMethodName()).Params().Block().Line()
-
-				g.Func().Params(jen.Id("w").Add(opt.MirWrapperType())).Id("Pb").Params().Add(oneof.PbType()).Block(
-					jen.Return(jen.Add(opt.NewPbWrapperType()).Values(
-						jen.Id(opt.Field.Name).Op(":").Add(opt.Field.Type.ToPb(jen.Id("w").Dot(opt.Field.Name))),
-					)),
-				).Line()
-			}
+			//g.Func().Id(oneof.MirInterfaceName()+"FromPb").Params(jen.Id("pb").Add(oneof.PbType())).Add(oneof.MirType()).Block(
+			//	jen.Switch(jen.Id("pb").Op(":=").Id("pb").Dot("(type)")).BlockFunc(func(group *jen.Group) {
+			//		for _, opt := range oneof.Options {
+			//			group.Case(opt.PbWrapperType()).Block(
+			//				jen.Return(jen.Add(opt.NewMirWrapperType()).Values(
+			//					jen.Id(opt.Field.Name).Op(":").Add(opt.Field.Type.ToMir(jen.Id("pb").Dot(opt.Field.Name))),
+			//				)),
+			//			)
+			//		}
+			//	}),
+			//	jen.Return(jen.Nil()),
+			//).Line()
+			//
+			//// Generate the wrappers.
+			//for _, opt := range oneof.Options {
+			//	g.Type().Id(opt.WrapperName).Struct(
+			//		jen.Id(opt.Field.Name).Add(opt.Field.Type.MirType()),
+			//	).Line()
+			//
+			//	g.Func().Params(opt.MirWrapperType()).Id(oneof.MirMethodName()).Params().Block().Line()
+			//
+			//	g.Func().Params(jen.Id("w").Add(opt.MirWrapperType())).Id("Pb").Params().Add(oneof.PbType()).Block(
+			//		jen.Return(jen.Add(opt.NewPbWrapperType()).Values(
+			//			jen.Id(opt.Field.Name).Op(":").Add(opt.Field.Type.ToPb(jen.Id("w").Dot(opt.Field.Name))),
+			//		)),
+			//	).Line()
+			//}
 		}
 	}
 
@@ -76,6 +74,17 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 			group.Line()
 		}),
 	).Line()
+
+	// If there is a parent oneof, generate interface implementation.
+	if oneofWrapper, ok, err := msg.OneofWrapper(); err != nil {
+		return err
+	} else if ok {
+		g.Func().Params(jen.Id("m").Add(msg.MirType())).Id("PbWrapper").Params().Add(oneofWrapper.PbType()).Block(
+			jen.Return(oneofWrapper.NewPbType().Values(
+				jen.Id(oneofWrapper.FieldName()).Op(":").Add(msg.ToPb(jen.Id("m"))),
+			)),
+		).Line()
+	}
 
 	// Generate Pb() method.
 	g.Func().Params(jen.Id("m").Add(msg.MirType())).Id("Pb").Params().Add(msg.PbType()).Block(
@@ -101,7 +110,7 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 	return nil
 }
 
-func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, oneofOptions []*model.OneofOption) (err error) {
+func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message) (err error) {
 	// Determine the output package and path.
 	outputPackagePath := model.StructsPackagePath(inputPackagePath)
 	outputDir := path.Join(inputDir, model.StructsPackageName(inputPackagePath))
@@ -111,7 +120,7 @@ func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, 
 
 	// Generate Mir types for messages.
 	for _, msg := range msgs {
-		err := generateMirType(g, msg, oneofOptions)
+		err := generateMirType(g, msg)
 		if err != nil {
 			return err
 		}

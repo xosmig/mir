@@ -16,6 +16,7 @@ import "requestpb/requestpb.proto";
 
 message Event {
   option (mir.oneof_wrapper) = "github.com/filecoin-project/mir/pkg/pb/eventpb.Event.Availability";
+  option (mir.event) = true;
 
   oneof type {
     option (mir.event_type) = true;

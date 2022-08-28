@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"go/ast"
-	"go/types"
 	"reflect"
 	"strings"
 
@@ -27,10 +26,19 @@ func StructsPackagePath(pbPackagePath string) string {
 
 // Message contains the information needed to generate code for a protobuf message.
 type Message struct {
-	shouldGenerateMirType bool
-	mirPkgPath            string
+	// Cached value for the package containing the Mir-generated type for this message.
+	// Do not use this field directly, use method MirPkgPath() instead.
+	mirPkgPath string
+	// Cached value for the parsed fields of the message.
+	// Do not use this field directly, use method Fields() instead.
+	fields Fields
 
-	fields               Fields
+	// The parser used to parse the message.
+	parser *Parser
+
+	// Whether Mir should generate a type for this message.
+	shouldGenerateMirType bool
+
 	pbStructType         jen.Code
 	mirStructType        jen.Code
 	protoDesc            protoreflect.MessageDescriptor
@@ -43,29 +51,6 @@ func (m *Message) Name() string {
 
 func (m *Message) PbPkgPath() string {
 	return m.pbGoStructPtrReflect.Elem().PkgPath()
-}
-
-func (m *Message) OneofWrapper() (jen.Code, bool, error) {
-	ext := proto.GetExtension(m.protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_OneofWrapper).(string)
-	if ext == "" {
-		return nil, false, nil
-	}
-
-	typeIdent, fieldName, ok := stringsutil.CutLast(ext, ".")
-	if !ok {
-		return nil, false, fmt.Errorf("inavid value for option (mir.oneof_wrapper): %v", ext)
-	}
-
-	typePackage, typeName, _ := stringsutil.CutLast(typeIdent, ".")
-	if typePackage == "" {
-		typePackage = m.PbPkgPath()
-	}
-
-	if typeName == "" {
-		return nil, false, fmt.Errorf("inavid value for option (mir.oneof_wrapper): %v", ext)
-	}
-
-	return jen.Op("*").Qual(typePackage, typeName+"_"+fieldName), true, nil
 }
 
 func (m *Message) MirPkgPath() string {
@@ -125,6 +110,33 @@ func (m *Message) LowercaseName() string {
 	return astutil.ToUnexported(m.Name())
 }
 
+func (m *Message) OneofWrapper() (*PbOneofWrapper, bool, error) {
+	ext := proto.GetExtension(m.protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_OneofWrapper).(string)
+	if ext == "" {
+		return nil, false, nil
+	}
+
+	typeIdent, fieldName, ok := stringsutil.CutLast(ext, ".")
+	if !ok {
+		return nil, false, fmt.Errorf("inavid value for option (mir.oneof_wrapper): %v", ext)
+	}
+
+	typePackage, typeName, _ := stringsutil.CutLast(typeIdent, ".")
+	if typePackage == "" {
+		typePackage = m.PbPkgPath()
+	}
+
+	if typeName == "" {
+		return nil, false, fmt.Errorf("inavid format for option (mir.oneof_wrapper): %v", ext)
+	}
+
+	oneofWrapper := &PbOneofWrapper{
+		pbStructType: jen.Qual(typePackage, fmt.Sprintf("%v_%v", typeName, fieldName)),
+		fieldName:    fieldName,
+	}
+	return oneofWrapper, true, nil
+}
+
 //func (m *Message) FuncParamPbType() jen.Code {
 //	return jen.Id(m.LowercaseName()).Add(m.PbType())
 //}
@@ -142,6 +154,7 @@ func (m *Message) LowercaseName() string {
 //}
 
 // Fields parses the fields of the message.
+// It uses the same parser as the one used to parse the message itself.
 func (m *Message) Fields() (Fields, error) {
 	// Return the cached value if present.
 	if m.fields != nil {
@@ -157,22 +170,20 @@ func (m *Message) Fields() (Fields, error) {
 		}
 
 		// Process oneof fields.
-		if pbOneofName, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
-			oneofDesc := m.protoDesc.Oneofs().ByName(protoreflect.Name(pbOneofName))
-			types.Interface{}
-			var options []*OneofOption
-			for _, opt := range oneofOptions {
-				if opt.PbWrapperReflect.Implements(goField.Type) {
-					options = append(options, opt)
-				}
-			}
+		if _, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
+			//var options []*OneofOption
+			//for _, opt := range oneofOptions {
+			//	if opt.PbWrapperReflect.Implements(goField.Type) {
+			//		options = append(options, opt)
+			//	}
+			//}
 
 			m.fields = append(m.fields, &Field{
 				Name: goField.Name,
 				Type: &Oneof{
-					Name:    goField.Name,
-					Parent:  m,
-					Options: options,
+					Name:   goField.Name,
+					Parent: m,
+					//Options: options,
 				},
 			})
 			continue
@@ -186,7 +197,7 @@ func (m *Message) Fields() (Fields, error) {
 		protoField := m.protoDesc.Fields().ByName(protoreflect.Name(protoName))
 
 		// Create the Field struct.
-		field, err := GetField(goField, protoField)
+		field, err := m.parser.parseField(goField, protoField)
 		if err != nil {
 			return nil, err
 		}
@@ -290,3 +301,20 @@ func getProtoNameOfField(field reflect.StructField) (protoName string, err error
 //	}
 //
 //}
+
+type PbOneofWrapper struct {
+	pbStructType *jen.Statement
+	fieldName    string
+}
+
+func (w *PbOneofWrapper) PbType() *jen.Statement {
+	return jen.Op("*").Add(w.pbStructType)
+}
+
+func (w *PbOneofWrapper) NewPbType() *jen.Statement {
+	return jen.Op("&").Add(w.pbStructType)
+}
+
+func (w *PbOneofWrapper) FieldName() string {
+	return w.fieldName
+}
