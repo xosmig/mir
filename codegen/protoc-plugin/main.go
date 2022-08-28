@@ -3,11 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"reflect"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
+	"github.com/filecoin-project/mir/codegen/proto-converter/util/protogenutil"
+	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
 // generateGenericFriendlyEnumsForEventTypes generates public interfaces of the form "[Msg]_[Oneof]" and
@@ -38,6 +41,17 @@ func generateGenericFriendlyEnumsForEventTypes(plugin *protogen.Plugin, file *pr
 
 			interfaceName := g.QualifiedGoIdent(oneof.GoIdent)
 			g.P("type ", interfaceName, " = ", "is", interfaceName)
+			g.P()
+
+			reflectType := g.QualifiedGoIdent(protogenutil.GoIdentByType(reflectutil.TypeOf[reflect.Type]()))
+			g.P("func (*", msg.GoIdent, ") Reflect", oneof.GoName, "Options() []", reflectType, " {")
+			g.P("\t", "return []", reflectType, " {")
+			for _, field := range oneof.Fields {
+				wrapperTypeName := g.QualifiedGoIdent(field.GoIdent)
+				g.P("\t\t", "reflect.TypeOf((*", wrapperTypeName, ") (nil)),")
+			}
+			g.P("\t", "}")
+			g.P("}")
 			g.P()
 
 			g.P("type ", interfaceName, "Wrapper[Ev any] interface {")

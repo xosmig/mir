@@ -6,11 +6,12 @@ SPDX-License-Identifier: Apache-2.0
 
 package protos
 
-// Build the custom code generator.
+// Build the custom code generators.
 //go:generate go build -o ../codegen/proto-converter/proto-converter.bin ../codegen/proto-converter
+//go:generate go build -o ../codegen/protoc-plugin/protoc-gen-mir ../codegen/protoc-plugin
 
 // Define some helpful shorthands.
-//go:generate -command protoc-events protoc --proto_path=. --go_out=../pkg/pb/ --go_opt=paths=source_relative
+//go:generate -command protoc-events protoc --proto_path=. --go_out=../pkg/pb/ --go_opt=paths=source_relative --plugin=../codegen/protoc-plugin/protoc-gen-mir --mir_out=../pkg/pb --mir_opt=paths=source_relative
 //go:generate -command proto-converter ../codegen/proto-converter/proto-converter.bin
 
 //go:generate protoc-events mir/plugin.proto
