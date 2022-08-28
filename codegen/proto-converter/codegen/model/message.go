@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"go/ast"
 	"reflect"
 	"strings"
 
@@ -29,14 +28,9 @@ type Message struct {
 	// Cached value for the package containing the Mir-generated type for this message.
 	// Do not use this field directly, use method MirPkgPath() instead.
 	mirPkgPath string
-	// Cached value for the parsed fields of the message.
-	// Do not use this field directly, use method Fields() instead.
-	fields Fields
-
-	// The parser used to parse the message.
-	parser *Parser
 
 	// Whether Mir should generate a type for this message.
+	// Do not use this field directly, use method ShouldGenerateMirType() instead.
 	shouldGenerateMirType bool
 
 	pbStructType         jen.Code
@@ -152,67 +146,6 @@ func (m *Message) OneofWrapper() (*PbOneofWrapper, bool, error) {
 //func (m *Message) StructParamMirType() jen.Code {
 //	return jen.Id(m.Name()).Add(m.MirType())
 //}
-
-// Fields parses the fields of the message.
-// It uses the same parser as the one used to parse the message itself.
-func (m *Message) Fields() (Fields, error) {
-	// Return the cached value if present.
-	if m.fields != nil {
-		return m.fields, nil
-	}
-
-	for i := 0; i < m.pbGoStructPtrReflect.Elem().NumField(); i++ {
-		// Get go representation of the field.
-		goField := m.pbGoStructPtrReflect.Elem().Field(i)
-		if !ast.IsExported(goField.Name) {
-			// Skip unexported fields.
-			continue
-		}
-
-		// Process oneof fields.
-		if _, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
-			oneofOptionsGoTypes := reflect.Zero(m.pbGoStructPtrReflect).
-				MethodByName("Reflect" + goField.Name + "Options").Call([]reflect.Value{})
-
-			var options []*OneofOption
-			for _, optionGoType := range oneofOptionsGoTypes {
-				m.parser.parseOneofOption(optionGoType)
-				options = append(options, m.p)
-
-				if opt.PbWrapperReflect.Implements(goField.Type) {
-					options = append(options, opt)
-				}
-			}
-
-			m.fields = append(m.fields, &Field{
-				Name: goField.Name,
-				Type: &Oneof{
-					Name:    goField.Name,
-					Parent:  m,
-					Options: options,
-				},
-			})
-			continue
-		}
-
-		// Get protobuf representation of the field.
-		protoName, err := getProtoNameOfField(goField)
-		if err != nil {
-			return nil, err
-		}
-		protoField := m.protoDesc.Fields().ByName(protoreflect.Name(protoName))
-
-		// Create the Field struct.
-		field, err := m.parser.parseField(goField, protoField)
-		if err != nil {
-			return nil, err
-		}
-
-		m.fields = append(m.fields, field)
-	}
-
-	return m.fields, nil
-}
 
 func (m *Message) IsMirEvent() bool {
 	return IsMirEvent(m.protoDesc)

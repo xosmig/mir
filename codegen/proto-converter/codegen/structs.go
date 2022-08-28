@@ -10,13 +10,13 @@ import (
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 )
 
-func generateMirType(g *jen.File, msg *model.Message) error {
+func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) error {
 	if !msg.ShouldGenerateMirType() {
 		// Ignore non-annotated messages.
 		return nil
 	}
 
-	fields, err := msg.Fields()
+	fields, err := parser.ParseFields(msg)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func generateMirType(g *jen.File, msg *model.Message) error {
 	return nil
 }
 
-func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message) (err error) {
+func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, parser *model.Parser) (err error) {
 	// Determine the output package and path.
 	outputPackagePath := model.StructsPackagePath(inputPackagePath)
 	outputDir := path.Join(inputDir, model.StructsPackageName(inputPackagePath))
@@ -120,7 +120,7 @@ func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message) 
 
 	// Generate Mir types for messages.
 	for _, msg := range msgs {
-		err := generateMirType(g, msg)
+		err := generateMirType(g, msg, parser)
 		if err != nil {
 			return err
 		}
