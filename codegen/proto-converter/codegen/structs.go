@@ -10,13 +10,13 @@ import (
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 )
 
-func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.OneofOption) error {
+func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) error {
 	if !msg.ShouldGenerateMirType() {
 		// Ignore non-annotated messages.
 		return nil
 	}
 
-	fields, err := msg.Fields(oneofOptions)
+	fields, err := parser.ParseFields(msg)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 	}
 
 	// Generate New[Name] function.
-	g.Func().Id("New" + msg.Name()).Params(fields.FuncParamsMirTypes()...).Add(msg.MirType()).Block(
+	g.Func().Id(msg.ConstructorName()).Params(fields.FuncParamsMirTypes()...).Add(msg.MirType()).Block(
 		jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
 			for _, field := range fields {
 				group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
@@ -101,7 +101,7 @@ func generateMirType(g *jen.File, msg *model.Message, oneofOptions []*model.Oneo
 	return nil
 }
 
-func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, oneofOptions []*model.OneofOption) (err error) {
+func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, parser *model.Parser) (err error) {
 	// Determine the output package and path.
 	outputPackagePath := model.StructsPackagePath(inputPackagePath)
 	outputDir := path.Join(inputDir, model.StructsPackageName(inputPackagePath))
@@ -111,7 +111,7 @@ func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, 
 
 	// Generate Mir types for messages.
 	for _, msg := range msgs {
-		err := generateMirType(g, msg, oneofOptions)
+		err := generateMirType(g, msg, parser)
 		if err != nil {
 			return err
 		}

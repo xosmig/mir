@@ -24,6 +24,8 @@ option go_package = "github.com/filecoin-project/mir/pkg/pb/eventpb";
 
 // Event represents a state event to be injected into the state machine
 message Event {
+  option (mir.event_root) = true;
+
   // TODO, normalize naming, for instance Complete/Completed
   oneof type {
     option (mir.event_type) = true;
