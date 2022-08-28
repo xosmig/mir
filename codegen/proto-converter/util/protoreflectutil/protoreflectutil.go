@@ -8,7 +8,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
-func IsMessageType(goStructPtr reflect.Type) bool {
+func IsProtoMessage(goStructPtr reflect.Type) bool {
 	return goStructPtr.Kind() == reflect.Pointer &&
 		goStructPtr.Implements(reflectutil.TypeOf[protoreflect.ProtoMessage]())
 }

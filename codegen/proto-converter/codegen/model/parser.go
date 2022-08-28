@@ -34,7 +34,7 @@ func (p *Parser) ParseMessages(pbGoStructPtrTypes []reflect.Type) ([]*Message, e
 		}
 
 		// Parse messages.
-		if protoreflectutil.IsMessageType(ptrType) {
+		if protoreflectutil.IsProtoMessage(ptrType) {
 			msg, err := p.ParseMessage(ptrType)
 			if err != nil {
 				return nil, err
@@ -89,6 +89,30 @@ func (p *Parser) ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
 	return msg, nil
 }
 
+func (p *Parser) ParseOneofOption(ptrType reflect.Type) (*OneofOption, error) {
+	if !protoreflectutil.IsOneofOption(ptrType) {
+		return nil, fmt.Errorf("%v is not a oneof option", ptrType)
+	}
+
+	if !protoreflectutil.IsProtoMessage(ptrType.Elem().Field(0).Type) {
+		return nil, fmt.Errorf("currently, only message types are supported in oneof options")
+	}
+
+	fieldType, err := p.ParseMessage(ptrType.Elem().Field(0).Type)
+	if err != nil {
+		return nil, err
+	}
+
+	return &OneofOption{
+		PbWrapperReflect: ptrType,
+		WrapperName:      ptrType.Elem().Name(),
+		Field: &Field{
+			Name: ptrType.Elem().Field(0).Name,
+			Type: fieldType,
+		},
+	}, nil
+}
+
 // parseField extracts the information about the field necessary for code generation.
 func (p *Parser) parseField(goField reflect.StructField, protoField protoreflect.FieldDescriptor) (*Field, error) {
 	tp, err := p.getFieldType(goField.Type, protoField)
@@ -129,7 +153,7 @@ func (p *Parser) getFieldType(goType reflect.Type, protoField protoreflect.Field
 	}
 
 	// Check if the field is a message.
-	if protoreflectutil.IsMessageType(goType) {
+	if protoreflectutil.IsProtoMessage(goType) {
 		msg, err := p.ParseMessage(goType)
 		if err != nil {
 			return nil, err

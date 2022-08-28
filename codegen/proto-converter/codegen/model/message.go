@@ -171,19 +171,25 @@ func (m *Message) Fields() (Fields, error) {
 
 		// Process oneof fields.
 		if _, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
-			//var options []*OneofOption
-			//for _, opt := range oneofOptions {
-			//	if opt.PbWrapperReflect.Implements(goField.Type) {
-			//		options = append(options, opt)
-			//	}
-			//}
+			oneofOptionsGoTypes := reflect.Zero(m.pbGoStructPtrReflect).
+				MethodByName("Reflect" + goField.Name + "Options").Call([]reflect.Value{})
+
+			var options []*OneofOption
+			for _, optionGoType := range oneofOptionsGoTypes {
+				m.parser.parseOneofOption(optionGoType)
+				options = append(options, m.p)
+
+				if opt.PbWrapperReflect.Implements(goField.Type) {
+					options = append(options, opt)
+				}
+			}
 
 			m.fields = append(m.fields, &Field{
 				Name: goField.Name,
 				Type: &Oneof{
-					Name:   goField.Name,
-					Parent: m,
-					//Options: options,
+					Name:    goField.Name,
+					Parent:  m,
+					Options: options,
 				},
 			})
 			continue

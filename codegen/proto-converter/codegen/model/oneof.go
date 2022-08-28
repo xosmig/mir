@@ -2,14 +2,17 @@ package model
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/dave/jennifer/jen"
+
+	"github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
 )
 
 type Oneof struct {
-	Name   string
-	Parent *Message
-	// To simplify parsing, Oneof doesn't store a list of its options.
+	Name    string
+	Parent  *Message
+	Options []*OneofOption
 }
 
 func (t *Oneof) Same() bool {
@@ -48,28 +51,28 @@ func (t *Oneof) ToPb(code jen.Code) jen.Code {
 	return jen.Add(code).Dot("PbWrapper").Call()
 }
 
-//type OneofOption struct {
-//	PbWrapperReflect reflect.Type
-//	WrapperName      string
-//	Field            *Field
-//}
-//
-//func (opt *OneofOption) PbWrapperType() jen.Code {
-//	return jen.Op("*").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
-//}
-//
-//func (opt *OneofOption) NewPbWrapperType() jen.Code {
-//	return jen.Op("&").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
-//}
-//
-//func (opt *OneofOption) MirWrapperStructType() jen.Code {
-//	return jen.Qual(StructsPackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
-//}
-//
-//func (opt *OneofOption) MirWrapperType() jen.Code {
-//	return jen.Op("*").Add(opt.MirWrapperStructType())
-//}
-//
-//func (opt *OneofOption) NewMirWrapperType() jen.Code {
-//	return jen.Op("&").Add(opt.MirWrapperStructType())
-//}
+type OneofOption struct {
+	PbWrapperReflect reflect.Type
+	WrapperName      string
+	Field            *Field
+}
+
+func (opt *OneofOption) PbWrapperType() jen.Code {
+	return jen.Op("*").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
+}
+
+func (opt *OneofOption) NewPbWrapperType() jen.Code {
+	return jen.Op("&").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
+}
+
+func (opt *OneofOption) MirWrapperStructType() jen.Code {
+	return jen.Qual(StructsPackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
+}
+
+func (opt *OneofOption) MirWrapperType() jen.Code {
+	return jen.Op("*").Add(opt.MirWrapperStructType())
+}
+
+func (opt *OneofOption) NewMirWrapperType() jen.Code {
+	return jen.Op("&").Add(opt.MirWrapperStructType())
+}
