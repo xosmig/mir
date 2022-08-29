@@ -73,7 +73,7 @@ message Event {
   // after the corresponding entry has been persisted in the write-ahead log (WAL).
   // In this case, the WAL append event would be this event
   // and the next field would contain the message sending event.
-  repeated Event next = 100;
+  repeated Event next = 100 [(mir.omit_in_constructor) = true];
 
   string dest_module = 200;
 }

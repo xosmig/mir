@@ -2,7 +2,6 @@ package codegen
 
 //import (
 //	"fmt"
-//	"path"
 //	"strings"
 //
 //	"github.com/dave/jennifer/jen"
@@ -10,6 +9,7 @@ package codegen
 //	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 //	"github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
 //	"github.com/filecoin-project/mir/pkg/dsl"
+//	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 //	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 //	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 //)
@@ -42,37 +42,67 @@ package codegen
 //
 //var (
 //	dslPackagePath = reflectutil.TypeOf[dsl.Module]().PkgPath()
+//	dslModule      = jen.Qual(dslPackagePath, "Module")
 //	dslEmitEvent   = jen.Qual(dslPackagePath, "EmitEvent")
 //	dslUponEvent   = jen.Qual(dslPackagePath, "UponEvent")
+//	rootEventType  = reflectutil.TypeOf[*eventpb.Event]()
 //)
 //
-//func generateDslFunctionsForEvent(
-//	emitParentEvent *jen.Statement,
+//func generateDslFunctionsForEmittingEvent(
+//	constructEvent func(code jen.Code) *jen.Statement,
 //	parentFields model.Fields,
 //	eventOpt *model.OneofOption,
 //	fr *jenutil.FileRegistry,
-//	oneofOptions []*model.OneofOption,
+//	parser *model.Parser,
 //) error {
 //	msg, ok := eventOpt.Field.Type.(*model.Message)
 //	if !ok {
 //		return fmt.Errorf("event %v is not a message", eventOpt.Field.Name)
 //	}
 //
-//	fields, err := msg.Fields(oneofOptions)
+//	fields, err := parser.ParseFields(msg)
 //	if err != nil {
 //		return err
 //	}
 //
+//	// TODO: resolve potential name collisions with the parent fields.
 //	fieldsWithParent := append(parentFields, fields...)
 //
+//	// If this is an intermediate node in the hierarchy, recursively call the function for subtypes.
+//	if typeOneof, ok := getTypeOneof(fields); ok {
+//		for _, opt := range typeOneof.Options {
+//			err := generateDslFunctionsForEmittingEvent(
+//				/*emitParentEvent*/ emitThisEvent,
+//				/*parentFields*/ fieldsWithParentWithoutType,
+//				/*eventOpt*/ opt,
+//				fr,
+//				parser,
+//			)
+//
+//			if err != nil {
+//				return err
+//			}
+//		}
+//		return nil
+//	}
+//
+//	// Generate a function for emitting the event.
 //	outputPackage := DslPackagePath(msg.PbPkgPath())
 //	g := fr.GetFile(outputPackage)
 //
 //	g.Func().Id(msg.Name()).Params(fieldsWithParent.FuncParamsMirTypes()...).Block(
-//		emitParentEvent.Params(
-//			msg.Constructor().Params(fieldsWithParent.FuncParamsIDs()...),
-//		),
+//		dslEmitEvent.Params(constructEvent(eventOpt.NewMirWrapperType().Values(
+//			jen.Line().Add(msg.Constructor()).Params(fields.FuncParamsIDs()...),
+//			jen.Line(),
+//		))),
 //	).Line()
+//
+//	//g.Func().Id("Upon"+msg.Name()).Params(
+//	//	jen.Id("m").Add(dslModule),
+//	//	jen.Func().Id("handler").Params(fieldsWithParent.FuncParamsMirTypes()...).Id("error"),
+//	//).Block(
+//	//	uponParentEvent.Types(eventOpt.MirWrapperType()).Params()
+//	//)
 //
 //	for _, field := range fields {
 //		// Recursively call the generator on all subtypes.
@@ -84,12 +114,12 @@ package codegen
 //			emitThisEvent := jen.Qual(outputPackage, msg.Name())
 //
 //			for _, opt := range oneof.Options {
-//				err := generateDslFunctionsForEvent(
+//				err := generateDslFunctionsForEmittingEvent(
 //					/*emitParentEvent*/ emitThisEvent,
 //					/*parentFields*/ fieldsWithParentWithoutType,
 //					/*eventOpt*/ opt,
 //					fr,
-//					oneofOptions,
+//					parser,
 //				)
 //
 //				if err != nil {
@@ -102,8 +132,12 @@ package codegen
 //	return nil
 //}
 //
-//func generateDslFunctions(eventRoot *model.Message, oneofOptions []*model.OneofOption) error {
-//	fields, err := eventRoot.Fields(oneofOptions)
+//func generateDslFunctionsForEmittingEvents(
+//	eventRoot *model.Message,
+//	fr *jenutil.FileRegistry,
+//	parser *model.Parser,
+//) error {
+//	fields, err := parser.ParseFields(eventRoot)
 //	if err != nil {
 //		return err
 //	}
@@ -120,7 +154,14 @@ package codegen
 //	typeOneof := oneofFields[0].Type.(*model.Oneof)
 //
 //	for _, opt := range typeOneof.Options {
-//		err := generateDslFunctionsForEvent(opt, oneofOptions)
+//		err := generateDslFunctionsForEmittingEvent(
+//			/*emitParentEvent*/ emitThisEvent,
+//			/*parentFields*/ fieldsWithParentWithoutType,
+//			/*eventOpt*/ opt,
+//			fr,
+//			parser,
+//		)
+//
 //		if err != nil {
 //			return err
 //		}
@@ -129,15 +170,8 @@ package codegen
 //	return nil
 //}
 //
-//func GenerateDslFunctions(inputDir, inputPackagePath string, msgs []*model.Message, oneofOptions []*model.OneofOption) (err error) {
-//	// Determine the output package and path.
-//	outputPackagePath := DslPackagePath(inputPackagePath)
-//	outputDir := path.Join(inputDir, DslPackageName(inputPackagePath))
-//	outputFile := path.Join(outputDir, DslPackageName(inputPackagePath)+".mir.go")
-//
-//	g := jen.NewFilePath(outputPackagePath)
-//
-//	events := sliceutil.Filter(msgs, func(i int, msg *model.Message) bool { return msg.IsMirEvent() })
+//func GenerateDslFunctions(inputDir, inputPackagePath string, msgs []*model.Message, parser *model.Parser) (err error) {
+//	fr := jenutil.NewFileRegistry()
 //
 //	for _, msg := range msgs {
 //		if msg.IsEventRoot() {

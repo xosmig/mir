@@ -61,22 +61,29 @@ type OneofOption struct {
 	Field            *Field
 }
 
-func (opt *OneofOption) PbWrapperType() jen.Code {
+func (opt *OneofOption) PbWrapperType() *jen.Statement {
 	return jen.Op("*").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
 }
 
-func (opt *OneofOption) NewPbWrapperType() jen.Code {
+func (opt *OneofOption) NewPbWrapperType() *jen.Statement {
 	return jen.Op("&").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
 }
 
-func (opt *OneofOption) MirWrapperStructType() jen.Code {
+func (opt *OneofOption) MirWrapperStructType() *jen.Statement {
 	return jen.Qual(StructsPackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
 }
 
-func (opt *OneofOption) MirWrapperType() jen.Code {
+func (opt *OneofOption) MirWrapperType() *jen.Statement {
 	return jen.Op("*").Add(opt.MirWrapperStructType())
 }
 
-func (opt *OneofOption) NewMirWrapperType() jen.Code {
+func (opt *OneofOption) NewMirWrapperType() *jen.Statement {
 	return jen.Op("&").Add(opt.MirWrapperStructType())
+}
+
+func (opt *OneofOption) ConstructMirWrapperType(underlying jen.Code) *jen.Statement {
+	return opt.NewMirWrapperType().Values(
+		jen.Line().Id(opt.Field.Name).Op(":").Add(underlying),
+		jen.Line(),
+	)
 }

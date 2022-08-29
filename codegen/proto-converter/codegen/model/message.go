@@ -64,7 +64,7 @@ func (m *Message) NewPbType() jen.Code {
 	return jen.Op("&").Add(m.pbStructType)
 }
 
-func (m *Message) NewMirType() jen.Code {
+func (m *Message) NewMirType() *jen.Statement {
 	return jen.Op("&").Add(m.mirStructType)
 }
 
@@ -74,14 +74,14 @@ func (m *Message) MirType() jen.Code {
 
 func (m *Message) ToMir(code jen.Code) jen.Code {
 	if m.Same() {
-		return code
+		return jen.Add(code)
 	}
 	return jen.Qual(m.MirPkgPath(), m.Name()+"FromPb").Call(code)
 }
 
 func (m *Message) ToPb(code jen.Code) jen.Code {
 	if m.Same() {
-		return code
+		return jen.Add(code)
 	}
 	return jen.Add(code).Dot("Pb").Call()
 }

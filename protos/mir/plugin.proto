@@ -20,6 +20,7 @@ extend google.protobuf.OneofOptions {
 
 extend google.protobuf.FieldOptions {
   string type = 51200;
+  bool omit_in_constructor = 51201;
 }
 
 extend google.protobuf.FileOptions {
