@@ -127,6 +127,10 @@ func (m *Message) IsMirStruct() bool {
 	return IsMirStruct(m.protoDesc)
 }
 
+func (m *Message) IsEventRoot() bool {
+	return IsEventRoot(m.protoDesc)
+}
+
 // ShouldGenerateMirType returns true if Mir should generate a struct for the message type.
 func (m *Message) ShouldGenerateMirType() bool {
 	return m.shouldGenerateMirType
@@ -171,6 +175,10 @@ func IsMirStruct(protoDesc protoreflect.MessageDescriptor) bool {
 
 func ShouldGenerateMirType(protoDesc protoreflect.MessageDescriptor) bool {
 	return IsMirEvent(protoDesc) || IsMirMessage(protoDesc) || IsMirStruct(protoDesc)
+}
+
+func IsEventRoot(protoDesc protoreflect.MessageDescriptor) bool {
+	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_EventRoot).(bool)
 }
 
 func getProtoNameOfField(field reflect.StructField) (protoName string, err error) {

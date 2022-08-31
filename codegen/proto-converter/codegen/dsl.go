@@ -17,7 +17,7 @@ package codegen
 ////var eventRootType = jenutil.QualFromType(reflect.TypeOf(&eventpb.Event{}))
 //
 //func DslPackageName(pbPackagePath string) string {
-//	return pbPackagePath[strings.LastIndex(pbPackagePath, "/")+1:] + "structs"
+//	return pbPackagePath[strings.LastIndex(pbPackagePath, "/")+1:] + "dsl"
 //}
 //
 //func DslPackagePath(pbPackagePath string) string {
