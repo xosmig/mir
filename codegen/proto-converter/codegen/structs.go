@@ -2,13 +2,17 @@ package codegen
 
 import (
 	"fmt"
-	"os"
 	"path"
 
 	"github.com/dave/jennifer/jen"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 )
+
+func StructsOutputDir(sourceDir string) string {
+	dirName := path.Base(sourceDir) + "structs"
+	return fmt.Sprintf(path.Join(sourceDir, dirName))
+}
 
 func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) error {
 	if !msg.ShouldGenerateMirType() {
@@ -104,39 +108,17 @@ func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) erro
 func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, parser *model.Parser) (err error) {
 	// Determine the output package and path.
 	outputPackagePath := model.StructsPackagePath(inputPackagePath)
-	outputDir := path.Join(inputDir, model.StructsPackageName(inputPackagePath))
-	outputFile := path.Join(outputDir, model.StructsPackageName(inputPackagePath)+".mir.go")
+	outputDir := StructsOutputDir(inputDir)
 
-	g := jen.NewFilePath(outputPackagePath)
+	jenFile := jen.NewFilePath(outputPackagePath)
 
 	// Generate Mir types for messages.
 	for _, msg := range msgs {
-		err := generateMirType(g, msg, parser)
+		err := generateMirType(jenFile, msg, parser)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Create the directory if needed.
-	err = os.MkdirAll(outputDir, 0755)
-	if err != nil {
-		return fmt.Errorf("error creating output directory: %w", err)
-	}
-
-	// Open the output file.
-	f, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("error creating output file: %w", err)
-	}
-
-	defer func() {
-		_ = f.Close()
-		// Remove the output directory in case of a failure to avoid causing compilation errors.
-		if err != nil {
-			_ = os.RemoveAll(outputDir)
-		}
-	}()
-
-	// Render the file.
-	return g.Render(f)
+	return renderJenFile(jenFile, outputDir, "structs.mir.go", /*removeDirOnFail*/ true)
 }

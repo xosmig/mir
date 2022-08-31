@@ -241,13 +241,18 @@ func (p *Parser) ParseEventHierarchy(eventRootMsg *Message) (root *EventNode, er
 		return nil, fmt.Errorf("message %v is not marked as event root", eventRootMsg.Name())
 	}
 
-	root, err = p.parseEventNode(eventRootMsg, nil)
+	root, err = p.parseEventNodeRecursively(eventRootMsg, nil, nil)
 	return
 }
 
-// parseEventNode parses a message from the event hierarchy.
+// parseEventNodeRecursively parses a message from the event hierarchy.
 // parent is the parent in the event hierarchy. Note that the parent's list of children may not be complete.
-func (p *Parser) parseEventNode(msg *Message, parent *EventNode) (*EventNode, error) {
+func (p *Parser) parseEventNodeRecursively(
+	msg *Message,
+	optionInParentOneof *OneofOption,
+	parent *EventNode,
+) (*EventNode, error) {
+
 	fields, err := p.ParseFields(msg)
 	if err != nil {
 		return nil, err
@@ -256,10 +261,11 @@ func (p *Parser) parseEventNode(msg *Message, parent *EventNode) (*EventNode, er
 	// Check if this is an event class.
 	if typeOneof, ok := getTypeOneof(fields); ok {
 		node := &EventNode{
-			message:      msg,
-			isEventClass: true,
-			children:     nil, // to be filled separately
-			parent:       parent,
+			message:     msg,
+			oneofOption: optionInParentOneof,
+			typeOneof:   typeOneof,
+			children:    nil, // to be filled separately
+			parent:      parent,
 		}
 
 		for _, opt := range typeOneof.Options {
@@ -268,7 +274,7 @@ func (p *Parser) parseEventNode(msg *Message, parent *EventNode) (*EventNode, er
 				return nil, fmt.Errorf("non-message type in the event hierarchy: %v", opt.Field.Name)
 			}
 
-			childNode, err := p.parseEventNode(childMsg, node)
+			childNode, err := p.parseEventNodeRecursively(childMsg, opt, node)
 			if err != nil {
 				return nil, err
 			}
@@ -280,10 +286,11 @@ func (p *Parser) parseEventNode(msg *Message, parent *EventNode) (*EventNode, er
 	}
 
 	return &EventNode{
-		message:      msg,
-		isEventClass: false,
-		children:     nil,
-		parent:       parent,
+		message:     msg,
+		oneofOption: optionInParentOneof,
+		typeOneof:   nil,
+		children:    nil,
+		parent:      parent,
 	}, nil
 }
 

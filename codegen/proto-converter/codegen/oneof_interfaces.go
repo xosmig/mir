@@ -1,10 +1,6 @@
 package codegen
 
 import (
-	"fmt"
-	"os"
-	"path"
-
 	"github.com/dave/jennifer/jen"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
@@ -32,18 +28,23 @@ func generateOneofInterface(g *jen.File, oneof *model.Oneof) error {
 
 // GenerateOneofInterfaces generates exported interfaces of the form "[Msg]_[Oneof]" "[Msg]_[Oneof]Wrapper" for all
 // oneofs in the given messages, where [Msg] is the name of the message and [Oneof] is the name of the oneof.
-func GenerateOneofInterfaces(inputDir, inputPackagePath string, msgs []*model.Message, oneofOptions []*model.OneofOption) (err error) {
-	g := jen.NewFilePath(inputPackagePath)
+func GenerateOneofInterfaces(
+	inputDir, inputPackagePath string,
+	msgs []*model.Message,
+	parser *model.Parser,
+) (err error) {
+
+	jenFile := jen.NewFilePath(inputPackagePath)
 
 	for _, msg := range msgs {
-		fields, err := msg.Fields(oneofOptions)
+		fields, err := parser.ParseFields(msg)
 		if err != nil {
 			return err
 		}
 
 		for _, field := range fields {
 			if oneof, ok := field.Type.(*model.Oneof); ok {
-				err := generateOneofInterface(g, oneof)
+				err := generateOneofInterface(jenFile, oneof)
 				if err != nil {
 					return err
 				}
@@ -51,21 +52,5 @@ func GenerateOneofInterfaces(inputDir, inputPackagePath string, msgs []*model.Me
 		}
 	}
 
-	// Open the output file.
-	outputFile := path.Join(inputDir, "pboneofs.mir.go")
-	f, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("error creating output file: %w", err)
-	}
-
-	defer func() {
-		_ = f.Close()
-		// Remove the output file in case of a failure to avoid causing compilation errors.
-		if err != nil {
-			_ = os.Remove(outputFile)
-		}
-	}()
-
-	// Render the file.
-	return g.Render(f)
+	return renderJenFile(jenFile, inputDir, "oneof_reflect.pb.mir.go", /*removeDirOnFail*/ false)
 }

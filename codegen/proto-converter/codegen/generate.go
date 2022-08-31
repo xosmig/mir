@@ -2,7 +2,11 @@ package codegen
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"reflect"
+
+	"github.com/dave/jennifer/jen"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/importerutil"
@@ -58,11 +62,45 @@ func GenerateAll(pbGoStructPtrTypes []reflect.Type) error {
 			return err
 		}
 
-		err := GenerateEventConstructors(eventRoot)
+		err = GenerateEventConstructors(eventRoot, parser)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func renderJenFile(jenFile *jen.File, outputDir, outputFileName string, removeDirOnFail bool) (err error) {
+	// Create the directory if needed.
+	err = os.MkdirAll(outputDir, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating output directory: %w", err)
+	}
+
+	if removeDirOnFail {
+		defer func() {
+			if err != nil {
+				_ = os.RemoveAll(outputDir)
+			}
+		}()
+	}
+
+	// Open the output file.
+	filePath := path.Join(outputDir, outputFileName)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("error creating output file: %w", err)
+	}
+
+	defer func() {
+		_ = file.Close()
+		// Remove the output file in case of a failure to avoid causing compilation errors.
+		if err != nil {
+			_ = os.Remove(filePath)
+		}
+	}()
+
+	// Render the file.
+	return jenFile.Render(file)
 }

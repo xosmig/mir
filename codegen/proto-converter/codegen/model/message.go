@@ -14,12 +14,9 @@ import (
 	"github.com/filecoin-project/mir/pkg/pb/mir"
 )
 
-func StructsPackageName(pbPackagePath string) string {
-	return pbPackagePath[strings.LastIndex(pbPackagePath, "/")+1:] + "structs"
-}
-
-func StructsPackagePath(pbPackagePath string) string {
-	return fmt.Sprintf("%v/%v", pbPackagePath, StructsPackageName(pbPackagePath))
+func StructsPackagePath(sourcePackagePath string) string {
+	packageName := sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "structs"
+	return fmt.Sprintf("%v/%v", sourcePackagePath, packageName)
 }
 
 // Message contains the information needed to generate code for a protobuf message.

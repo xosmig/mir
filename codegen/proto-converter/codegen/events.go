@@ -2,89 +2,95 @@ package codegen
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
-	"github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
+	"github.com/filecoin-project/mir/codegen/proto-converter/util/importerutil"
 	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
-func EventsPackageName(pbPackagePath string) string {
-	return pbPackagePath[strings.LastIndex(pbPackagePath, "/")+1:] + "events"
+func EventsPackagePath(sourcePackagePath string) string {
+	packageName := sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "events"
+	return fmt.Sprintf("%v/%v", sourcePackagePath, packageName)
 }
 
-func EventsPackagePath(pbPackagePath string) string {
-	return fmt.Sprintf("%v/%v", pbPackagePath, EventsPackagePath(pbPackagePath))
+func EventsOutputDir(sourceDir string) string {
+	dirName := path.Base(sourceDir) + "events"
+	return path.Join(sourceDir, dirName)
 }
 
-func generateEventConstructorsRec(
+func generateEventConstructorsRecursively(
+	eventNode *model.EventNode,
 	constructParent func(code jen.Code) *jen.Statement,
-	parentFields model.Fields,
-	eventOpt *model.OneofOption,
-	fr *jenutil.FileRegistry,
-	parser *model.Parser,
 	eventRootType jen.Code,
+	parentExtraFields model.Fields,
+	jenFileBySourcePackagePath map[string]*jen.File,
+	parser *model.Parser,
 ) error {
-	msg, ok := eventOpt.Field.Type.(*model.Message)
-	if !ok {
-		return fmt.Errorf("event %v is not a message", eventOpt.Field.Name)
-	}
 
-	fields, err := parser.ParseFields(msg)
+	fields, err := parser.ParseFields(eventNode.Message())
 	if err != nil {
 		return err
 	}
 
 	// TODO: resolve potential name collisions with the parent fields.
-	fieldsWithParent := append(parentFields, fields...)
+	fieldsWithParent := append(parentExtraFields, fields...)
 
 	// If this is an intermediate node in the hierarchy, recursively call the function for subtypes.
-	if typeOneof, ok := getTypeOneof(fields); ok {
-		constructThis := func(child jen.Code) *jen.Statement {
-			return constructParent(
-				eventOpt.ConstructMirWrapperType(
-					msg.NewMirType().ValuesFunc(func(group *jen.Group) {
-						for _, field := range fields {
-							group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
-						}
-						group.Line().Id(typeOneof.Name).Op(":").Add(child)
-						group.Line()
-					}),
-				),
-			)
-		}
+	if eventNode.IsEventClass() {
+		for _, child := range eventNode.Children() {
+			// constructThis is a function that takes the code to construct a child in the hierarchy
+			// and constructs an event.
+			constructThis := func(child jen.Code) *jen.Statement {
+				return constructParent(
+					eventNode.OneofOption().ConstructMirWrapperType(
+						eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
+							for _, field := range fields {
+								group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
+							}
+							group.Line().Id(eventNode.TypeOneof().Name).Op(":").Add(child)
+							group.Line()
+						}),
+					),
+				)
+			}
 
-		fieldsWithParentWithoutType := sliceutil.Filter(fieldsWithParent, func(i int, f *model.Field) bool {
-			return f.Name != typeOneof.Name
-		})
+			fieldsWithParentWithoutType := sliceutil.Filter(fieldsWithParent, func(i int, f *model.Field) bool {
+				return f.Name != model.TypeOneofFieldName
+			})
 
-		for _, opt := range typeOneof.Options {
-			err := generateEventConstructorsRec(
+			err := generateEventConstructorsRecursively(
+				/*eventNode*/ child,
 				/*constructParent*/ constructThis,
-				/*parentFields*/ fieldsWithParentWithoutType,
-				/*eventOpt*/ opt,
-				fr,
-				parser,
 				eventRootType,
+				fieldsWithParentWithoutType,
+				jenFileBySourcePackagePath,
+				parser,
 			)
-
 			if err != nil {
 				return err
 			}
 		}
-		return nil
 	}
 
-	// If this is a leaf node in the hierarchy, create the event constructor.
-	outputPackage := EventsPackagePath(msg.PbPkgPath())
-	g := fr.GetFile(outputPackage)
+	// If this is an event (i.e., a leaf in the hierarchy), create the event constructor.
 
-	g.Func().Id(msg.Name()).Params(fieldsWithParent.FuncParamsMirTypes()...).Add(eventRootType).Block(
+	// First, get a jen file to which the event constructor will be added.
+	outputPackage := EventsPackagePath(eventNode.Message().PbPkgPath())
+	jenFile, ok := jenFileBySourcePackagePath[outputPackage]
+	if !ok {
+		jenFile = jen.NewFilePath(outputPackage)
+		jenFileBySourcePackagePath[outputPackage] = jenFile
+	}
+
+	// Generate the constructor.
+	jenFile.Func().Id(eventNode.Message().Name()).Params(fieldsWithParent.FuncParamsMirTypes()...).Add(eventRootType).Block(
 		jen.Return(constructParent(
-			eventOpt.ConstructMirWrapperType(
-				msg.NewMirType().ValuesFunc(func(group *jen.Group) {
+			eventNode.OneofOption().ConstructMirWrapperType(
+				eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
 					for _, field := range fields {
 						group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
 					}
@@ -102,26 +108,33 @@ func generateEventConstructorsRec(
 //     func [SrcPkg]events.[EventName]([EventParams]...) [RootEventType]
 //
 // TODO: add an example.
-//
-// TODO: generalize event hierarchy traversal.
-func GenerateEventConstructors(eventRoot *model.Message, parser *model.Parser) error {
-	fields, err := parser.ParseFields(eventRoot)
+func GenerateEventConstructors(eventRoot *model.EventNode, parser *model.Parser) error {
+	jenFileBySourcePackagePath := make(map[string]*jen.File)
+
+	err := generateEventConstructorsRecursively(
+		/*eventNode*/ eventRoot,
+		/*constructParent*/ func(code jen.Code) *jen.Statement { return jen.Add(code) },
+		/*eventRootType*/ eventRoot.Message().MirType(),
+		/*parentExtraFields*/ nil,
+		jenFileBySourcePackagePath,
+		parser,
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("error generating event constructors: %w", err)
 	}
 
-	for _, opt := range typeOneof.Options {
-		err := generateEventConstructorsRec(
-			/*constructParent*/ emitThisEvent,
-			/*parentFields*/ fieldsWithParentWithoutType,
-			/*eventOpt*/ opt,
-			fr,
-			parser,
-			/*eventRootType*/ eventRoot.MirType(),
-		)
+	for sourcePackage, jenFile := range jenFileBySourcePackagePath {
+		sourceDir, err := importerutil.GetSourceDirForPackage(sourcePackage)
+		if err != nil {
+			return fmt.Errorf("could not find the source directory for package %v: %w", sourcePackage, err)
+		}
 
+		outputDir := EventsOutputDir(sourceDir)
+		err = renderJenFile(jenFile, outputDir, "events.mir.go", /*removeDirOnFail*/ true)
 		if err != nil {
 			return err
 		}
 	}
+
+	return nil
 }
