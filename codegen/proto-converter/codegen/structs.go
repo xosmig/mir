@@ -3,10 +3,10 @@ package codegen
 import (
 	"github.com/dave/jennifer/jen"
 
-	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
+	"github.com/filecoin-project/mir/codegen/proto-converter/model/types"
 )
 
-func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) error {
+func generateMirType(g *jen.File, msg *types.Message, parser *types.Parser) error {
 	if !msg.ShouldGenerateMirType() {
 		// Ignore non-annotated messages.
 		return nil
@@ -26,7 +26,7 @@ func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) erro
 
 	// Generate the code for oneof fields.
 	for _, field := range fields {
-		if oneof, ok := field.Type.(*model.Oneof); ok {
+		if oneof, ok := field.Type.(*types.Oneof); ok {
 			// Generate the interface.
 			g.Type().Id(oneof.MirInterfaceName()).Interface(
 				jen.Id(oneof.MirMethodName()).Params(),
@@ -63,15 +63,15 @@ func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) erro
 		}
 	}
 
-	// Generate New[Name] function.
-	g.Func().Id(msg.ConstructorName()).Params(fields.FuncParamsMirTypes()...).Add(msg.MirType()).Block(
-		jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
-			for _, field := range fields {
-				group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
-			}
-			group.Line()
-		}),
-	).Line()
+	//// Generate New[Name] function.
+	//g.Func().Id(msg.ConstructorName()).Params(fields.FuncParamsMirTypes()...).Add(msg.MirType()).Block(
+	//	jen.Return().Add(msg.NewMirType()).ValuesFunc(func(group *jen.Group) {
+	//		for _, field := range fields {
+	//			group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
+	//		}
+	//		group.Line()
+	//	}),
+	//).Line()
 
 	// Generate Pb() method.
 	g.Func().Params(jen.Id("m").Add(msg.MirType())).Id("Pb").Params().Add(msg.PbType()).Block(
@@ -97,10 +97,10 @@ func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) erro
 	return nil
 }
 
-func GenerateMirTypes(inputDir, sourcePackagePath string, msgs []*model.Message, parser *model.Parser) (err error) {
+func GenerateMirTypes(inputDir, sourcePackagePath string, msgs []*types.Message, parser *types.Parser) (err error) {
 	jenFile := jen.NewFilePathName(
-		model.StructsPackagePath(sourcePackagePath),
-		model.StructsPackageName(sourcePackagePath),
+		types.StructsPackagePath(sourcePackagePath),
+		types.StructsPackageName(sourcePackagePath),
 	)
 
 	// Generate Mir types for messages.
@@ -111,5 +111,5 @@ func GenerateMirTypes(inputDir, sourcePackagePath string, msgs []*model.Message,
 		}
 	}
 
-	return renderJenFile(jenFile, model.StructsOutputDir(inputDir), "structs.mir.go", /*removeDirOnFail*/ true)
+	return renderJenFile(jenFile, types.StructsOutputDir(inputDir), "structs.mir.go" /*removeDirOnFail*/, true)
 }

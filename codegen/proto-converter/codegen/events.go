@@ -2,43 +2,19 @@ package codegen
 
 import (
 	"fmt"
-	"path"
-	"strings"
 
 	"github.com/dave/jennifer/jen"
 
-	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
+	"github.com/filecoin-project/mir/codegen/proto-converter/model/events"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/importerutil"
-	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
-func EventsPackagePath(sourcePackagePath string) string {
-	return sourcePackagePath + "/events"
-}
-
-func EventsPackageName(sourcePackagePath string) string {
-	return sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "events"
-}
-
-func EventsOutputDir(sourceDir string) string {
-	return path.Join(sourceDir, "events")
-}
-
 func generateEventConstructorsRecursively(
-	eventNode *model.EventNode,
+	eventNode *events.EventNode,
 	constructParent func(code jen.Code) *jen.Statement,
 	eventRootType jen.Code,
 	jenFileBySourcePackagePath map[string]*jen.File,
-	parser *model.Parser,
-) error {
-
-	fields, err := parser.ParseFields(eventNode.Message())
-	if err != nil {
-		return err
-	}
-
-	// Filter out the fields that are marked with option [(mir.omit_in_constructor) = true].
-	fields = sliceutil.Filter(fields, func(_ int, field *model.Field) bool { return !field.OmitInConstructor() })
+) {
 
 	// If this is an intermediate node in the hierarchy, recursively call the function for subtypes.
 	if eventNode.IsEventClass() {
@@ -48,15 +24,13 @@ func generateEventConstructorsRecursively(
 			constructThis := func(child jen.Code) *jen.Statement {
 				return constructParent(
 					eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
-						// Initialize other fields.
-						for _, field := range fields {
-							if field.Name != model.TypeOneofFieldName {
-								group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
-							}
+						// Initialize fields other than the event type.
+						for _, param := range eventNode.ThisNodeConstructorParameters().Slice {
+							group.Line().Id(param.Field.Name).Op(":").Id(param.ParamName)
 						}
 
 						// Initialize the Type field
-						group.Line().Id(model.TypeOneofFieldName).Op(":").
+						group.Line().Id(eventNode.TypeOneof().Name).Op(":").
 							Add(childNode.OneofOption().ConstructMirWrapperType(child))
 
 						// Put the closing bracket on a new line.
@@ -65,46 +39,40 @@ func generateEventConstructorsRecursively(
 				)
 			}
 
-			err := generateEventConstructorsRecursively(
+			generateEventConstructorsRecursively(
 				/*eventNode*/ childNode,
 				/*constructParent*/ constructThis,
 				eventRootType,
 				jenFileBySourcePackagePath,
-				parser,
 			)
-			if err != nil {
-				return err
-			}
 		}
 
-		return nil
+		return
 	}
 
 	// If this is an event (i.e., a leaf in the hierarchy), create the event constructor.
 
-	// First, get a jen file to which the event constructor will be added.
+	// Get a jen file to which the event constructor will be added.
 	sourcePackage := eventNode.Message().PbPkgPath()
 	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
 	if !ok {
-		jenFile = jen.NewFilePathName(EventsPackagePath(sourcePackage), EventsPackageName(sourcePackage))
+		jenFile = jen.NewFilePathName(events.PackagePath(sourcePackage), events.PackageName(sourcePackage))
 		jenFileBySourcePackagePath[sourcePackage] = jenFile
 	}
 
 	// Generate the constructor.
-	jenFile.Func().Id(eventNode.Message().Name()).Params(
-		eventNode.ConstructorParameters().Code()...,
+	jenFile.Func().Id(eventNode.Name()).Params(
+		eventNode.AllConstructorParameters().MirCode()...,
 	).Add(eventRootType).Block(
 		jen.Return(constructParent(
 			eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
-				for _, field := range fields {
-					group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
+				for _, param := range eventNode.ThisNodeConstructorParameters().Slice {
+					group.Line().Id(param.Field.Name).Op(":").Id(param.ParamName)
 				}
 				group.Line()
 			}),
 		)),
 	)
-
-	return nil
 }
 
 // GenerateEventConstructors generates functions of form:
@@ -112,19 +80,19 @@ func generateEventConstructorsRecursively(
 //     func [SrcPkg]events.[EventName]([EventParams]...) [RootEventType]
 //
 // TODO: add an example.
-func GenerateEventConstructors(eventRoot *model.EventNode, parser *model.Parser) error {
+func GenerateEventConstructors(eventRoot *events.EventNode) error {
 	jenFileBySourcePackagePath := make(map[string]*jen.File)
 
-	err := generateEventConstructorsRecursively(
-		/*eventNode*/ eventRoot,
-		/*constructParent*/ func(code jen.Code) *jen.Statement { return jen.Add(code) },
-		/*eventRootType*/ eventRoot.Message().MirType(),
-		jenFileBySourcePackagePath,
-		parser,
-	)
-	if err != nil {
-		return fmt.Errorf("error generating event constructors: %w", err)
+	constructPbRootEventFromMirRootEvent := func(mirRootEvent jen.Code) *jen.Statement {
+		return eventRoot.Message().ToPb(mirRootEvent)
 	}
+
+	generateEventConstructorsRecursively(
+		/*eventNode*/ eventRoot,
+		/*constructParent*/ constructPbRootEventFromMirRootEvent,
+		/*eventRootType*/ eventRoot.Message().PbType(),
+		jenFileBySourcePackagePath,
+	)
 
 	for sourcePackage, jenFile := range jenFileBySourcePackagePath {
 		sourceDir, err := importerutil.GetSourceDirForPackage(sourcePackage)
@@ -132,7 +100,7 @@ func GenerateEventConstructors(eventRoot *model.EventNode, parser *model.Parser)
 			return fmt.Errorf("could not find the source directory for package %v: %w", sourcePackage, err)
 		}
 
-		outputDir := EventsOutputDir(sourceDir)
+		outputDir := events.OutputDir(sourceDir)
 		err = renderJenFile(jenFile, outputDir, "events.mir.go" /*removeDirOnFail*/, true)
 		if err != nil {
 			return err

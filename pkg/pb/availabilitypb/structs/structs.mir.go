@@ -71,7 +71,7 @@ type Event_CertVerified struct {
 func (*Event_CertVerified) isEvent_Type() {}
 
 func (w *Event_CertVerified) Pb() availabilitypb.Event_Type {
-	return &availabilitypb.Event_CertVerified{CertVerified: w.CertVerified.Pb()}
+	return &availabilitypb.Event_CertVerified{CertVerified: (w.CertVerified).Pb()}
 }
 
 type Event_RequestTransactions struct {
@@ -94,15 +94,9 @@ func (w *Event_ProvideTransactions) Pb() availabilitypb.Event_Type {
 	return &availabilitypb.Event_ProvideTransactions{ProvideTransactions: w.ProvideTransactions}
 }
 
-func NewEvent(type_ Event_Type) *Event {
-	return &Event{
-		Type: type_,
-	}
-}
-
 func (m *Event) Pb() *availabilitypb.Event {
 	return &availabilitypb.Event{
-		Type: m.Type.Pb(),
+		Type: (m.Type).Pb(),
 	}
 }
 
@@ -118,19 +112,11 @@ type CertVerified struct {
 	Origin *VerifyCertOrigin
 }
 
-func NewCertVerified(valid bool, err string, origin *VerifyCertOrigin) *CertVerified {
-	return &CertVerified{
-		Valid:  valid,
-		Err:    err,
-		Origin: origin,
-	}
-}
-
 func (m *CertVerified) Pb() *availabilitypb.CertVerified {
 	return &availabilitypb.CertVerified{
 		Valid:  m.Valid,
 		Err:    m.Err,
-		Origin: m.Origin.Pb(),
+		Origin: (m.Origin).Pb(),
 	}
 }
 
@@ -169,7 +155,7 @@ type RequestCertOrigin_ContextStore struct {
 func (*RequestCertOrigin_ContextStore) isRequestCertOrigin_Type() {}
 
 func (w *RequestCertOrigin_ContextStore) Pb() availabilitypb.RequestCertOrigin_Type {
-	return &availabilitypb.RequestCertOrigin_ContextStore{ContextStore: w.ContextStore.Pb()}
+	return &availabilitypb.RequestCertOrigin_ContextStore{ContextStore: (w.ContextStore).Pb()}
 }
 
 type RequestCertOrigin_Dsl struct {
@@ -182,17 +168,10 @@ func (w *RequestCertOrigin_Dsl) Pb() availabilitypb.RequestCertOrigin_Type {
 	return &availabilitypb.RequestCertOrigin_Dsl{Dsl: w.Dsl}
 }
 
-func NewRequestCertOrigin(module types.ModuleID, type_ RequestCertOrigin_Type) *RequestCertOrigin {
-	return &RequestCertOrigin{
-		Module: module,
-		Type:   type_,
-	}
-}
-
 func (m *RequestCertOrigin) Pb() *availabilitypb.RequestCertOrigin {
 	return &availabilitypb.RequestCertOrigin{
 		Module: (string)(m.Module),
-		Type:   m.Type.Pb(),
+		Type:   (m.Type).Pb(),
 	}
 }
 
@@ -230,7 +209,7 @@ type VerifyCertOrigin_ContextStore struct {
 func (*VerifyCertOrigin_ContextStore) isVerifyCertOrigin_Type() {}
 
 func (w *VerifyCertOrigin_ContextStore) Pb() availabilitypb.VerifyCertOrigin_Type {
-	return &availabilitypb.VerifyCertOrigin_ContextStore{ContextStore: w.ContextStore.Pb()}
+	return &availabilitypb.VerifyCertOrigin_ContextStore{ContextStore: (w.ContextStore).Pb()}
 }
 
 type VerifyCertOrigin_Dsl struct {
@@ -243,17 +222,10 @@ func (w *VerifyCertOrigin_Dsl) Pb() availabilitypb.VerifyCertOrigin_Type {
 	return &availabilitypb.VerifyCertOrigin_Dsl{Dsl: w.Dsl}
 }
 
-func NewVerifyCertOrigin(module string, type_ VerifyCertOrigin_Type) *VerifyCertOrigin {
-	return &VerifyCertOrigin{
-		Module: module,
-		Type:   type_,
-	}
-}
-
 func (m *VerifyCertOrigin) Pb() *availabilitypb.VerifyCertOrigin {
 	return &availabilitypb.VerifyCertOrigin{
 		Module: m.Module,
-		Type:   m.Type.Pb(),
+		Type:   (m.Type).Pb(),
 	}
 }
 

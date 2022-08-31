@@ -6,12 +6,6 @@ type Origin struct {
 	ItemID uint64
 }
 
-func NewOrigin(itemID uint64) *Origin {
-	return &Origin{
-		ItemID: itemID,
-	}
-}
-
 func (m *Origin) Pb() *contextstorepb.Origin {
 	return &contextstorepb.Origin{
 		ItemID: m.ItemID,

@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"fmt"
@@ -243,88 +243,4 @@ func (p *Parser) getFieldType(goType reflect.Type, protoField protoreflect.Field
 	}
 
 	return Same{jenutil.QualFromType(goType)}, nil
-}
-
-// ParseEventHierarchy extracts the information about the whole event hierarchy by its root.
-func (p *Parser) ParseEventHierarchy(eventRootMsg *Message) (root *EventNode, err error) {
-	if !eventRootMsg.IsEventRoot() {
-		return nil, fmt.Errorf("message %v is not marked as event root", eventRootMsg.Name())
-	}
-
-	root, err = p.parseEventNodeRecursively(eventRootMsg, nil, nil, jenutil.NewFuncParamList())
-	return
-}
-
-// parseEventNodeRecursively parses a message from the event hierarchy.
-// parent is the parent in the event hierarchy. Note that the parent's list of children may not be complete.
-func (p *Parser) parseEventNodeRecursively(
-	msg *Message,
-	optionInParentOneof *OneofOption,
-	parent *EventNode,
-	constructorParameters *jenutil.FuncParamList,
-) (*EventNode, error) {
-
-	fields, err := p.ParseFields(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, field := range fields {
-		if field.IsEventTypeOneof() || field.OmitInConstructor() {
-			continue
-		}
-
-		constructorParameters.Append(field.LowercaseName(), field.Type.MirType())
-	}
-
-	// Check if this is an event class.
-	if typeOneof, ok := getTypeOneof(fields); ok {
-		node := &EventNode{
-			message:     msg,
-			oneofOption: optionInParentOneof,
-			typeOneof:   typeOneof,
-			children:    nil, // to be filled separately
-			parent:      parent,
-		}
-
-		for _, opt := range typeOneof.Options {
-			childMsg, ok := opt.Field.Type.(*Message)
-			if !ok {
-				return nil, fmt.Errorf("non-message type in the event hierarchy: %v", opt.Field.Name)
-			}
-
-			if !childMsg.ShouldGenerateMirType() {
-				// Skip children that are not marked as Mir events.
-				continue
-			}
-
-			childNode, err := p.parseEventNodeRecursively(childMsg, opt, node, constructorParameters)
-			if err != nil {
-				return nil, err
-			}
-
-			node.children = append(node.children, childNode)
-		}
-
-		return node, nil
-	}
-
-	return &EventNode{
-		message:               msg,
-		oneofOption:           optionInParentOneof,
-		typeOneof:             nil,
-		children:              nil,
-		parent:                parent,
-		constructorParameters: constructorParameters,
-	}, nil
-}
-
-func getTypeOneof(fields Fields) (*Oneof, bool) {
-	for _, field := range fields {
-		// Recursively call the generator on all subtypes.
-		if oneof, ok := field.Type.(*Oneof); ok && oneof.Name == "Type" {
-			return oneof, true
-		}
-	}
-	return nil, false
 }

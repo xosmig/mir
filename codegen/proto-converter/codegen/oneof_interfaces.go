@@ -3,10 +3,10 @@ package codegen
 import (
 	"github.com/dave/jennifer/jen"
 
-	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
+	"github.com/filecoin-project/mir/codegen/proto-converter/model/types"
 )
 
-func generateOneofInterface(g *jen.File, oneof *model.Oneof) error {
+func generateOneofInterface(g *jen.File, oneof *types.Oneof) error {
 	// Generate [Msg]_[Oneof] interface.
 	g.Type().Id(oneof.PbExportedInterfaceName()).Op("=").Id(oneof.PbNativeInterfaceName()).Line()
 
@@ -30,20 +30,24 @@ func generateOneofInterface(g *jen.File, oneof *model.Oneof) error {
 // oneofs in the given messages, where [Msg] is the name of the message and [Oneof] is the name of the oneof.
 func GenerateOneofInterfaces(
 	inputDir, inputPackagePath string,
-	msgs []*model.Message,
-	parser *model.Parser,
+	msgs []*types.Message,
+	parser *types.Parser,
 ) (err error) {
 
 	jenFile := jen.NewFilePath(inputPackagePath)
 
 	for _, msg := range msgs {
+		if !msg.ShouldGenerateMirType() {
+			continue
+		}
+
 		fields, err := parser.ParseFields(msg)
 		if err != nil {
 			return err
 		}
 
 		for _, field := range fields {
-			if oneof, ok := field.Type.(*model.Oneof); ok {
+			if oneof, ok := field.Type.(*types.Oneof); ok {
 				err := generateOneofInterface(jenFile, oneof)
 				if err != nil {
 					return err
@@ -52,5 +56,5 @@ func GenerateOneofInterfaces(
 		}
 	}
 
-	return renderJenFile(jenFile, inputDir, "oneof_reflect.pb.mir.go", /*removeDirOnFail*/ false)
+	return renderJenFile(jenFile, inputDir, "oneof_interfaces.mir.go" /*removeDirOnFail*/, false)
 }

@@ -8,7 +8,8 @@ import (
 
 	"github.com/dave/jennifer/jen"
 
-	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
+	"github.com/filecoin-project/mir/codegen/proto-converter/model/events"
+	"github.com/filecoin-project/mir/codegen/proto-converter/model/types"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/importerutil"
 	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
@@ -37,8 +38,13 @@ func GenerateAll(pbGoStructPtrTypes []reflect.Type) error {
 		}
 	}
 
-	parser := model.NewParser()
+	parser := types.NewParser()
 	msgs, err := parser.ParseMessages(pbGoStructPtrTypes)
+	if err != nil {
+		return err
+	}
+
+	err = GenerateOneofInterfaces(inputDir, inputPackagePath, msgs, parser)
 	if err != nil {
 		return err
 	}
@@ -49,22 +55,29 @@ func GenerateAll(pbGoStructPtrTypes []reflect.Type) error {
 	}
 
 	// Look for the root of the event hierarchy.
-	eventRootMessages := sliceutil.Filter(msgs, func(_ int, msg *model.Message) bool { return msg.IsEventRoot() })
+	eventRootMessages := sliceutil.Filter(msgs, func(_ int, msg *types.Message) bool { return msg.IsEventRoot() })
 	if len(eventRootMessages) > 1 {
 		return fmt.Errorf("found multiple messages marked as event roots: %v",
-			sliceutil.Transform(eventRootMessages, func(_ int, msg *model.Message) string { return msg.Name() }))
+			sliceutil.Transform(eventRootMessages, func(_ int, msg *types.Message) string { return msg.Name() }))
 	}
 
 	// If this package contains the root of the event hierarchy, generate constructors for all events.
 	if len(eventRootMessages) == 1 {
-		eventRoot, err := parser.ParseEventHierarchy(eventRootMessages[0])
+		eventParser := events.NewParser(parser)
+
+		eventRoot, err := eventParser.ParseEventHierarchy(eventRootMessages[0])
 		if err != nil {
 			return err
 		}
 
-		err = GenerateEventConstructors(eventRoot, parser)
+		err = GenerateEventConstructors(eventRoot)
 		if err != nil {
-			return err
+			return fmt.Errorf("error generating event constructors: %w", err)
+		}
+
+		err = GenerateDslFunctions(eventRoot)
+		if err != nil {
+			return fmt.Errorf("error generating dsl functions: %w", err)
 		}
 	}
 

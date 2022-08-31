@@ -4,8 +4,6 @@ import (
 	reflect "reflect"
 )
 
-type Event_Type = isEvent_Type
-
 func (*Event) ReflectTypeOptions() []reflect.Type {
 	return []reflect.Type{
 		reflect.TypeOf((*Event_Init)(nil)),

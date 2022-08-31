@@ -7,7 +7,6 @@ import (
 
 	"google.golang.org/protobuf/compiler/protogen"
 
-	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/protogenutil"
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
@@ -16,7 +15,7 @@ func generateReflectMethodsToListOneofOptions(plugin *protogen.Plugin, file *pro
 	var g *protogen.GeneratedFile
 
 	for _, msg := range file.Messages {
-		if !model.ShouldGenerateMirType(msg.Desc) {
+		if !types.ShouldGenerateMirType(msg.Desc) {
 			// Skip structs that are not explicitly marked with Mir annotations.
 			continue
 		}
@@ -28,10 +27,6 @@ func generateReflectMethodsToListOneofOptions(plugin *protogen.Plugin, file *pro
 				g.P("package ", file.GoPackageName)
 				g.P()
 			}
-
-			interfaceName := g.QualifiedGoIdent(oneof.GoIdent)
-			g.P("type ", interfaceName, " = ", "is", interfaceName)
-			g.P()
 
 			reflectType := g.QualifiedGoIdent(protogenutil.GoIdentByType(reflectutil.TypeOf[reflect.Type]()))
 			g.P("func (*", msg.GoIdent, ") Reflect", oneof.GoName, "Options() []", reflectType, " {")

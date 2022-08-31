@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"fmt"
@@ -61,11 +61,11 @@ func (m *Message) Same() bool {
 	return !m.ShouldGenerateMirType()
 }
 
-func (m *Message) PbType() jen.Code {
+func (m *Message) PbType() *jen.Statement {
 	return jen.Op("*").Add(m.pbStructType)
 }
 
-func (m *Message) NewPbType() jen.Code {
+func (m *Message) NewPbType() *jen.Statement {
 	return jen.Op("&").Add(m.pbStructType)
 }
 
@@ -73,50 +73,50 @@ func (m *Message) NewMirType() *jen.Statement {
 	return jen.Op("&").Add(m.mirStructType)
 }
 
-func (m *Message) MirType() jen.Code {
+func (m *Message) MirType() *jen.Statement {
 	return jen.Op("*").Add(m.mirStructType)
 }
 
-func (m *Message) ToMir(code jen.Code) jen.Code {
+func (m *Message) ToMir(code jen.Code) *jen.Statement {
 	if m.Same() {
 		return jen.Add(code)
 	}
 	return jen.Qual(m.MirPkgPath(), m.Name()+"FromPb").Call(code)
 }
 
-func (m *Message) ToPb(code jen.Code) jen.Code {
+func (m *Message) ToPb(code jen.Code) *jen.Statement {
 	if m.Same() {
 		return jen.Add(code)
 	}
-	return jen.Add(code).Dot("Pb").Call()
+	return jen.Parens(code).Dot("Pb").Call()
 }
 
-func (m *Message) ConstructorName() string {
-	return "New" + m.Name()
-}
-
-func (m *Message) Constructor() *jen.Statement {
-	return jen.Qual(m.MirPkgPath(), m.ConstructorName())
-}
+//func (m *Message) ConstructorName() string {
+//	return "New" + m.Name()
+//}
+//
+//func (m *Message) Constructor() *jen.Statement {
+//	return jen.Qual(m.MirPkgPath(), m.ConstructorName())
+//}
 
 // LowercaseName returns the name of the message in lowercase.
 func (m *Message) LowercaseName() string {
 	return astutil.ToUnexported(m.Name())
 }
 
-//func (m *Message) FuncParamPbType() jen.Code {
+//func (m *Message) FuncParamPbType() *jen.Statement {
 //	return jen.Id(m.LowercaseName()).Add(m.PbType())
 //}
 //
-//func (m *Message) FuncParamMirType() jen.Code {
+//func (m *Message) FuncParamMirType() *jen.Statement {
 //	return jen.Id(m.LowercaseName()).Add(m.MirType())
 //}
 //
-//func (m *Message) StructParamPbType() jen.Code {
+//func (m *Message) StructParamPbType() *jen.Statement {
 //	return jen.Id(m.Name()).Add(m.PbType())
 //}
 //
-//func (m *Message) StructParamMirType() jen.Code {
+//func (m *Message) StructParamMirType() *jen.Statement {
 //	return jen.Id(m.Name()).Add(m.MirType())
 //}
 

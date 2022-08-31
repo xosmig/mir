@@ -1,7 +1,7 @@
 package eventpbstructs
 
 import (
-	model "github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
+	model "github.com/filecoin-project/mir/codegen/proto-converter/model"
 	structs "github.com/filecoin-project/mir/pkg/pb/availabilitypb/structs"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	eventpb "github.com/filecoin-project/mir/pkg/pb/eventpb"
@@ -380,7 +380,7 @@ type Event_Availability struct {
 func (*Event_Availability) isEvent_Type() {}
 
 func (w *Event_Availability) Pb() eventpb.Event_Type {
-	return &eventpb.Event_Availability{Availability: w.Availability.Pb()}
+	return &eventpb.Event_Availability{Availability: (w.Availability).Pb()}
 }
 
 type Event_NewEpoch struct {
@@ -423,19 +423,11 @@ func (w *Event_TestingUint) Pb() eventpb.Event_Type {
 	return &eventpb.Event_TestingUint{TestingUint: w.TestingUint}
 }
 
-func NewEvent(type_ Event_Type, next []*Event, destModule string) *Event {
-	return &Event{
-		Type:       type_,
-		Next:       next,
-		DestModule: destModule,
-	}
-}
-
 func (m *Event) Pb() *eventpb.Event {
 	return &eventpb.Event{
-		Type: m.Type.Pb(),
-		Next: model.ConvertSlice(m.Next, func(t *Event) {
-			return t.Pb()
+		Type: (m.Type).Pb(),
+		Next: model.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
+			return (t).Pb()
 		}),
 		DestModule: m.DestModule,
 	}
@@ -444,7 +436,7 @@ func (m *Event) Pb() *eventpb.Event {
 func EventFromPb(pb *eventpb.Event) *Event {
 	return &Event{
 		Type: Event_TypeFromPb(pb.Type),
-		Next: model.ConvertSlice(pb.Next, func(t *eventpb.Event) {
+		Next: model.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
 			return EventFromPb(t)
 		}),
 		DestModule: pb.DestModule,

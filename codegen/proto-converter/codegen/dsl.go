@@ -7,13 +7,8 @@ import (
 
 	"github.com/dave/jennifer/jen"
 
-	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
+	"github.com/filecoin-project/mir/codegen/proto-converter/model/events"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/importerutil"
-	"github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
-	"github.com/filecoin-project/mir/pkg/dsl"
-	"github.com/filecoin-project/mir/pkg/pb/eventpb"
-	"github.com/filecoin-project/mir/pkg/util/reflectutil"
-	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
 func DslPackagePath(sourcePackagePath string) string {
@@ -28,164 +23,91 @@ func DslOutputDir(sourceDir string) string {
 	return path.Join(sourceDir, "dsl")
 }
 
-//func generateDslFunctionForEmittingEvent(g *jen.File, eventRoot *model.Message, oneofOptions []*model.OneofOption) error {
-//
-//	fields, err := eventRoot.Fields(oneofOptions)
-//	if err != nil {
-//		return err
-//	}
-//
-//
-//
-//	//g.Func().Id(event.Name()).Params(fields.FuncParamsMirTypes()...).Add(eventRootType).Block(
-//	//	jen.Return()
-//	//	)
-//
-//	return nil
-//}
-
 var (
-	dslPackagePath = reflectutil.TypeOf[dsl.Module]().PkgPath()
+	// Note: using reflection to determine this package path would cause a build dependency cycle.
+	dslPackagePath = "github.com/filecoin-project/mir/pkg/dsl"
 	dslModule      = jen.Qual(dslPackagePath, "Module")
 	dslEmitEvent   = jen.Qual(dslPackagePath, "EmitEvent")
 	dslUponEvent   = jen.Qual(dslPackagePath, "UponEvent")
-	rootEventType  = reflectutil.TypeOf[*eventpb.Event]()
 )
 
-func generateDslFunctionsForEmittingEvent(
-	constructEvent func(code jen.Code) *jen.Statement,
-	parentFields model.Fields,
-	eventOpt *model.OneofOption,
-	fr *jenutil.FileRegistry,
-	parser *model.Parser,
-) error {
-	msg, ok := eventOpt.Field.Type.(*model.Message)
+func generateDslFunctionsForEmittingEventsRecursively(
+	eventNode *events.EventNode,
+	jenFileBySourcePackagePath map[string]*jen.File,
+) {
+
+	// If this is an internal node in the hierarchy, recursively call the function for subtypes.
+	if eventNode.IsEventClass() {
+		for _, child := range eventNode.Children() {
+			generateDslFunctionsForEmittingEventsRecursively(child, jenFileBySourcePackagePath)
+		}
+		return
+	}
+
+	// Get a jen file to which the event constructor will be added.
+	sourcePackage := eventNode.Message().PbPkgPath()
+	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
 	if !ok {
-		return fmt.Errorf("event %v is not a message", eventOpt.Field.Name)
+		jenFile = jen.NewFilePathName(DslPackagePath(sourcePackage), DslPackageName(sourcePackage))
+		jenFileBySourcePackagePath[sourcePackage] = jenFile
+
+		jenFile.Comment("Module-specific dsl functions for emitting events.")
+		jenFile.Line()
 	}
 
-	fields, err := parser.ParseFields(msg)
-	if err != nil {
-		return err
-	}
+	// Generate the function for emitting the event
+	funcParams := append(
+		[]jen.Code{jen.Id("m").Add(dslModule)},
+		eventNode.AllConstructorParameters().MirCode()...,
+	)
 
-	// TODO: resolve potential name collisions with the parent fields.
-	fieldsWithParent := append(parentFields, fields...)
-
-	// If this is an intermediate node in the hierarchy, recursively call the function for subtypes.
-	if typeOneof, ok := getTypeOneof(fields); ok {
-		for _, opt := range typeOneof.Options {
-			err := generateDslFunctionsForEmittingEvent(
-				/*emitParentEvent*/ emitThisEvent,
-				/*parentFields*/ fieldsWithParentWithoutType,
-				/*eventOpt*/ opt,
-				fr,
-				parser,
-			)
-
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	// Generate a function for emitting the event.
-	outputPackage := DslPackagePath(msg.PbPkgPath())
-	g := fr.GetFile(outputPackage)
-
-	g.Func().Id(msg.Name()).Params(fieldsWithParent.FuncParamsMirTypes()...).Block(
-		dslEmitEvent.Params(constructEvent(eventOpt.NewMirWrapperType().Values(
-			jen.Line().Add(msg.Constructor()).Params(fields.FuncParamsIDs()...),
-			jen.Line(),
-		))),
-	).Line()
-
-	//g.Func().Id("Upon"+msg.Name()).Params(
-	//	jen.Id("m").Add(dslModule),
-	//	jen.Func().Id("handler").Params(fieldsWithParent.FuncParamsMirTypes()...).Id("error"),
-	//).Block(
-	//	uponParentEvent.Types(eventOpt.MirWrapperType()).Params()
-	//)
-
-	for _, field := range fields {
-		// Recursively call the generator on all subtypes.
-		if oneof, ok := field.Type.(*model.Oneof); ok && oneof.Name == "Type" {
-			fieldsWithParentWithoutType := sliceutil.Filter(fieldsWithParent, func(i int, f *model.Field) bool {
-				return f.Name != "Type"
-			})
-
-			emitThisEvent := jen.Qual(outputPackage, msg.Name())
-
-			for _, opt := range oneof.Options {
-				err := generateDslFunctionsForEmittingEvent(
-					/*emitParentEvent*/ emitThisEvent,
-					/*parentFields*/ fieldsWithParentWithoutType,
-					/*eventOpt*/ opt,
-					fr,
-					parser,
-				)
-
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
+	jenFile.Func().Id(eventNode.Name()).Params(funcParams...).Block(
+		dslEmitEvent.Params(jen.Id("m"), eventNode.Constructor().Params(eventNode.AllConstructorParameters().IDs()...)),
+	)
 }
 
-func generateDslFunctionsForEmmitingEventsRecursively(
-	eventRoot *model.Message,
-	fr *jenutil.FileRegistry,
-	parser *model.Parser,
-) error {
-	fields, err := parser.ParseFields(eventRoot)
-	if err != nil {
-		return err
-	}
+func generateDslFunctionsForHandlingEventsRecursively(
+	eventNode *events.EventNode,
+	jenFileBySourcePackagePath map[string]*jen.File,
+) {
 
-	oneofFields := sliceutil.Filter(fields, func(i int, field *model.Field) bool {
-		_, ok := field.Type.(*model.Oneof)
-		return ok
-	})
+	// If this is an internal node in the hierarchy, recursively call the function for subtypes.
+	if eventNode.IsEventClass() {
+		// TODO
 
-	if len(oneofFields) != 1 || oneofFields[0].Name != "Type" {
-		return fmt.Errorf("expected 1 oneof field named 'Type' in event root")
-	}
-
-	typeOneof := oneofFields[0].Type.(*model.Oneof)
-
-	for _, opt := range typeOneof.Options {
-		err := generateDslFunctionsForEmittingEvent(
-			/*emitParentEvent*/ emitThisEvent,
-			/*parentFields*/ fieldsWithParentWithoutType,
-			/*eventOpt*/ opt,
-			fr,
-			parser,
-		)
-
-		if err != nil {
-			return err
+		for _, child := range eventNode.Children() {
+			generateDslFunctionsForEmittingEventsRecursively(child, jenFileBySourcePackagePath)
 		}
+		return
 	}
 
-	return nil
+	// Get a jen file to which the event constructor will be added.
+	sourcePackage := eventNode.Message().PbPkgPath()
+	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
+	if !ok {
+		jenFile = jen.NewFilePathName(DslPackagePath(sourcePackage), DslPackageName(sourcePackage))
+		jenFileBySourcePackagePath[sourcePackage] = jenFile
+
+		jenFile.Comment("Module-specific dsl functions for emitting events.")
+		jenFile.Line()
+	}
+
+	// Generate the function for emitting the event
+	funcParams := append(
+		[]jen.Code{jen.Id("m").Add(dslModule)},
+		eventNode.AllConstructorParameters().MirCode()...,
+	)
+
+	// TODO
 }
 
-func GenerateDslFunctions(eventRoot *model.EventNode, parser *model.Parser) error {
+func GenerateDslFunctions(eventRoot *events.EventNode) error {
 	jenFileBySourcePackagePath := make(map[string]*jen.File)
 
-	err := generateDslFunctionsForEmmitingEventsRecursively(
+	generateDslFunctionsForEmittingEventsRecursively(
 		/*eventNode*/ eventRoot,
-		/*parentExtraFields*/ nil,
 		jenFileBySourcePackagePath,
-		parser,
 	)
-	if err != nil {
-		return fmt.Errorf("error generating event constructors: %w", err)
-	}
 
 	for sourcePackage, jenFile := range jenFileBySourcePackagePath {
 		sourceDir, err := importerutil.GetSourceDirForPackage(sourcePackage)
@@ -194,7 +116,7 @@ func GenerateDslFunctions(eventRoot *model.EventNode, parser *model.Parser) erro
 		}
 
 		outputDir := DslOutputDir(sourceDir)
-		err = renderJenFile(jenFile, outputDir, "events.mir.go" /*removeDirOnFail*/, true)
+		err = renderJenFile(jenFile, outputDir, "dsl.mir.go" /*removeDirOnFail*/, true)
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"reflect"
@@ -17,32 +17,32 @@ func (s Slice) Same() bool {
 	return s.Underlying.Same()
 }
 
-func (s Slice) PbType() jen.Code {
+func (s Slice) PbType() *jen.Statement {
 	return jen.Index().Add(s.Underlying.PbType())
 }
 
-func (s Slice) MirType() jen.Code {
+func (s Slice) MirType() *jen.Statement {
 	return jen.Index().Add(s.Underlying.MirType())
 }
 
-func (s Slice) ToMir(code jen.Code) jen.Code {
+func (s Slice) ToMir(code jen.Code) *jen.Statement {
 	if s.Same() {
-		return code
+		return jen.Add(code)
 	}
 
 	return jen.Qual(thisPackage, "ConvertSlice").Call(code,
-		jen.Func().Params(jen.Id("t").Add(s.Underlying.PbType())).Block(
+		jen.Func().Params(jen.Id("t").Add(s.Underlying.PbType())).Add(s.Underlying.MirType()).Block(
 			jen.Return(s.Underlying.ToMir(jen.Id("t"))),
 		))
 }
 
-func (s Slice) ToPb(code jen.Code) jen.Code {
+func (s Slice) ToPb(code jen.Code) *jen.Statement {
 	if s.Same() {
-		return code
+		return jen.Add(code)
 	}
 
 	return jen.Qual(thisPackage, "ConvertSlice").Call(code,
-		jen.Func().Params(jen.Id("t").Add(s.Underlying.MirType())).Block(
+		jen.Func().Params(jen.Id("t").Add(s.Underlying.MirType())).Add(s.Underlying.PbType()).Block(
 			jen.Return(s.Underlying.ToPb(jen.Id("t"))),
 		))
 }

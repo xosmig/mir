@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"fmt"
@@ -39,20 +39,20 @@ func (t *Oneof) MirMethodName() string {
 	return t.PbMethodName()
 }
 
-func (t *Oneof) PbType() jen.Code {
+func (t *Oneof) PbType() *jen.Statement {
 	return jen.Qual(t.Parent.PbPkgPath(), t.PbExportedInterfaceName())
 }
 
-func (t *Oneof) MirType() jen.Code {
+func (t *Oneof) MirType() *jen.Statement {
 	return jen.Qual(t.Parent.MirPkgPath(), t.MirInterfaceName())
 }
 
-func (t *Oneof) ToMir(code jen.Code) jen.Code {
+func (t *Oneof) ToMir(code jen.Code) *jen.Statement {
 	return jen.Qual(t.Parent.MirPkgPath(), t.MirInterfaceName()+"FromPb").Call(code)
 }
 
-func (t *Oneof) ToPb(code jen.Code) jen.Code {
-	return jen.Add(code).Dot("Pb").Call()
+func (t *Oneof) ToPb(code jen.Code) *jen.Statement {
+	return jen.Parens(code).Dot("Pb").Call()
 }
 
 type OneofOption struct {
