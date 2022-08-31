@@ -251,7 +251,7 @@ func (p *Parser) ParseEventHierarchy(eventRootMsg *Message) (root *EventNode, er
 		return nil, fmt.Errorf("message %v is not marked as event root", eventRootMsg.Name())
 	}
 
-	root, err = p.parseEventNodeRecursively(eventRootMsg, nil, nil)
+	root, err = p.parseEventNodeRecursively(eventRootMsg, nil, nil, jenutil.NewFuncParamList())
 	return
 }
 
@@ -261,11 +261,20 @@ func (p *Parser) parseEventNodeRecursively(
 	msg *Message,
 	optionInParentOneof *OneofOption,
 	parent *EventNode,
+	constructorParameters *jenutil.FuncParamList,
 ) (*EventNode, error) {
 
 	fields, err := p.ParseFields(msg)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, field := range fields {
+		if field.IsEventTypeOneof() || field.OmitInConstructor() {
+			continue
+		}
+
+		constructorParameters.Append(field.LowercaseName(), field.Type.MirType())
 	}
 
 	// Check if this is an event class.
@@ -289,7 +298,7 @@ func (p *Parser) parseEventNodeRecursively(
 				continue
 			}
 
-			childNode, err := p.parseEventNodeRecursively(childMsg, opt, node)
+			childNode, err := p.parseEventNodeRecursively(childMsg, opt, node, constructorParameters)
 			if err != nil {
 				return nil, err
 			}
@@ -301,11 +310,12 @@ func (p *Parser) parseEventNodeRecursively(
 	}
 
 	return &EventNode{
-		message:     msg,
-		oneofOption: optionInParentOneof,
-		typeOneof:   nil,
-		children:    nil,
-		parent:      parent,
+		message:               msg,
+		oneofOption:           optionInParentOneof,
+		typeOneof:             nil,
+		children:              nil,
+		parent:                parent,
+		constructorParameters: constructorParameters,
 	}, nil
 }
 

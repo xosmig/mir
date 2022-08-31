@@ -43,14 +43,32 @@ func (f *Field) FuncParamMirType() jen.Code {
 
 // OmitInConstructor returns true iff the field is marked with option [(mir.omit_in_constructor) = true].
 func (f *Field) OmitInConstructor() bool {
-	protoDesc, ok := f.ProtoDesc.(protoreflect.FieldDescriptor)
+	fieldDesc, ok := f.ProtoDesc.(protoreflect.FieldDescriptor)
 	if !ok {
 		// This is a oneof and this option does not exist for oneofs.
 		// Return false as the default value.
 		return false
 	}
 
-	return proto.GetExtension(protoDesc.Options().(*descriptorpb.FieldOptions), mir.E_OmitInConstructor).(bool)
+	return proto.GetExtension(fieldDesc.Options().(*descriptorpb.FieldOptions), mir.E_OmitInConstructor).(bool)
+}
+
+// IsEventTypeOneof returns true iff the field is a oneof and either
+// (a) it is named `type` or `Type`; or
+// (b) it is marked with `option (mir.event_type) = true`.
+//
+// The reason why option (a) is present is that it is easy to forget the annotation and get some weird
+// unexpected results.
+func (f *Field) IsEventTypeOneof() bool {
+	oneofDesc, ok := f.ProtoDesc.(protoreflect.OneofDescriptor)
+	if !ok {
+		return false
+	}
+	if f.Name == "Type" {
+		return true
+	}
+
+	return proto.GetExtension(oneofDesc.Options().(*descriptorpb.FieldOptions), mir.E_EventType).(bool)
 }
 
 // Fields is a list of fields of a protobuf message.

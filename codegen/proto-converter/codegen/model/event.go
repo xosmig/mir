@@ -1,5 +1,7 @@
 package model
 
+import "github.com/filecoin-project/mir/codegen/proto-converter/util/jenutil"
+
 // TypeOneofFieldName is the name of the oneof field that lists the children of the node in the event hierarchy.
 const TypeOneofFieldName = "Type"
 
@@ -15,6 +17,8 @@ type EventNode struct {
 	children []*EventNode
 	// The parent event in the hierarchy.
 	parent *EventNode
+	// The accumulated parameters for the constructor function.
+	constructorParameters *jenutil.FuncParamList
 }
 
 // IsRoot returns true if this is the root of the event hierarchy.
@@ -57,4 +61,9 @@ func (ev *EventNode) Children() []*EventNode {
 // Parent returns the parent event in the hierarchy.
 func (ev *EventNode) Parent() *EventNode {
 	return ev.parent
+}
+
+// ConstructorParameters returns the accumulated parameters for the constructor function.
+func (ev *EventNode) ConstructorParameters() *jenutil.FuncParamList {
+	return ev.constructorParameters
 }

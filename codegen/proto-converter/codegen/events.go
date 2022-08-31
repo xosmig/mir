@@ -28,7 +28,6 @@ func generateEventConstructorsRecursively(
 	eventNode *model.EventNode,
 	constructParent func(code jen.Code) *jen.Statement,
 	eventRootType jen.Code,
-	parentExtraFields model.Fields,
 	jenFileBySourcePackagePath map[string]*jen.File,
 	parser *model.Parser,
 ) error {
@@ -40,9 +39,6 @@ func generateEventConstructorsRecursively(
 
 	// Filter out the fields that are marked with option [(mir.omit_in_constructor) = true].
 	fields = sliceutil.Filter(fields, func(_ int, field *model.Field) bool { return !field.OmitInConstructor() })
-
-	// TODO: resolve potential name collisions with the parent fields.
-	fieldsWithParent := append(parentExtraFields, fields...)
 
 	// If this is an intermediate node in the hierarchy, recursively call the function for subtypes.
 	if eventNode.IsEventClass() {
@@ -69,15 +65,10 @@ func generateEventConstructorsRecursively(
 				)
 			}
 
-			fieldsWithParentWithoutType := sliceutil.Filter(fieldsWithParent, func(i int, f *model.Field) bool {
-				return f.Name != model.TypeOneofFieldName
-			})
-
 			err := generateEventConstructorsRecursively(
 				/*eventNode*/ childNode,
 				/*constructParent*/ constructThis,
 				eventRootType,
-				fieldsWithParentWithoutType,
 				jenFileBySourcePackagePath,
 				parser,
 			)
@@ -100,7 +91,9 @@ func generateEventConstructorsRecursively(
 	}
 
 	// Generate the constructor.
-	jenFile.Func().Id(eventNode.Message().Name()).Params(fieldsWithParent.FuncParamsMirTypes()...).Add(eventRootType).Block(
+	jenFile.Func().Id(eventNode.Message().Name()).Params(
+		eventNode.ConstructorParameters().Code()...,
+	).Add(eventRootType).Block(
 		jen.Return(constructParent(
 			eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
 				for _, field := range fields {
@@ -126,7 +119,6 @@ func GenerateEventConstructors(eventRoot *model.EventNode, parser *model.Parser)
 		/*eventNode*/ eventRoot,
 		/*constructParent*/ func(code jen.Code) *jen.Statement { return jen.Add(code) },
 		/*eventRootType*/ eventRoot.Message().MirType(),
-		/*parentExtraFields*/ nil,
 		jenFileBySourcePackagePath,
 		parser,
 	)
@@ -141,7 +133,7 @@ func GenerateEventConstructors(eventRoot *model.EventNode, parser *model.Parser)
 		}
 
 		outputDir := EventsOutputDir(sourceDir)
-		err = renderJenFile(jenFile, outputDir, "events.mir.go", /*removeDirOnFail*/ true)
+		err = renderJenFile(jenFile, outputDir, "events.mir.go" /*removeDirOnFail*/, true)
 		if err != nil {
 			return err
 		}
