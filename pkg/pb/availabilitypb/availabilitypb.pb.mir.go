@@ -4,6 +4,19 @@ import (
 	reflect "reflect"
 )
 
+type Event_Type = isEvent_Type
+
+func (*Event) ReflectTypeOptions() []reflect.Type {
+	return []reflect.Type{
+		reflect.TypeOf((*Event_RequestCert)(nil)),
+		reflect.TypeOf((*Event_NewCert)(nil)),
+		reflect.TypeOf((*Event_VerifyCert)(nil)),
+		reflect.TypeOf((*Event_CertVerified)(nil)),
+		reflect.TypeOf((*Event_RequestTransactions)(nil)),
+		reflect.TypeOf((*Event_ProvideTransactions)(nil)),
+	}
+}
+
 type RequestCertOrigin_Type = isRequestCertOrigin_Type
 
 func (*RequestCertOrigin) ReflectTypeOptions() []reflect.Type {

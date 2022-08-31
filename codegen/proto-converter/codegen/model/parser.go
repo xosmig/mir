@@ -91,27 +91,35 @@ func (p *Parser) ParseMessage(pbGoStructPtr reflect.Type) (*Message, error) {
 	return msg, nil
 }
 
-func (p *Parser) ParseOneofOption(ptrType reflect.Type) (*OneofOption, error) {
+func (p *Parser) ParseOneofOption(message *Message, ptrType reflect.Type) (*OneofOption, error) {
 	if !protoreflectutil.IsOneofOption(ptrType) {
 		return nil, fmt.Errorf("%v is not a oneof option", ptrType)
 	}
 
-	if !protoreflectutil.IsProtoMessage(ptrType.Elem().Field(0).Type) {
-		return nil, fmt.Errorf("currently, only message types are supported in oneof options")
+	// Get the go representation of the field.
+	if ptrType.Elem().NumField() != 1 {
+		return nil, fmt.Errorf("protoc-generated oneof wrapper must have exactly 1 exported field")
 	}
+	goField := ptrType.Elem().Field(0)
 
-	fieldType, err := p.ParseMessage(ptrType.Elem().Field(0).Type)
+	// Get the protobuf representation of the field
+	protoName, err := getProtoNameOfField(goField)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing the name of proto field in oneof wrapper %v: %w", ptrType.Elem(), err)
+	}
+	protoField := message.protoDesc.Fields().ByName(protoName)
+
+	// Parse the field information.
+	field, err := p.parseField(goField, protoField)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing oneof option %v: %w", ptrType.Name(), err)
 	}
 
+	// Return the resulting oneof option.
 	return &OneofOption{
 		PbWrapperReflect: ptrType,
 		WrapperName:      ptrType.Elem().Name(),
-		Field: &Field{
-			Name: ptrType.Elem().Field(0).Name,
-			Type: fieldType,
-		},
+		Field:            field,
 	}, nil
 }
 
@@ -137,14 +145,14 @@ func (p *Parser) ParseFields(m *Message) (Fields, error) {
 		}
 
 		// Process oneof fields.
-		if _, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
+		if oneofProtoName, ok := goField.Tag.Lookup("protobuf_oneof"); ok {
 			oneofOptionsGoTypes := reflect.Zero(m.pbGoStructPtrReflect).
 				MethodByName("Reflect" + goField.Name + "Options").Call([]reflect.Value{})[0].
 				Interface().([]reflect.Type)
 
 			var options []*OneofOption
 			for _, optionGoType := range oneofOptionsGoTypes {
-				opt, err := p.ParseOneofOption(optionGoType)
+				opt, err := p.ParseOneofOption(m, optionGoType)
 				if err != nil {
 					return nil, err
 				}
@@ -159,6 +167,7 @@ func (p *Parser) ParseFields(m *Message) (Fields, error) {
 					Parent:  m,
 					Options: options,
 				},
+				ProtoDesc: m.protoDesc.Oneofs().ByName(protoreflect.Name(oneofProtoName)),
 			})
 			continue
 		}
@@ -168,7 +177,7 @@ func (p *Parser) ParseFields(m *Message) (Fields, error) {
 		if err != nil {
 			return nil, err
 		}
-		protoField := m.protoDesc.Fields().ByName(protoreflect.Name(protoName))
+		protoField := m.protoDesc.Fields().ByName(protoName)
 
 		// Create the Field struct.
 		field, err := p.parseField(goField, protoField)
@@ -191,8 +200,9 @@ func (p *Parser) parseField(goField reflect.StructField, protoField protoreflect
 	}
 
 	return &Field{
-		Name: goField.Name,
-		Type: tp,
+		Name:      goField.Name,
+		Type:      tp,
+		ProtoDesc: protoField,
 	}, nil
 }
 
@@ -272,6 +282,11 @@ func (p *Parser) parseEventNodeRecursively(
 			childMsg, ok := opt.Field.Type.(*Message)
 			if !ok {
 				return nil, fmt.Errorf("non-message type in the event hierarchy: %v", opt.Field.Name)
+			}
+
+			if !childMsg.ShouldGenerateMirType() {
+				// Skip children that are not marked as Mir events.
+				continue
 			}
 
 			childNode, err := p.parseEventNodeRecursively(childMsg, opt, node)

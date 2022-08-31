@@ -15,7 +15,7 @@ import "requestpb/requestpb.proto";
 // ============================================================
 
 message Event {
-  option (mir.parent_event) = "github.com/filecoin-project/mir/pkg/pb/eventpb.Event";
+  option (mir.event) = true;
 
   oneof type {
     option (mir.event_type) = true;

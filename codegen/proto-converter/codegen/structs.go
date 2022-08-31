@@ -1,18 +1,10 @@
 package codegen
 
 import (
-	"fmt"
-	"path"
-
 	"github.com/dave/jennifer/jen"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/codegen/model"
 )
-
-func StructsOutputDir(sourceDir string) string {
-	dirName := path.Base(sourceDir) + "structs"
-	return fmt.Sprintf(path.Join(sourceDir, dirName))
-}
 
 func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) error {
 	if !msg.ShouldGenerateMirType() {
@@ -105,12 +97,11 @@ func generateMirType(g *jen.File, msg *model.Message, parser *model.Parser) erro
 	return nil
 }
 
-func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, parser *model.Parser) (err error) {
-	// Determine the output package and path.
-	outputPackagePath := model.StructsPackagePath(inputPackagePath)
-	outputDir := StructsOutputDir(inputDir)
-
-	jenFile := jen.NewFilePath(outputPackagePath)
+func GenerateMirTypes(inputDir, sourcePackagePath string, msgs []*model.Message, parser *model.Parser) (err error) {
+	jenFile := jen.NewFilePathName(
+		model.StructsPackagePath(sourcePackagePath),
+		model.StructsPackageName(sourcePackagePath),
+	)
 
 	// Generate Mir types for messages.
 	for _, msg := range msgs {
@@ -120,5 +111,5 @@ func GenerateMirTypes(inputDir, inputPackagePath string, msgs []*model.Message, 
 		}
 	}
 
-	return renderJenFile(jenFile, outputDir, "structs.mir.go", /*removeDirOnFail*/ true)
+	return renderJenFile(jenFile, model.StructsOutputDir(inputDir), "structs.mir.go", /*removeDirOnFail*/ true)
 }

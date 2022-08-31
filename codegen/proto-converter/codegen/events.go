@@ -13,13 +13,15 @@ import (
 )
 
 func EventsPackagePath(sourcePackagePath string) string {
-	packageName := sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "events"
-	return fmt.Sprintf("%v/%v", sourcePackagePath, packageName)
+	return sourcePackagePath + "/events"
+}
+
+func EventsPackageName(sourcePackagePath string) string {
+	return sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "events"
 }
 
 func EventsOutputDir(sourceDir string) string {
-	dirName := path.Base(sourceDir) + "events"
-	return path.Join(sourceDir, dirName)
+	return path.Join(sourceDir, "events")
 }
 
 func generateEventConstructorsRecursively(
@@ -36,25 +38,34 @@ func generateEventConstructorsRecursively(
 		return err
 	}
 
+	// Filter out the fields that are marked with option [(mir.omit_in_constructor) = true].
+	fields = sliceutil.Filter(fields, func(_ int, field *model.Field) bool { return !field.OmitInConstructor() })
+
 	// TODO: resolve potential name collisions with the parent fields.
 	fieldsWithParent := append(parentExtraFields, fields...)
 
 	// If this is an intermediate node in the hierarchy, recursively call the function for subtypes.
 	if eventNode.IsEventClass() {
-		for _, child := range eventNode.Children() {
+		for _, childNode := range eventNode.Children() {
 			// constructThis is a function that takes the code to construct a child in the hierarchy
 			// and constructs an event.
 			constructThis := func(child jen.Code) *jen.Statement {
 				return constructParent(
-					eventNode.OneofOption().ConstructMirWrapperType(
-						eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
-							for _, field := range fields {
+					eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
+						// Initialize other fields.
+						for _, field := range fields {
+							if field.Name != model.TypeOneofFieldName {
 								group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
 							}
-							group.Line().Id(eventNode.TypeOneof().Name).Op(":").Add(child)
-							group.Line()
-						}),
-					),
+						}
+
+						// Initialize the Type field
+						group.Line().Id(model.TypeOneofFieldName).Op(":").
+							Add(childNode.OneofOption().ConstructMirWrapperType(child))
+
+						// Put the closing bracket on a new line.
+						group.Line()
+					}),
 				)
 			}
 
@@ -63,7 +74,7 @@ func generateEventConstructorsRecursively(
 			})
 
 			err := generateEventConstructorsRecursively(
-				/*eventNode*/ child,
+				/*eventNode*/ childNode,
 				/*constructParent*/ constructThis,
 				eventRootType,
 				fieldsWithParentWithoutType,
@@ -74,29 +85,29 @@ func generateEventConstructorsRecursively(
 				return err
 			}
 		}
+
+		return nil
 	}
 
 	// If this is an event (i.e., a leaf in the hierarchy), create the event constructor.
 
 	// First, get a jen file to which the event constructor will be added.
-	outputPackage := EventsPackagePath(eventNode.Message().PbPkgPath())
-	jenFile, ok := jenFileBySourcePackagePath[outputPackage]
+	sourcePackage := eventNode.Message().PbPkgPath()
+	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
 	if !ok {
-		jenFile = jen.NewFilePath(outputPackage)
-		jenFileBySourcePackagePath[outputPackage] = jenFile
+		jenFile = jen.NewFilePathName(EventsPackagePath(sourcePackage), EventsPackageName(sourcePackage))
+		jenFileBySourcePackagePath[sourcePackage] = jenFile
 	}
 
 	// Generate the constructor.
 	jenFile.Func().Id(eventNode.Message().Name()).Params(fieldsWithParent.FuncParamsMirTypes()...).Add(eventRootType).Block(
 		jen.Return(constructParent(
-			eventNode.OneofOption().ConstructMirWrapperType(
-				eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
-					for _, field := range fields {
-						group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
-					}
-					group.Line()
-				}),
-			),
+			eventNode.Message().NewMirType().ValuesFunc(func(group *jen.Group) {
+				for _, field := range fields {
+					group.Line().Id(field.Name).Op(":").Id(field.LowercaseName())
+				}
+				group.Line()
+			}),
 		)),
 	)
 

@@ -28,8 +28,6 @@ message Event {
 
   // TODO, normalize naming, for instance Complete/Completed
   oneof type {
-    option (mir.event_type) = true;
-
     Init                   init                    = 1;
     Tick                   tick                    = 2;
     WALAppend              wal_append              = 3;

@@ -10,7 +10,6 @@ extend google.protobuf.MessageOptions {
   bool event = 51200;
   bool message = 51201;
   bool struct = 51202;
-  string parent_event = 51203;
   bool event_root = 51204;
 }
 

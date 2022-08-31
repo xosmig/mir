@@ -2,18 +2,28 @@ package model
 
 import (
 	"github.com/dave/jennifer/jen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/astutil"
+	"github.com/filecoin-project/mir/pkg/pb/mir"
 	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
 // Field represents a field in a protobuf message.
+// Note: oneofs are not considered as fields in the protobuf data module, but are considered as fields here.
+// The reason for that is that oneofs are mapped to fields in the generated Go code.
 type Field struct {
-	// Name is the name of the field .
+	// The name of the field.
 	Name string
 
-	// Type contains type-related information about the field.
+	// The information about the type of the field.
 	Type Type
+
+	// The protobuf descriptor of the field.
+	// The descriptor can be either protoreflect.FieldDescriptor or protoreflect.OneofDescriptor.
+	ProtoDesc protoreflect.Descriptor
 }
 
 // LowercaseName returns the lowercase name of the field.
@@ -29,6 +39,18 @@ func (f *Field) FuncParamPbType() jen.Code {
 // FuncParamMirType returns the field lowercase name followed by its mir type.
 func (f *Field) FuncParamMirType() jen.Code {
 	return jen.Id(f.LowercaseName()).Add(f.Type.MirType())
+}
+
+// OmitInConstructor returns true iff the field is marked with option [(mir.omit_in_constructor) = true].
+func (f *Field) OmitInConstructor() bool {
+	protoDesc, ok := f.ProtoDesc.(protoreflect.FieldDescriptor)
+	if !ok {
+		// This is a oneof and this option does not exist for oneofs.
+		// Return false as the default value.
+		return false
+	}
+
+	return proto.GetExtension(protoDesc.Options().(*descriptorpb.FieldOptions), mir.E_OmitInConstructor).(bool)
 }
 
 // Fields is a list of fields of a protobuf message.

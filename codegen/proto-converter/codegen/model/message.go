@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"path"
 	"reflect"
 	"strings"
 
@@ -15,8 +16,15 @@ import (
 )
 
 func StructsPackagePath(sourcePackagePath string) string {
-	packageName := sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "structs"
-	return fmt.Sprintf("%v/%v", sourcePackagePath, packageName)
+	return sourcePackagePath + "/structs"
+}
+
+func StructsPackageName(sourcePackagePath string) string {
+	return sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "structs"
+}
+
+func StructsOutputDir(sourceDir string) string {
+	return fmt.Sprintf(path.Join(sourceDir, "structs"))
 }
 
 // Message contains the information needed to generate code for a protobuf message.
@@ -171,14 +179,14 @@ func IsMirStruct(protoDesc protoreflect.MessageDescriptor) bool {
 }
 
 func ShouldGenerateMirType(protoDesc protoreflect.MessageDescriptor) bool {
-	return IsMirEvent(protoDesc) || IsMirMessage(protoDesc) || IsMirStruct(protoDesc)
+	return IsMirEvent(protoDesc) || IsMirMessage(protoDesc) || IsMirStruct(protoDesc) || IsEventRoot(protoDesc)
 }
 
 func IsEventRoot(protoDesc protoreflect.MessageDescriptor) bool {
 	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_EventRoot).(bool)
 }
 
-func getProtoNameOfField(field reflect.StructField) (protoName string, err error) {
+func getProtoNameOfField(field reflect.StructField) (protoName protoreflect.Name, err error) {
 	protobufTag, ok := field.Tag.Lookup("protobuf")
 	if !ok {
 		return "", fmt.Errorf("field %v has no protobuf tag", field.Name)
@@ -186,7 +194,7 @@ func getProtoNameOfField(field reflect.StructField) (protoName string, err error
 
 	for _, tagPart := range strings.Split(protobufTag, ",") {
 		if strings.HasPrefix(tagPart, "name=") {
-			return strings.TrimPrefix(tagPart, "name="), nil
+			return protoreflect.Name(strings.TrimPrefix(tagPart, "name=")), nil
 		}
 	}
 
