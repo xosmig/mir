@@ -31,6 +31,10 @@ func (t *Oneof) MirInterfaceName() string {
 	return fmt.Sprintf("%v_%v", t.Parent.Name(), t.Name)
 }
 
+func (t *Oneof) MirWrapperInterfaceName() string {
+	return t.MirInterfaceName() + "Wrapper"
+}
+
 func (t *Oneof) PbMethodName() string {
 	return "is" + t.PbExportedInterfaceName()
 }

@@ -71,16 +71,6 @@ func generateDslFunctionsForHandlingEventsRecursively(
 	jenFileBySourcePackagePath map[string]*jen.File,
 ) {
 
-	// If this is an internal node in the hierarchy, recursively call the function for subtypes.
-	if eventNode.IsEventClass() {
-		// TODO
-
-		for _, child := range eventNode.Children() {
-			generateDslFunctionsForEmittingEventsRecursively(child, jenFileBySourcePackagePath)
-		}
-		return
-	}
-
 	// Get a jen file to which the event constructor will be added.
 	sourcePackage := eventNode.Message().PbPkgPath()
 	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
@@ -88,8 +78,32 @@ func generateDslFunctionsForHandlingEventsRecursively(
 		jenFile = jen.NewFilePathName(DslPackagePath(sourcePackage), DslPackageName(sourcePackage))
 		jenFileBySourcePackagePath[sourcePackage] = jenFile
 
-		jenFile.Comment("Module-specific dsl functions for emitting events.")
+		jenFile.Comment("Module-specific dsl functions for processing events.")
 		jenFile.Line()
+	}
+
+	// Check if this is an internal node in the hierarchy.
+	if eventNode.IsEventClass() {
+		jenFile.Func().Id("Upon"+eventNode.Name()).Types(
+			jen.Id("ChildWrapper").Id(eventNode.TypeOneof().MirWrapperInterfaceName()).Params(jen.Id("Child")),
+			jen.Id("Child").Any(),
+		).Params(jen.Id("m").Add(dslModule), jen.Id("handler").Func().Params())
+
+		for _, child := range eventNode.Children() {
+			generateDslFunctionsForEmittingEventsRecursively(child, jenFileBySourcePackagePath)
+		}
+
+		// // UponEvent registers a handler for the given availability layer event type.
+		//func UponEvent[EvWrapper apb.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handler func(ev *Ev) error) {
+		//	dsl.UponEvent[*eventpb.Event_Availability](m, func(ev *apb.Event) error {
+		//		evWrapper, ok := ev.Type.(EvWrapper)
+		//		if !ok {
+		//			return nil
+		//		}
+		//		return handler(evWrapper.Unwrap())
+		//	})
+		//}
+		return
 	}
 
 	// Generate the function for emitting the event
