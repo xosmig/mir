@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
+	eventpbtypes "github.com/filecoin-project/mir/pkg/pb/eventpb/types"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
@@ -64,14 +65,27 @@ func (m *dslModuleImpl) ModuleID() t.ModuleID {
 	return m.moduleID
 }
 
-// UponEvent registers an event handler for module m.
+// UponPbEvent registers an event handler for module m.
 // This event handler will be called every time an event of type EvWrapper is received.
-func UponEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) error) {
+// NB: This function works with the (legacy) protoc-generated types and is likely to be removed in the future.
+func UponPbEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) error) {
 	evWrapperType := reflectutil.TypeOf[EvWrapper]()
 
 	m.DslHandle().impl.eventHandlers[evWrapperType] = append(m.DslHandle().impl.eventHandlers[evWrapperType],
-		func(evWrapper *eventpb.Event) error {
-			return handler(evWrapper.Type.(EvWrapper).Unwrap())
+		func(ev *eventpb.Event) error {
+			return handler(ev.Type.(EvWrapper).Unwrap())
+		})
+}
+
+// UponMirEvent registers an event handler for module m.
+// This event handler will be called every time an event of type EvWrapper is received.
+func UponMirEvent[EvWrapper eventpbtypes.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) error) {
+	var zeroW EvWrapper
+	evWrapperType := zeroW.MirReflect().PbType()
+
+	m.DslHandle().impl.eventHandlers[evWrapperType] = append(m.DslHandle().impl.eventHandlers[evWrapperType],
+		func(ev *eventpb.Event) error {
+			return handler(eventpbtypes.EventFromPb(ev).Type.(EvWrapper).Unwrap())
 		})
 }
 

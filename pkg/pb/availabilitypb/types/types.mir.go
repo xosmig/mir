@@ -1,10 +1,12 @@
-package availabilitypbstructs
+package availabilitypbtypes
 
 import (
+	mirreflect "github.com/filecoin-project/mir/codegen/proto-converter/mirreflect"
 	availabilitypb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
-	structs "github.com/filecoin-project/mir/pkg/pb/contextstorepb/structs"
+	types1 "github.com/filecoin-project/mir/pkg/pb/contextstorepb/types"
 	dslpb "github.com/filecoin-project/mir/pkg/pb/dslpb"
 	types "github.com/filecoin-project/mir/pkg/types"
+	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
 type Event struct {
@@ -12,8 +14,14 @@ type Event struct {
 }
 
 type Event_Type interface {
+	mirreflect.GeneratedType
 	isEvent_Type()
 	Pb() availabilitypb.Event_Type
+}
+
+type Event_TypeWrapper[T any] interface {
+	Event_Type
+	Unwrap() *T
 }
 
 func Event_TypeFromPb(pb availabilitypb.Event_Type) Event_Type {
@@ -40,8 +48,16 @@ type Event_RequestCert struct {
 
 func (*Event_RequestCert) isEvent_Type() {}
 
+func (w *Event_RequestCert) Unwrap() *availabilitypb.RequestCert {
+	return w.RequestCert
+}
+
 func (w *Event_RequestCert) Pb() availabilitypb.Event_Type {
 	return &availabilitypb.Event_RequestCert{RequestCert: w.RequestCert}
+}
+
+func (*Event_RequestCert) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_RequestCert]()}
 }
 
 type Event_NewCert struct {
@@ -50,8 +66,16 @@ type Event_NewCert struct {
 
 func (*Event_NewCert) isEvent_Type() {}
 
+func (w *Event_NewCert) Unwrap() *availabilitypb.NewCert {
+	return w.NewCert
+}
+
 func (w *Event_NewCert) Pb() availabilitypb.Event_Type {
 	return &availabilitypb.Event_NewCert{NewCert: w.NewCert}
+}
+
+func (*Event_NewCert) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_NewCert]()}
 }
 
 type Event_VerifyCert struct {
@@ -60,8 +84,16 @@ type Event_VerifyCert struct {
 
 func (*Event_VerifyCert) isEvent_Type() {}
 
+func (w *Event_VerifyCert) Unwrap() *availabilitypb.VerifyCert {
+	return w.VerifyCert
+}
+
 func (w *Event_VerifyCert) Pb() availabilitypb.Event_Type {
 	return &availabilitypb.Event_VerifyCert{VerifyCert: w.VerifyCert}
+}
+
+func (*Event_VerifyCert) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_VerifyCert]()}
 }
 
 type Event_CertVerified struct {
@@ -70,8 +102,16 @@ type Event_CertVerified struct {
 
 func (*Event_CertVerified) isEvent_Type() {}
 
+func (w *Event_CertVerified) Unwrap() *CertVerified {
+	return w.CertVerified
+}
+
 func (w *Event_CertVerified) Pb() availabilitypb.Event_Type {
 	return &availabilitypb.Event_CertVerified{CertVerified: (w.CertVerified).Pb()}
+}
+
+func (*Event_CertVerified) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_CertVerified]()}
 }
 
 type Event_RequestTransactions struct {
@@ -80,8 +120,16 @@ type Event_RequestTransactions struct {
 
 func (*Event_RequestTransactions) isEvent_Type() {}
 
+func (w *Event_RequestTransactions) Unwrap() *availabilitypb.RequestTransactions {
+	return w.RequestTransactions
+}
+
 func (w *Event_RequestTransactions) Pb() availabilitypb.Event_Type {
 	return &availabilitypb.Event_RequestTransactions{RequestTransactions: w.RequestTransactions}
+}
+
+func (*Event_RequestTransactions) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_RequestTransactions]()}
 }
 
 type Event_ProvideTransactions struct {
@@ -90,14 +138,16 @@ type Event_ProvideTransactions struct {
 
 func (*Event_ProvideTransactions) isEvent_Type() {}
 
+func (w *Event_ProvideTransactions) Unwrap() *availabilitypb.ProvideTransactions {
+	return w.ProvideTransactions
+}
+
 func (w *Event_ProvideTransactions) Pb() availabilitypb.Event_Type {
 	return &availabilitypb.Event_ProvideTransactions{ProvideTransactions: w.ProvideTransactions}
 }
 
-func (m *Event) Pb() *availabilitypb.Event {
-	return &availabilitypb.Event{
-		Type: (m.Type).Pb(),
-	}
+func (*Event_ProvideTransactions) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_ProvideTransactions]()}
 }
 
 func EventFromPb(pb *availabilitypb.Event) *Event {
@@ -106,18 +156,20 @@ func EventFromPb(pb *availabilitypb.Event) *Event {
 	}
 }
 
+func (m *Event) Pb() *availabilitypb.Event {
+	return &availabilitypb.Event{
+		Type: (m.Type).Pb(),
+	}
+}
+
+func (*Event) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event]()}
+}
+
 type CertVerified struct {
 	Valid  bool
 	Err    string
 	Origin *VerifyCertOrigin
-}
-
-func (m *CertVerified) Pb() *availabilitypb.CertVerified {
-	return &availabilitypb.CertVerified{
-		Valid:  m.Valid,
-		Err:    m.Err,
-		Origin: (m.Origin).Pb(),
-	}
 }
 
 func CertVerifiedFromPb(pb *availabilitypb.CertVerified) *CertVerified {
@@ -128,20 +180,38 @@ func CertVerifiedFromPb(pb *availabilitypb.CertVerified) *CertVerified {
 	}
 }
 
+func (m *CertVerified) Pb() *availabilitypb.CertVerified {
+	return &availabilitypb.CertVerified{
+		Valid:  m.Valid,
+		Err:    m.Err,
+		Origin: (m.Origin).Pb(),
+	}
+}
+
+func (*CertVerified) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.CertVerified]()}
+}
+
 type RequestCertOrigin struct {
 	Module types.ModuleID
 	Type   RequestCertOrigin_Type
 }
 
 type RequestCertOrigin_Type interface {
+	mirreflect.GeneratedType
 	isRequestCertOrigin_Type()
 	Pb() availabilitypb.RequestCertOrigin_Type
+}
+
+type RequestCertOrigin_TypeWrapper[T any] interface {
+	RequestCertOrigin_Type
+	Unwrap() *T
 }
 
 func RequestCertOrigin_TypeFromPb(pb availabilitypb.RequestCertOrigin_Type) RequestCertOrigin_Type {
 	switch pb := pb.(type) {
 	case *availabilitypb.RequestCertOrigin_ContextStore:
-		return &RequestCertOrigin_ContextStore{ContextStore: structs.OriginFromPb(pb.ContextStore)}
+		return &RequestCertOrigin_ContextStore{ContextStore: types1.OriginFromPb(pb.ContextStore)}
 	case *availabilitypb.RequestCertOrigin_Dsl:
 		return &RequestCertOrigin_Dsl{Dsl: pb.Dsl}
 	}
@@ -149,13 +219,21 @@ func RequestCertOrigin_TypeFromPb(pb availabilitypb.RequestCertOrigin_Type) Requ
 }
 
 type RequestCertOrigin_ContextStore struct {
-	ContextStore *structs.Origin
+	ContextStore *types1.Origin
 }
 
 func (*RequestCertOrigin_ContextStore) isRequestCertOrigin_Type() {}
 
+func (w *RequestCertOrigin_ContextStore) Unwrap() *types1.Origin {
+	return w.ContextStore
+}
+
 func (w *RequestCertOrigin_ContextStore) Pb() availabilitypb.RequestCertOrigin_Type {
 	return &availabilitypb.RequestCertOrigin_ContextStore{ContextStore: (w.ContextStore).Pb()}
+}
+
+func (*RequestCertOrigin_ContextStore) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.RequestCertOrigin_ContextStore]()}
 }
 
 type RequestCertOrigin_Dsl struct {
@@ -164,15 +242,16 @@ type RequestCertOrigin_Dsl struct {
 
 func (*RequestCertOrigin_Dsl) isRequestCertOrigin_Type() {}
 
+func (w *RequestCertOrigin_Dsl) Unwrap() *dslpb.Origin {
+	return w.Dsl
+}
+
 func (w *RequestCertOrigin_Dsl) Pb() availabilitypb.RequestCertOrigin_Type {
 	return &availabilitypb.RequestCertOrigin_Dsl{Dsl: w.Dsl}
 }
 
-func (m *RequestCertOrigin) Pb() *availabilitypb.RequestCertOrigin {
-	return &availabilitypb.RequestCertOrigin{
-		Module: (string)(m.Module),
-		Type:   (m.Type).Pb(),
-	}
+func (*RequestCertOrigin_Dsl) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.RequestCertOrigin_Dsl]()}
 }
 
 func RequestCertOriginFromPb(pb *availabilitypb.RequestCertOrigin) *RequestCertOrigin {
@@ -182,20 +261,37 @@ func RequestCertOriginFromPb(pb *availabilitypb.RequestCertOrigin) *RequestCertO
 	}
 }
 
+func (m *RequestCertOrigin) Pb() *availabilitypb.RequestCertOrigin {
+	return &availabilitypb.RequestCertOrigin{
+		Module: (string)(m.Module),
+		Type:   (m.Type).Pb(),
+	}
+}
+
+func (*RequestCertOrigin) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.RequestCertOrigin]()}
+}
+
 type VerifyCertOrigin struct {
 	Module string
 	Type   VerifyCertOrigin_Type
 }
 
 type VerifyCertOrigin_Type interface {
+	mirreflect.GeneratedType
 	isVerifyCertOrigin_Type()
 	Pb() availabilitypb.VerifyCertOrigin_Type
+}
+
+type VerifyCertOrigin_TypeWrapper[T any] interface {
+	VerifyCertOrigin_Type
+	Unwrap() *T
 }
 
 func VerifyCertOrigin_TypeFromPb(pb availabilitypb.VerifyCertOrigin_Type) VerifyCertOrigin_Type {
 	switch pb := pb.(type) {
 	case *availabilitypb.VerifyCertOrigin_ContextStore:
-		return &VerifyCertOrigin_ContextStore{ContextStore: structs.OriginFromPb(pb.ContextStore)}
+		return &VerifyCertOrigin_ContextStore{ContextStore: types1.OriginFromPb(pb.ContextStore)}
 	case *availabilitypb.VerifyCertOrigin_Dsl:
 		return &VerifyCertOrigin_Dsl{Dsl: pb.Dsl}
 	}
@@ -203,13 +299,21 @@ func VerifyCertOrigin_TypeFromPb(pb availabilitypb.VerifyCertOrigin_Type) Verify
 }
 
 type VerifyCertOrigin_ContextStore struct {
-	ContextStore *structs.Origin
+	ContextStore *types1.Origin
 }
 
 func (*VerifyCertOrigin_ContextStore) isVerifyCertOrigin_Type() {}
 
+func (w *VerifyCertOrigin_ContextStore) Unwrap() *types1.Origin {
+	return w.ContextStore
+}
+
 func (w *VerifyCertOrigin_ContextStore) Pb() availabilitypb.VerifyCertOrigin_Type {
 	return &availabilitypb.VerifyCertOrigin_ContextStore{ContextStore: (w.ContextStore).Pb()}
+}
+
+func (*VerifyCertOrigin_ContextStore) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.VerifyCertOrigin_ContextStore]()}
 }
 
 type VerifyCertOrigin_Dsl struct {
@@ -218,8 +322,23 @@ type VerifyCertOrigin_Dsl struct {
 
 func (*VerifyCertOrigin_Dsl) isVerifyCertOrigin_Type() {}
 
+func (w *VerifyCertOrigin_Dsl) Unwrap() *dslpb.Origin {
+	return w.Dsl
+}
+
 func (w *VerifyCertOrigin_Dsl) Pb() availabilitypb.VerifyCertOrigin_Type {
 	return &availabilitypb.VerifyCertOrigin_Dsl{Dsl: w.Dsl}
+}
+
+func (*VerifyCertOrigin_Dsl) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.VerifyCertOrigin_Dsl]()}
+}
+
+func VerifyCertOriginFromPb(pb *availabilitypb.VerifyCertOrigin) *VerifyCertOrigin {
+	return &VerifyCertOrigin{
+		Module: pb.Module,
+		Type:   VerifyCertOrigin_TypeFromPb(pb.Type),
+	}
 }
 
 func (m *VerifyCertOrigin) Pb() *availabilitypb.VerifyCertOrigin {
@@ -229,9 +348,6 @@ func (m *VerifyCertOrigin) Pb() *availabilitypb.VerifyCertOrigin {
 	}
 }
 
-func VerifyCertOriginFromPb(pb *availabilitypb.VerifyCertOrigin) *VerifyCertOrigin {
-	return &VerifyCertOrigin{
-		Module: pb.Module,
-		Type:   VerifyCertOrigin_TypeFromPb(pb.Type),
-	}
+func (*VerifyCertOrigin) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.VerifyCertOrigin]()}
 }

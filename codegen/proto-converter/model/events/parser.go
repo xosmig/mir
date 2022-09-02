@@ -65,7 +65,7 @@ func (p *Parser) parseEventNodeRecursively(
 		for _, opt := range typeOneof.Options {
 			childMsg, ok := opt.Field.Type.(*types.Message)
 			if !ok {
-				return nil, fmt.Errorf("non-message type in the event hierarchy: %v", opt.Field.Name)
+				return nil, fmt.Errorf("non-message type in the event hierarchy: %v", opt.Name())
 			}
 
 			if !childMsg.ShouldGenerateMirType() {

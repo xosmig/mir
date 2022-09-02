@@ -1,0 +1,23 @@
+package mirreflect
+
+import "reflect"
+
+type GeneratedType interface {
+	MirReflect() Type
+}
+
+// Type represents runtime information about a Mir-generated type.
+type Type interface {
+	PbType() reflect.Type
+}
+
+// TypeImpl is an implementation of the Type interface.
+// As functionality being added to the mirreflect package,
+// this type is likely to be removed and replaced by more specific types.
+type TypeImpl struct {
+	PbType_ reflect.Type
+}
+
+func (t TypeImpl) PbType() reflect.Type {
+	return t.PbType_
+}

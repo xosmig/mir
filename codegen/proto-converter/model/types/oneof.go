@@ -35,6 +35,10 @@ func (t *Oneof) MirWrapperInterfaceName() string {
 	return t.MirInterfaceName() + "Wrapper"
 }
 
+func (t *Oneof) MirWrapperInterface() *jen.Statement {
+	return jen.Qual(t.Parent.MirPkgPath(), t.MirWrapperInterfaceName())
+}
+
 func (t *Oneof) PbMethodName() string {
 	return "is" + t.PbExportedInterfaceName()
 }
@@ -65,6 +69,12 @@ type OneofOption struct {
 	Field            *Field
 }
 
+// Name returns the name of the oneof option.
+// Same as opt.Field.Name.
+func (opt *OneofOption) Name() string {
+	return opt.Field.Name
+}
+
 func (opt *OneofOption) PbWrapperType() *jen.Statement {
 	return jen.Op("*").Add(jenutil.QualFromType(opt.PbWrapperReflect.Elem()))
 }
@@ -74,7 +84,7 @@ func (opt *OneofOption) NewPbWrapperType() *jen.Statement {
 }
 
 func (opt *OneofOption) MirWrapperStructType() *jen.Statement {
-	return jen.Qual(StructsPackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
+	return jen.Qual(PackagePath(opt.PbWrapperReflect.Elem().PkgPath()), opt.WrapperName)
 }
 
 func (opt *OneofOption) MirWrapperType() *jen.Statement {

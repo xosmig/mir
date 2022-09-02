@@ -75,7 +75,7 @@ func ProvideTransactions(m dsl.Module, dest t.ModuleID, txs []*requestpb.Request
 
 // UponEvent registers a handler for the given availability layer event type.
 func UponEvent[EvWrapper apb.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handler func(ev *Ev) error) {
-	dsl.UponEvent[*eventpb.Event_Availability](m, func(ev *apb.Event) error {
+	dsl.UponPbEvent[*eventpb.Event_Availability](m, func(ev *apb.Event) error {
 		evWrapper, ok := ev.Type.(EvWrapper)
 		if !ok {
 			return nil

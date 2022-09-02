@@ -19,6 +19,8 @@ message Deliver {
 }
 
 message Event {
+  option (mir.event) = true;
+
   oneof type {
     option (mir.event_type) = true;
     BroadcastRequest request = 1;

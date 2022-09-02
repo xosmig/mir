@@ -7,7 +7,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-func QualFromType(tp reflect.Type) jen.Code {
+func QualFromType(tp reflect.Type) *jen.Statement {
 	switch tp.Kind() {
 
 	case reflect.Array:

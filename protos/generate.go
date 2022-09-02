@@ -30,9 +30,10 @@ package protos
 //go:generate protoc-events availabilitypb/availabilitypb.proto
 //go:generate protoc-events availabilitypb/mscpb/mscpb.proto
 
-// go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/eventpb"
-// go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
-// go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
+//go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/eventpb"
+//go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/bcbpb"
+//go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
+//go:generate proto-converter "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 
 //go:generate protoc --proto_path=. --go_out=:../pkg/ --go_opt=paths=source_relative simplewal/simplewal.proto
 //go:generate protoc --proto_path=. --go_out=:../samples/ --go_opt=paths=source_relative chat-demo/chatdemo.proto

@@ -1,13 +1,16 @@
-package eventpbstructs
+package eventpbtypes
 
 import (
-	model "github.com/filecoin-project/mir/codegen/proto-converter/model"
-	structs "github.com/filecoin-project/mir/pkg/pb/availabilitypb/structs"
-	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+
+	mirreflect "github.com/filecoin-project/mir/codegen/proto-converter/mirreflect"
+	types2 "github.com/filecoin-project/mir/codegen/proto-converter/model/types"
+	types1 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
+	types "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
 	eventpb "github.com/filecoin-project/mir/pkg/pb/eventpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	mempoolpb "github.com/filecoin-project/mir/pkg/pb/mempoolpb"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
 type Event struct {
@@ -17,8 +20,14 @@ type Event struct {
 }
 
 type Event_Type interface {
+	mirreflect.GeneratedType
 	isEvent_Type()
 	Pb() eventpb.Event_Type
+}
+
+type Event_TypeWrapper[T any] interface {
+	Event_Type
+	Unwrap() *T
 }
 
 func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
@@ -76,11 +85,11 @@ func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
 	case *eventpb.Event_TimerGarbageCollect:
 		return &Event_TimerGarbageCollect{TimerGarbageCollect: pb.TimerGarbageCollect}
 	case *eventpb.Event_Bcb:
-		return &Event_Bcb{Bcb: pb.Bcb}
+		return &Event_Bcb{Bcb: types.EventFromPb(pb.Bcb)}
 	case *eventpb.Event_Mempool:
 		return &Event_Mempool{Mempool: pb.Mempool}
 	case *eventpb.Event_Availability:
-		return &Event_Availability{Availability: structs.EventFromPb(pb.Availability)}
+		return &Event_Availability{Availability: types1.EventFromPb(pb.Availability)}
 	case *eventpb.Event_NewEpoch:
 		return &Event_NewEpoch{NewEpoch: pb.NewEpoch}
 	case *eventpb.Event_NewConfig:
@@ -99,8 +108,16 @@ type Event_Init struct {
 
 func (*Event_Init) isEvent_Type() {}
 
+func (w *Event_Init) Unwrap() *eventpb.Init {
+	return w.Init
+}
+
 func (w *Event_Init) Pb() eventpb.Event_Type {
 	return &eventpb.Event_Init{Init: w.Init}
+}
+
+func (*Event_Init) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Init]()}
 }
 
 type Event_Tick struct {
@@ -109,8 +126,16 @@ type Event_Tick struct {
 
 func (*Event_Tick) isEvent_Type() {}
 
+func (w *Event_Tick) Unwrap() *eventpb.Tick {
+	return w.Tick
+}
+
 func (w *Event_Tick) Pb() eventpb.Event_Type {
 	return &eventpb.Event_Tick{Tick: w.Tick}
+}
+
+func (*Event_Tick) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Tick]()}
 }
 
 type Event_WalAppend struct {
@@ -119,8 +144,16 @@ type Event_WalAppend struct {
 
 func (*Event_WalAppend) isEvent_Type() {}
 
+func (w *Event_WalAppend) Unwrap() *eventpb.WALAppend {
+	return w.WalAppend
+}
+
 func (w *Event_WalAppend) Pb() eventpb.Event_Type {
 	return &eventpb.Event_WalAppend{WalAppend: w.WalAppend}
+}
+
+func (*Event_WalAppend) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_WalAppend]()}
 }
 
 type Event_WalEntry struct {
@@ -129,8 +162,16 @@ type Event_WalEntry struct {
 
 func (*Event_WalEntry) isEvent_Type() {}
 
+func (w *Event_WalEntry) Unwrap() *eventpb.WALEntry {
+	return w.WalEntry
+}
+
 func (w *Event_WalEntry) Pb() eventpb.Event_Type {
 	return &eventpb.Event_WalEntry{WalEntry: w.WalEntry}
+}
+
+func (*Event_WalEntry) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_WalEntry]()}
 }
 
 type Event_WalTruncate struct {
@@ -139,8 +180,16 @@ type Event_WalTruncate struct {
 
 func (*Event_WalTruncate) isEvent_Type() {}
 
+func (w *Event_WalTruncate) Unwrap() *eventpb.WALTruncate {
+	return w.WalTruncate
+}
+
 func (w *Event_WalTruncate) Pb() eventpb.Event_Type {
 	return &eventpb.Event_WalTruncate{WalTruncate: w.WalTruncate}
+}
+
+func (*Event_WalTruncate) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_WalTruncate]()}
 }
 
 type Event_NewRequests struct {
@@ -149,8 +198,16 @@ type Event_NewRequests struct {
 
 func (*Event_NewRequests) isEvent_Type() {}
 
+func (w *Event_NewRequests) Unwrap() *eventpb.NewRequests {
+	return w.NewRequests
+}
+
 func (w *Event_NewRequests) Pb() eventpb.Event_Type {
 	return &eventpb.Event_NewRequests{NewRequests: w.NewRequests}
+}
+
+func (*Event_NewRequests) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_NewRequests]()}
 }
 
 type Event_HashRequest struct {
@@ -159,8 +216,16 @@ type Event_HashRequest struct {
 
 func (*Event_HashRequest) isEvent_Type() {}
 
+func (w *Event_HashRequest) Unwrap() *eventpb.HashRequest {
+	return w.HashRequest
+}
+
 func (w *Event_HashRequest) Pb() eventpb.Event_Type {
 	return &eventpb.Event_HashRequest{HashRequest: w.HashRequest}
+}
+
+func (*Event_HashRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_HashRequest]()}
 }
 
 type Event_HashResult struct {
@@ -169,8 +234,16 @@ type Event_HashResult struct {
 
 func (*Event_HashResult) isEvent_Type() {}
 
+func (w *Event_HashResult) Unwrap() *eventpb.HashResult {
+	return w.HashResult
+}
+
 func (w *Event_HashResult) Pb() eventpb.Event_Type {
 	return &eventpb.Event_HashResult{HashResult: w.HashResult}
+}
+
+func (*Event_HashResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_HashResult]()}
 }
 
 type Event_SignRequest struct {
@@ -179,8 +252,16 @@ type Event_SignRequest struct {
 
 func (*Event_SignRequest) isEvent_Type() {}
 
+func (w *Event_SignRequest) Unwrap() *eventpb.SignRequest {
+	return w.SignRequest
+}
+
 func (w *Event_SignRequest) Pb() eventpb.Event_Type {
 	return &eventpb.Event_SignRequest{SignRequest: w.SignRequest}
+}
+
+func (*Event_SignRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_SignRequest]()}
 }
 
 type Event_SignResult struct {
@@ -189,8 +270,16 @@ type Event_SignResult struct {
 
 func (*Event_SignResult) isEvent_Type() {}
 
+func (w *Event_SignResult) Unwrap() *eventpb.SignResult {
+	return w.SignResult
+}
+
 func (w *Event_SignResult) Pb() eventpb.Event_Type {
 	return &eventpb.Event_SignResult{SignResult: w.SignResult}
+}
+
+func (*Event_SignResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_SignResult]()}
 }
 
 type Event_VerifyNodeSigs struct {
@@ -199,8 +288,16 @@ type Event_VerifyNodeSigs struct {
 
 func (*Event_VerifyNodeSigs) isEvent_Type() {}
 
+func (w *Event_VerifyNodeSigs) Unwrap() *eventpb.VerifyNodeSigs {
+	return w.VerifyNodeSigs
+}
+
 func (w *Event_VerifyNodeSigs) Pb() eventpb.Event_Type {
 	return &eventpb.Event_VerifyNodeSigs{VerifyNodeSigs: w.VerifyNodeSigs}
+}
+
+func (*Event_VerifyNodeSigs) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_VerifyNodeSigs]()}
 }
 
 type Event_NodeSigsVerified struct {
@@ -209,8 +306,16 @@ type Event_NodeSigsVerified struct {
 
 func (*Event_NodeSigsVerified) isEvent_Type() {}
 
+func (w *Event_NodeSigsVerified) Unwrap() *eventpb.NodeSigsVerified {
+	return w.NodeSigsVerified
+}
+
 func (w *Event_NodeSigsVerified) Pb() eventpb.Event_Type {
 	return &eventpb.Event_NodeSigsVerified{NodeSigsVerified: w.NodeSigsVerified}
+}
+
+func (*Event_NodeSigsVerified) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_NodeSigsVerified]()}
 }
 
 type Event_RequestReady struct {
@@ -219,8 +324,16 @@ type Event_RequestReady struct {
 
 func (*Event_RequestReady) isEvent_Type() {}
 
+func (w *Event_RequestReady) Unwrap() *eventpb.RequestReady {
+	return w.RequestReady
+}
+
 func (w *Event_RequestReady) Pb() eventpb.Event_Type {
 	return &eventpb.Event_RequestReady{RequestReady: w.RequestReady}
+}
+
+func (*Event_RequestReady) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_RequestReady]()}
 }
 
 type Event_SendMessage struct {
@@ -229,8 +342,16 @@ type Event_SendMessage struct {
 
 func (*Event_SendMessage) isEvent_Type() {}
 
+func (w *Event_SendMessage) Unwrap() *eventpb.SendMessage {
+	return w.SendMessage
+}
+
 func (w *Event_SendMessage) Pb() eventpb.Event_Type {
 	return &eventpb.Event_SendMessage{SendMessage: w.SendMessage}
+}
+
+func (*Event_SendMessage) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_SendMessage]()}
 }
 
 type Event_MessageReceived struct {
@@ -239,8 +360,16 @@ type Event_MessageReceived struct {
 
 func (*Event_MessageReceived) isEvent_Type() {}
 
+func (w *Event_MessageReceived) Unwrap() *eventpb.MessageReceived {
+	return w.MessageReceived
+}
+
 func (w *Event_MessageReceived) Pb() eventpb.Event_Type {
 	return &eventpb.Event_MessageReceived{MessageReceived: w.MessageReceived}
+}
+
+func (*Event_MessageReceived) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MessageReceived]()}
 }
 
 type Event_Deliver struct {
@@ -249,8 +378,16 @@ type Event_Deliver struct {
 
 func (*Event_Deliver) isEvent_Type() {}
 
+func (w *Event_Deliver) Unwrap() *eventpb.Deliver {
+	return w.Deliver
+}
+
 func (w *Event_Deliver) Pb() eventpb.Event_Type {
 	return &eventpb.Event_Deliver{Deliver: w.Deliver}
+}
+
+func (*Event_Deliver) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Deliver]()}
 }
 
 type Event_Iss struct {
@@ -259,8 +396,16 @@ type Event_Iss struct {
 
 func (*Event_Iss) isEvent_Type() {}
 
+func (w *Event_Iss) Unwrap() *isspb.ISSEvent {
+	return w.Iss
+}
+
 func (w *Event_Iss) Pb() eventpb.Event_Type {
 	return &eventpb.Event_Iss{Iss: w.Iss}
+}
+
+func (*Event_Iss) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Iss]()}
 }
 
 type Event_VerifyRequestSig struct {
@@ -269,8 +414,16 @@ type Event_VerifyRequestSig struct {
 
 func (*Event_VerifyRequestSig) isEvent_Type() {}
 
+func (w *Event_VerifyRequestSig) Unwrap() *eventpb.VerifyRequestSig {
+	return w.VerifyRequestSig
+}
+
 func (w *Event_VerifyRequestSig) Pb() eventpb.Event_Type {
 	return &eventpb.Event_VerifyRequestSig{VerifyRequestSig: w.VerifyRequestSig}
+}
+
+func (*Event_VerifyRequestSig) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_VerifyRequestSig]()}
 }
 
 type Event_RequestSigVerified struct {
@@ -279,8 +432,16 @@ type Event_RequestSigVerified struct {
 
 func (*Event_RequestSigVerified) isEvent_Type() {}
 
+func (w *Event_RequestSigVerified) Unwrap() *eventpb.RequestSigVerified {
+	return w.RequestSigVerified
+}
+
 func (w *Event_RequestSigVerified) Pb() eventpb.Event_Type {
 	return &eventpb.Event_RequestSigVerified{RequestSigVerified: w.RequestSigVerified}
+}
+
+func (*Event_RequestSigVerified) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_RequestSigVerified]()}
 }
 
 type Event_StoreVerifiedRequest struct {
@@ -289,8 +450,16 @@ type Event_StoreVerifiedRequest struct {
 
 func (*Event_StoreVerifiedRequest) isEvent_Type() {}
 
+func (w *Event_StoreVerifiedRequest) Unwrap() *eventpb.StoreVerifiedRequest {
+	return w.StoreVerifiedRequest
+}
+
 func (w *Event_StoreVerifiedRequest) Pb() eventpb.Event_Type {
 	return &eventpb.Event_StoreVerifiedRequest{StoreVerifiedRequest: w.StoreVerifiedRequest}
+}
+
+func (*Event_StoreVerifiedRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_StoreVerifiedRequest]()}
 }
 
 type Event_AppSnapshotRequest struct {
@@ -299,8 +468,16 @@ type Event_AppSnapshotRequest struct {
 
 func (*Event_AppSnapshotRequest) isEvent_Type() {}
 
+func (w *Event_AppSnapshotRequest) Unwrap() *eventpb.AppSnapshotRequest {
+	return w.AppSnapshotRequest
+}
+
 func (w *Event_AppSnapshotRequest) Pb() eventpb.Event_Type {
 	return &eventpb.Event_AppSnapshotRequest{AppSnapshotRequest: w.AppSnapshotRequest}
+}
+
+func (*Event_AppSnapshotRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_AppSnapshotRequest]()}
 }
 
 type Event_AppSnapshot struct {
@@ -309,8 +486,16 @@ type Event_AppSnapshot struct {
 
 func (*Event_AppSnapshot) isEvent_Type() {}
 
+func (w *Event_AppSnapshot) Unwrap() *eventpb.AppSnapshot {
+	return w.AppSnapshot
+}
+
 func (w *Event_AppSnapshot) Pb() eventpb.Event_Type {
 	return &eventpb.Event_AppSnapshot{AppSnapshot: w.AppSnapshot}
+}
+
+func (*Event_AppSnapshot) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_AppSnapshot]()}
 }
 
 type Event_AppRestoreState struct {
@@ -319,8 +504,16 @@ type Event_AppRestoreState struct {
 
 func (*Event_AppRestoreState) isEvent_Type() {}
 
+func (w *Event_AppRestoreState) Unwrap() *eventpb.AppRestoreState {
+	return w.AppRestoreState
+}
+
 func (w *Event_AppRestoreState) Pb() eventpb.Event_Type {
 	return &eventpb.Event_AppRestoreState{AppRestoreState: w.AppRestoreState}
+}
+
+func (*Event_AppRestoreState) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_AppRestoreState]()}
 }
 
 type Event_TimerDelay struct {
@@ -329,8 +522,16 @@ type Event_TimerDelay struct {
 
 func (*Event_TimerDelay) isEvent_Type() {}
 
+func (w *Event_TimerDelay) Unwrap() *eventpb.TimerDelay {
+	return w.TimerDelay
+}
+
 func (w *Event_TimerDelay) Pb() eventpb.Event_Type {
 	return &eventpb.Event_TimerDelay{TimerDelay: w.TimerDelay}
+}
+
+func (*Event_TimerDelay) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_TimerDelay]()}
 }
 
 type Event_TimerRepeat struct {
@@ -339,8 +540,16 @@ type Event_TimerRepeat struct {
 
 func (*Event_TimerRepeat) isEvent_Type() {}
 
+func (w *Event_TimerRepeat) Unwrap() *eventpb.TimerRepeat {
+	return w.TimerRepeat
+}
+
 func (w *Event_TimerRepeat) Pb() eventpb.Event_Type {
 	return &eventpb.Event_TimerRepeat{TimerRepeat: w.TimerRepeat}
+}
+
+func (*Event_TimerRepeat) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_TimerRepeat]()}
 }
 
 type Event_TimerGarbageCollect struct {
@@ -349,18 +558,34 @@ type Event_TimerGarbageCollect struct {
 
 func (*Event_TimerGarbageCollect) isEvent_Type() {}
 
+func (w *Event_TimerGarbageCollect) Unwrap() *eventpb.TimerGarbageCollect {
+	return w.TimerGarbageCollect
+}
+
 func (w *Event_TimerGarbageCollect) Pb() eventpb.Event_Type {
 	return &eventpb.Event_TimerGarbageCollect{TimerGarbageCollect: w.TimerGarbageCollect}
 }
 
+func (*Event_TimerGarbageCollect) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_TimerGarbageCollect]()}
+}
+
 type Event_Bcb struct {
-	Bcb *bcbpb.Event
+	Bcb *types.Event
 }
 
 func (*Event_Bcb) isEvent_Type() {}
 
+func (w *Event_Bcb) Unwrap() *types.Event {
+	return w.Bcb
+}
+
 func (w *Event_Bcb) Pb() eventpb.Event_Type {
-	return &eventpb.Event_Bcb{Bcb: w.Bcb}
+	return &eventpb.Event_Bcb{Bcb: (w.Bcb).Pb()}
+}
+
+func (*Event_Bcb) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Bcb]()}
 }
 
 type Event_Mempool struct {
@@ -369,18 +594,34 @@ type Event_Mempool struct {
 
 func (*Event_Mempool) isEvent_Type() {}
 
+func (w *Event_Mempool) Unwrap() *mempoolpb.Event {
+	return w.Mempool
+}
+
 func (w *Event_Mempool) Pb() eventpb.Event_Type {
 	return &eventpb.Event_Mempool{Mempool: w.Mempool}
 }
 
+func (*Event_Mempool) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Mempool]()}
+}
+
 type Event_Availability struct {
-	Availability *structs.Event
+	Availability *types1.Event
 }
 
 func (*Event_Availability) isEvent_Type() {}
 
+func (w *Event_Availability) Unwrap() *types1.Event {
+	return w.Availability
+}
+
 func (w *Event_Availability) Pb() eventpb.Event_Type {
 	return &eventpb.Event_Availability{Availability: (w.Availability).Pb()}
+}
+
+func (*Event_Availability) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Availability]()}
 }
 
 type Event_NewEpoch struct {
@@ -389,8 +630,16 @@ type Event_NewEpoch struct {
 
 func (*Event_NewEpoch) isEvent_Type() {}
 
+func (w *Event_NewEpoch) Unwrap() *eventpb.NewEpoch {
+	return w.NewEpoch
+}
+
 func (w *Event_NewEpoch) Pb() eventpb.Event_Type {
 	return &eventpb.Event_NewEpoch{NewEpoch: w.NewEpoch}
+}
+
+func (*Event_NewEpoch) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_NewEpoch]()}
 }
 
 type Event_NewConfig struct {
@@ -399,8 +648,16 @@ type Event_NewConfig struct {
 
 func (*Event_NewConfig) isEvent_Type() {}
 
+func (w *Event_NewConfig) Unwrap() *eventpb.NewConfig {
+	return w.NewConfig
+}
+
 func (w *Event_NewConfig) Pb() eventpb.Event_Type {
 	return &eventpb.Event_NewConfig{NewConfig: w.NewConfig}
+}
+
+func (*Event_NewConfig) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_NewConfig]()}
 }
 
 type Event_TestingString struct {
@@ -409,8 +666,16 @@ type Event_TestingString struct {
 
 func (*Event_TestingString) isEvent_Type() {}
 
+func (w *Event_TestingString) Unwrap() *wrapperspb.StringValue {
+	return w.TestingString
+}
+
 func (w *Event_TestingString) Pb() eventpb.Event_Type {
 	return &eventpb.Event_TestingString{TestingString: w.TestingString}
+}
+
+func (*Event_TestingString) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_TestingString]()}
 }
 
 type Event_TestingUint struct {
@@ -419,26 +684,38 @@ type Event_TestingUint struct {
 
 func (*Event_TestingUint) isEvent_Type() {}
 
+func (w *Event_TestingUint) Unwrap() *wrapperspb.UInt64Value {
+	return w.TestingUint
+}
+
 func (w *Event_TestingUint) Pb() eventpb.Event_Type {
 	return &eventpb.Event_TestingUint{TestingUint: w.TestingUint}
+}
+
+func (*Event_TestingUint) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_TestingUint]()}
+}
+
+func EventFromPb(pb *eventpb.Event) *Event {
+	return &Event{
+		Type: Event_TypeFromPb(pb.Type),
+		Next: types2.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
+			return EventFromPb(t)
+		}),
+		DestModule: pb.DestModule,
+	}
 }
 
 func (m *Event) Pb() *eventpb.Event {
 	return &eventpb.Event{
 		Type: (m.Type).Pb(),
-		Next: model.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
+		Next: types2.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
 			return (t).Pb()
 		}),
 		DestModule: m.DestModule,
 	}
 }
 
-func EventFromPb(pb *eventpb.Event) *Event {
-	return &Event{
-		Type: Event_TypeFromPb(pb.Type),
-		Next: model.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
-			return EventFromPb(t)
-		}),
-		DestModule: pb.DestModule,
-	}
+func (*Event) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event]()}
 }

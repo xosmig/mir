@@ -79,19 +79,11 @@ func GenerateAll(pbGoStructPtrTypes []reflect.Type) error {
 	return nil
 }
 
-func renderJenFile(jenFile *jen.File, outputDir, outputFileName string, removeDirOnFail bool) (err error) {
+func renderJenFile(jenFile *jen.File, outputDir, outputFileName string) (err error) {
 	// Create the directory if needed.
 	err = os.MkdirAll(outputDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating output directory: %w", err)
-	}
-
-	if removeDirOnFail {
-		defer func() {
-			if err != nil {
-				_ = os.RemoveAll(outputDir)
-			}
-		}()
 	}
 
 	// Open the output file.
@@ -111,4 +103,25 @@ func renderJenFile(jenFile *jen.File, outputDir, outputFileName string, removeDi
 
 	// Render the file.
 	return jenFile.Render(file)
+}
+
+func renderJenFiles(
+	jenFileBySourcePackagePath map[string]*jen.File,
+	outputDirBySourceDir func(string) string,
+	outputFileName string,
+) error {
+	for sourcePackage, jenFile := range jenFileBySourcePackagePath {
+		sourceDir, err := importerutil.GetSourceDirForPackage(sourcePackage)
+		if err != nil {
+			return fmt.Errorf("could not find the source directory for package %v: %w", sourcePackage, err)
+		}
+
+		outputDir := outputDirBySourceDir(sourceDir)
+		err = renderJenFile(jenFile, outputDir, outputFileName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

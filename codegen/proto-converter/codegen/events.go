@@ -1,12 +1,9 @@
 package codegen
 
 import (
-	"fmt"
-
 	"github.com/dave/jennifer/jen"
 
 	"github.com/filecoin-project/mir/codegen/proto-converter/model/events"
-	"github.com/filecoin-project/mir/codegen/proto-converter/util/importerutil"
 )
 
 func generateEventConstructorsRecursively(
@@ -94,18 +91,5 @@ func GenerateEventConstructors(eventRoot *events.EventNode) error {
 		jenFileBySourcePackagePath,
 	)
 
-	for sourcePackage, jenFile := range jenFileBySourcePackagePath {
-		sourceDir, err := importerutil.GetSourceDirForPackage(sourcePackage)
-		if err != nil {
-			return fmt.Errorf("could not find the source directory for package %v: %w", sourcePackage, err)
-		}
-
-		outputDir := events.OutputDir(sourceDir)
-		err = renderJenFile(jenFile, outputDir, "events.mir.go" /*removeDirOnFail*/, true)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return renderJenFiles(jenFileBySourcePackagePath, events.OutputDir, "events.mir.go")
 }

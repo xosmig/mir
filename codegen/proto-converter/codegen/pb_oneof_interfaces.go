@@ -56,5 +56,5 @@ func GenerateOneofInterfaces(
 		}
 	}
 
-	return renderJenFile(jenFile, inputDir, "oneof_interfaces.mir.go" /*removeDirOnFail*/, false)
+	return renderJenFile(jenFile, inputDir, "oneof_interfaces.mir.go")
 }

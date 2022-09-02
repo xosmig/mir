@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"path"
 	"reflect"
 	"strings"
 
@@ -14,18 +13,6 @@ import (
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/astutil"
 	"github.com/filecoin-project/mir/pkg/pb/mir"
 )
-
-func StructsPackagePath(sourcePackagePath string) string {
-	return sourcePackagePath + "/structs"
-}
-
-func StructsPackageName(sourcePackagePath string) string {
-	return sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "structs"
-}
-
-func StructsOutputDir(sourceDir string) string {
-	return fmt.Sprintf(path.Join(sourceDir, "structs"))
-}
 
 // Message contains the information needed to generate code for a protobuf message.
 type Message struct {
@@ -53,7 +40,7 @@ func (m *Message) MirPkgPath() string {
 		return m.mirPkgPath
 	}
 
-	m.mirPkgPath = StructsPackagePath(m.PbPkgPath())
+	m.mirPkgPath = PackagePath(m.PbPkgPath())
 	return m.mirPkgPath
 }
 
@@ -141,31 +128,6 @@ func (m *Message) ShouldGenerateMirType() bool {
 	return m.shouldGenerateMirType
 }
 
-//func (m *Message) ParentEvent() (*Message, error) {
-//	// Return the cached version if present.
-//	if m.parentEvent != nil {
-//		return m.parentEvent, nil
-//	}
-//
-//	ext := proto.GetExtension(m.protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_ParentEvent).(string)
-//	if ext == "" {
-//		return nil, nil
-//	}
-//
-//	sepIdx := strings.LastIndex(ext, ".")
-//	parentPackage, parentType := ext[:sepIdx], ext[sepIdx+1:]
-//	if parentType == "" {
-//		return nil, fmt.Errorf("invalid format for option (mir.parent_event)")
-//	}
-//
-//	// If the parent package is not specified, the same package is used.
-//	if parentPackage == "" {
-//		parentPackage = m.PbPkgPath()
-//	}
-//
-//	return
-//}
-
 func IsMirEvent(protoDesc protoreflect.MessageDescriptor) bool {
 	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_Event).(bool)
 }
@@ -200,24 +162,3 @@ func getProtoNameOfField(field reflect.StructField) (protoName protoreflect.Name
 
 	return "", fmt.Errorf("proto name of field %v is not specified in the tag", field.Name)
 }
-
-//func GetParentOneof(protoDesc protoreflect.MessageDescriptor) (*Oneof, error) {
-//	str := proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_ParentOneof).(string)
-//	parts := strings.Split(str, ".")
-//	if len(parts) < 3 {
-//		return nil, fmt.Errorf("invalid format for parent_oneof option. " +
-//			"Expected format: \"full/pkg/name.Message.oneof_field\"")
-//	}
-//
-//	parentMsgName := parts[len(parts)-2]
-//	oneofName := parts[len(parts)-1]
-//	parentPkg := strings.Join(parts[:len(parts)-2], "/")
-//
-//
-//
-//	return &Oneof{
-//		Name: oneofName,
-//		Parent:
-//	}
-//
-//}

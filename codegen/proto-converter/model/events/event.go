@@ -52,7 +52,8 @@ func (ev *EventNode) IsEvent() bool {
 	return !ev.IsEventClass()
 }
 
-// Name returns the name of the event, which is the name of the corresponding message.
+// Name returns the name of the event.
+// Same as ev.Message().Name().
 func (ev *EventNode) Name() string {
 	return ev.Message().Name()
 }

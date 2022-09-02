@@ -1,18 +1,18 @@
 package availabilitypbevents
 
 import (
-	structs "github.com/filecoin-project/mir/pkg/pb/availabilitypb/structs"
+	types "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
 	eventpb "github.com/filecoin-project/mir/pkg/pb/eventpb"
-	structs1 "github.com/filecoin-project/mir/pkg/pb/eventpb/structs"
+	types1 "github.com/filecoin-project/mir/pkg/pb/eventpb/types"
 )
 
-func CertVerified(destModule string, valid bool, err string, origin *structs.VerifyCertOrigin) *eventpb.Event {
-	return (&structs1.Event{
+func CertVerified(destModule string, valid bool, err string, origin *types.VerifyCertOrigin) *eventpb.Event {
+	return (&types1.Event{
 		DestModule: destModule,
-		Type: &structs1.Event_Availability{
-			Availability: &structs.Event{
-				Type: &structs.Event_CertVerified{
-					CertVerified: &structs.CertVerified{
+		Type: &types1.Event_Availability{
+			Availability: &types.Event{
+				Type: &types.Event_CertVerified{
+					CertVerified: &types.CertVerified{
 						Valid:  valid,
 						Err:    err,
 						Origin: origin,

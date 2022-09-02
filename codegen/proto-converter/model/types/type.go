@@ -1,8 +1,24 @@
 package types
 
 import (
+	"fmt"
+	"path"
+	"strings"
+
 	"github.com/dave/jennifer/jen"
 )
+
+func PackagePath(sourcePackagePath string) string {
+	return sourcePackagePath + "/types"
+}
+
+func PackageName(sourcePackagePath string) string {
+	return sourcePackagePath[strings.LastIndex(sourcePackagePath, "/")+1:] + "types"
+}
+
+func OutputDir(sourceDir string) string {
+	return fmt.Sprintf(path.Join(sourceDir, "types"))
+}
 
 type Type interface {
 	// Same returns whether PbType() and MirType() represent the same type.

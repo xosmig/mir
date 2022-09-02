@@ -94,7 +94,7 @@ func BatchIDResponse(m dsl.Module, dest t.ModuleID, batchID t.BatchID, origin *m
 
 // UponEvent registers a handler for the given mempool event type.
 func UponEvent[EvWrapper mppb.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handler func(ev *Ev) error) {
-	dsl.UponEvent[*eventpb.Event_Mempool](m, func(ev *mppb.Event) error {
+	dsl.UponPbEvent[*eventpb.Event_Mempool](m, func(ev *mppb.Event) error {
 		evWrapper, ok := ev.Type.(EvWrapper)
 		if !ok {
 			return nil
