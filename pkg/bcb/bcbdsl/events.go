@@ -45,7 +45,7 @@ func Deliver(m dsl.Module, dest t.ModuleID, data []byte) {
 // Module-specific dsl functions for processing events.
 
 func UponEvent[EvWrapper bcbpb.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handler func(ev *Ev) error) {
-	dsl.UponPbEvent[*eventpb.Event_Bcb](m, func(ev *bcbpb.Event) error {
+	dsl.UponEvent[*eventpb.Event_Bcb](m, func(ev *bcbpb.Event) error {
 		evWrapper, ok := ev.Type.(EvWrapper)
 		if !ok {
 			return nil

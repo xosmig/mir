@@ -8,7 +8,7 @@ import (
 
 func generateEventConstructorsRecursively(
 	eventNode *events.EventNode,
-	constructParent func(code jen.Code) *jen.Statement,
+	constructParent func(child jen.Code) *jen.Statement,
 	eventRootType jen.Code,
 	jenFileBySourcePackagePath map[string]*jen.File,
 ) {
@@ -80,14 +80,14 @@ func generateEventConstructorsRecursively(
 func GenerateEventConstructors(eventRoot *events.EventNode) error {
 	jenFileBySourcePackagePath := make(map[string]*jen.File)
 
-	constructPbRootEventFromMirRootEvent := func(mirRootEvent jen.Code) *jen.Statement {
-		return eventRoot.Message().ToPb(mirRootEvent)
-	}
+	//constructPbRootEventFromMirRootEvent := func(mirRootEvent jen.Code) *jen.Statement {
+	//	return eventRoot.Message().ToPb(mirRootEvent)
+	//}
 
 	generateEventConstructorsRecursively(
 		/*eventNode*/ eventRoot,
-		/*constructParent*/ constructPbRootEventFromMirRootEvent,
-		/*eventRootType*/ eventRoot.Message().PbType(),
+		/*constructParent*/ func(child jen.Code) *jen.Statement { return jen.Add(child) },
+		/*eventRootType*/ eventRoot.Message().MirType(),
 		jenFileBySourcePackagePath,
 	)
 

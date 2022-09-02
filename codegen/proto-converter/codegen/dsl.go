@@ -25,9 +25,9 @@ var (
 	// Note: using reflection to determine this package path would cause a build dependency cycle.
 	dslPackagePath = "github.com/filecoin-project/mir/pkg/dsl"
 
-	dslModule    jen.Code = jen.Qual(dslPackagePath, "Module")
-	dslEmitEvent jen.Code = jen.Qual(dslPackagePath, "EmitEvent")
-	dslUponEvent jen.Code = jen.Qual(dslPackagePath, "UponMirEvent")
+	dslModule       jen.Code = jen.Qual(dslPackagePath, "Module")
+	dslEmitMirEvent jen.Code = jen.Qual(dslPackagePath, "EmitMirEvent")
+	dslUponMirEvent jen.Code = jen.Qual(dslPackagePath, "UponMirEvent")
 )
 
 func generateDslFunctionsForEmittingEventsRecursively(
@@ -61,11 +61,11 @@ func generateDslFunctionsForEmittingEventsRecursively(
 	)
 
 	jenFile.Func().Id(eventNode.Name()).Params(funcParams...).Block(
-		jen.Add(dslEmitEvent).Params(
+		jen.Add(dslEmitMirEvent).Params(
 			jen.Id("m"),
 			eventNode.Constructor().Params(eventNode.AllConstructorParameters().IDs()...),
 		),
-	)
+	).Line()
 }
 
 func generateDslFunctionsForEmittingEvents(eventRoot *events.EventNode) error {
@@ -159,7 +159,7 @@ func generateDslFunctionForHandlingEvents(eventRoot *events.EventNode) error {
 	for _, child := range eventRoot.Children() {
 		generateDslFunctionsForHandlingEventsRecursively(
 			/*eventNode*/ child,
-			/*uponEvent*/ dslUponEvent,
+			/*uponEvent*/ dslUponMirEvent,
 			jenFileBySourcePackagePath,
 		)
 	}

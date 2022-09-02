@@ -118,7 +118,7 @@ func HashOneMessage[C any](m Module, destModule t.ModuleID, data [][]byte, conte
 
 // UponInit invokes handler when the module is initialized.
 func UponInit(m Module, handler func() error) {
-	UponPbEvent[*eventpb.Event_Init](m, func(ev *eventpb.Init) error {
+	UponEvent[*eventpb.Event_Init](m, func(ev *eventpb.Init) error {
 		return handler()
 	})
 }
@@ -126,7 +126,7 @@ func UponInit(m Module, handler func() error) {
 // UponSignResult invokes handler when the module receives a response to a request made by SignRequest with the same
 // context type C.
 func UponSignResult[C any](m Module, handler func(signature []byte, context *C) error) {
-	UponPbEvent[*eventpb.Event_SignResult](m, func(ev *eventpb.SignResult) error {
+	UponEvent[*eventpb.Event_SignResult](m, func(ev *eventpb.SignResult) error {
 		originWrapper, ok := ev.Origin.Type.(*eventpb.SignOrigin_Dsl)
 		if !ok {
 			return nil
@@ -148,7 +148,7 @@ func UponNodeSigsVerified[C any](
 	m Module,
 	handler func(nodeIDs []t.NodeID, errs []error, allOK bool, context *C) error,
 ) {
-	UponPbEvent[*eventpb.Event_NodeSigsVerified](m, func(ev *eventpb.NodeSigsVerified) error {
+	UponEvent[*eventpb.Event_NodeSigsVerified](m, func(ev *eventpb.NodeSigsVerified) error {
 		originWrapper, ok := ev.Origin.Type.(*eventpb.SigVerOrigin_Dsl)
 		if !ok {
 			return nil
@@ -191,7 +191,7 @@ func UponOneNodeSigVerified[C any](m Module, handler func(nodeID t.NodeID, err e
 // UponHashResult invokes handler when the module receives a response to a request made by HashRequest with the same
 // context type C.
 func UponHashResult[C any](m Module, handler func(hashes [][]byte, context *C) error) {
-	UponPbEvent[*eventpb.Event_HashResult](m, func(ev *eventpb.HashResult) error {
+	UponEvent[*eventpb.Event_HashResult](m, func(ev *eventpb.HashResult) error {
 		originWrapper, ok := ev.Origin.Type.(*eventpb.HashOrigin_Dsl)
 		if !ok {
 			return nil
@@ -224,14 +224,14 @@ func UponOneHashResult[C any](m Module, handler func(hash []byte, context *C) er
 
 // UponMessageReceived invokes handler when the module receives a message over the network.
 func UponMessageReceived(m Module, handler func(from t.NodeID, msg *messagepb.Message) error) {
-	UponPbEvent[*eventpb.Event_MessageReceived](m, func(ev *eventpb.MessageReceived) error {
+	UponEvent[*eventpb.Event_MessageReceived](m, func(ev *eventpb.MessageReceived) error {
 		return handler(t.NodeID(ev.From), ev.Msg)
 	})
 }
 
 // UponNewRequests invokes handler when the module receives a NewRequests event.
 func UponNewRequests(m Module, handler func(requests []*requestpb.Request) error) {
-	UponPbEvent[*eventpb.Event_NewRequests](m, func(ev *eventpb.NewRequests) error {
+	UponEvent[*eventpb.Event_NewRequests](m, func(ev *eventpb.NewRequests) error {
 		return handler(ev.Requests)
 	})
 }

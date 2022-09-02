@@ -1,22 +1,22 @@
 package eventpbtypes
 
 import (
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-
 	mirreflect "github.com/filecoin-project/mir/codegen/proto-converter/mirreflect"
-	types2 "github.com/filecoin-project/mir/codegen/proto-converter/model/types"
-	types1 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
-	types "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
+	types3 "github.com/filecoin-project/mir/codegen/proto-converter/model/types"
+	types2 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
+	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
 	eventpb "github.com/filecoin-project/mir/pkg/pb/eventpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	mempoolpb "github.com/filecoin-project/mir/pkg/pb/mempoolpb"
+	types "github.com/filecoin-project/mir/pkg/types"
 	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type Event struct {
 	Type       Event_Type
 	Next       []*Event
-	DestModule string
+	DestModule types.ModuleID
 }
 
 type Event_Type interface {
@@ -85,11 +85,11 @@ func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
 	case *eventpb.Event_TimerGarbageCollect:
 		return &Event_TimerGarbageCollect{TimerGarbageCollect: pb.TimerGarbageCollect}
 	case *eventpb.Event_Bcb:
-		return &Event_Bcb{Bcb: types.EventFromPb(pb.Bcb)}
+		return &Event_Bcb{Bcb: types1.EventFromPb(pb.Bcb)}
 	case *eventpb.Event_Mempool:
 		return &Event_Mempool{Mempool: pb.Mempool}
 	case *eventpb.Event_Availability:
-		return &Event_Availability{Availability: types1.EventFromPb(pb.Availability)}
+		return &Event_Availability{Availability: types2.EventFromPb(pb.Availability)}
 	case *eventpb.Event_NewEpoch:
 		return &Event_NewEpoch{NewEpoch: pb.NewEpoch}
 	case *eventpb.Event_NewConfig:
@@ -571,12 +571,12 @@ func (*Event_TimerGarbageCollect) MirReflect() mirreflect.Type {
 }
 
 type Event_Bcb struct {
-	Bcb *types.Event
+	Bcb *types1.Event
 }
 
 func (*Event_Bcb) isEvent_Type() {}
 
-func (w *Event_Bcb) Unwrap() *types.Event {
+func (w *Event_Bcb) Unwrap() *types1.Event {
 	return w.Bcb
 }
 
@@ -607,12 +607,12 @@ func (*Event_Mempool) MirReflect() mirreflect.Type {
 }
 
 type Event_Availability struct {
-	Availability *types1.Event
+	Availability *types2.Event
 }
 
 func (*Event_Availability) isEvent_Type() {}
 
-func (w *Event_Availability) Unwrap() *types1.Event {
+func (w *Event_Availability) Unwrap() *types2.Event {
 	return w.Availability
 }
 
@@ -699,20 +699,20 @@ func (*Event_TestingUint) MirReflect() mirreflect.Type {
 func EventFromPb(pb *eventpb.Event) *Event {
 	return &Event{
 		Type: Event_TypeFromPb(pb.Type),
-		Next: types2.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
+		Next: types3.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
 			return EventFromPb(t)
 		}),
-		DestModule: pb.DestModule,
+		DestModule: (types.ModuleID)(pb.DestModule),
 	}
 }
 
 func (m *Event) Pb() *eventpb.Event {
 	return &eventpb.Event{
 		Type: (m.Type).Pb(),
-		Next: types2.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
+		Next: types3.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
 			return (t).Pb()
 		}),
-		DestModule: m.DestModule,
+		DestModule: (string)(m.DestModule),
 	}
 }
 

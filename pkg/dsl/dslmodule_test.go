@@ -419,13 +419,13 @@ func EmitTestingUint(m Module, dest types.ModuleID, u uint64) {
 }
 
 func UponTestingString(m Module, handler func(s string) error) {
-	UponPbEvent[*eventpb.Event_TestingString](m, func(ev *wrapperspb.StringValue) error {
+	UponEvent[*eventpb.Event_TestingString](m, func(ev *wrapperspb.StringValue) error {
 		return handler(ev.Value)
 	})
 }
 
 func UponTestingUint(m Module, handler func(u uint64) error) {
-	UponPbEvent[*eventpb.Event_TestingUint](m, func(ev *wrapperspb.UInt64Value) error {
+	UponEvent[*eventpb.Event_TestingUint](m, func(ev *wrapperspb.UInt64Value) error {
 		return handler(ev.Value)
 	})
 }

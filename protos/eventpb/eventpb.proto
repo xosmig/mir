@@ -30,6 +30,8 @@ message Event {
 
   // TODO, normalize naming, for instance Complete/Completed
   oneof type {
+    option (mir.event_type) = true;
+
     Init                   init                    = 1;
     Tick                   tick                    = 2;
     WALAppend              wal_append              = 3;
@@ -75,7 +77,7 @@ message Event {
   // and the next field would contain the message sending event.
   repeated Event next = 100 [(mir.dsl.ignore) = true];
 
-  string dest_module = 200 [(mir.dsl.omit_in_handler) = true];
+  string dest_module = 200 [(mir.type) = "github.com/filecoin-project/mir/pkg/types.ModuleID", (mir.dsl.omit_in_handler) = true];
 }
 
 message Init {}

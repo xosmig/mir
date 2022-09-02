@@ -65,10 +65,11 @@ func (m *dslModuleImpl) ModuleID() t.ModuleID {
 	return m.moduleID
 }
 
-// UponPbEvent registers an event handler for module m.
+// UponEvent registers an event handler for module m.
 // This event handler will be called every time an event of type EvWrapper is received.
-// NB: This function works with the (legacy) protoc-generated types and is likely to be removed in the future.
-func UponPbEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) error) {
+// NB: This function works with the (legacy) protoc-generated types and is likely to be
+// removed in the future, with UponMirEvent taking its place.
+func UponEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) error) {
 	evWrapperType := reflectutil.TypeOf[EvWrapper]()
 
 	m.DslHandle().impl.eventHandlers[evWrapperType] = append(m.DslHandle().impl.eventHandlers[evWrapperType],
@@ -79,6 +80,8 @@ func UponPbEvent[EvWrapper eventpb.Event_TypeWrapper[Ev], Ev any](m Module, hand
 
 // UponMirEvent registers an event handler for module m.
 // This event handler will be called every time an event of type EvWrapper is received.
+// NB: this function works with the Mir-generated types.
+// For the (legacy) protoc-generated types, UponEvent can be used.
 func UponMirEvent[EvWrapper eventpbtypes.Event_TypeWrapper[Ev], Ev any](m Module, handler func(ev *Ev) error) {
 	var zeroW EvWrapper
 	evWrapperType := zeroW.MirReflect().PbType()
@@ -131,8 +134,17 @@ func (h Handle) RecoverAndCleanupContext(id ContextID) any {
 func (m *dslModuleImpl) ImplementsModule() {}
 
 // EmitEvent adds the event to the queue of output events
+// NB: This function works with the (legacy) protoc-generated types and is likely to be
+// removed in the future, with EmitMirEvent taking its place.
 func EmitEvent(m Module, ev *eventpb.Event) {
 	m.DslHandle().impl.outputEvents.PushBack(ev)
+}
+
+// EmitMirEvent adds the event to the queue of output events
+// NB: this function works with the Mir-generated types.
+// For the (legacy) protoc-generated types, EmitEvent can be used.
+func EmitMirEvent(m Module, ev *eventpbtypes.Event) {
+	m.DslHandle().impl.outputEvents.PushBack(ev.Pb())
 }
 
 // ApplyEvents applies a list of input events to the module, making it advance its state
