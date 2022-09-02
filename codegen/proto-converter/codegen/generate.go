@@ -56,16 +56,11 @@ func GenerateAll(pbGoStructPtrTypes []reflect.Type) error {
 
 	// Look for the root of the event hierarchy.
 	eventRootMessages := sliceutil.Filter(msgs, func(_ int, msg *types.Message) bool { return msg.IsEventRoot() })
-	if len(eventRootMessages) > 1 {
-		return fmt.Errorf("found multiple messages marked as event roots: %v",
-			sliceutil.Transform(eventRootMessages, func(_ int, msg *types.Message) string { return msg.Name() }))
-	}
 
-	// If this package contains the root of the event hierarchy, generate constructors for all events.
-	if len(eventRootMessages) == 1 {
+	for _, eventRootMessage := range eventRootMessages {
 		eventParser := events.NewParser(parser)
 
-		eventRoot, err := eventParser.ParseEventHierarchy(eventRootMessages[0])
+		eventRoot, err := eventParser.ParseEventHierarchy(eventRootMessage)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,12 @@ package events
 import (
 	"fmt"
 
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/filecoin-project/mir/codegen/proto-converter/model/types"
+	"github.com/filecoin-project/mir/pkg/pb/mir/dsl"
 )
 
 type Parser struct {
@@ -39,7 +44,7 @@ func (p *Parser) parseEventNodeRecursively(
 	}
 
 	for _, field := range fields {
-		if field.IsEventTypeOneof() || field.OmitInConstructor() {
+		if field.IsEventTypeOneof() || DslIgnore(field.ProtoDesc) {
 			continue
 		}
 
@@ -97,4 +102,15 @@ func getTypeOneof(fields types.Fields) (*types.Oneof, bool) {
 		}
 	}
 	return nil, false
+}
+
+func DslIgnore(protoDesc protoreflect.Descriptor) bool {
+	fieldDesc, ok := protoDesc.(protoreflect.FieldDescriptor)
+	if !ok {
+		// This is a oneof and this option does not exist for oneofs.
+		// Return false as the default value.
+		return false
+	}
+
+	return proto.GetExtension(fieldDesc.Options().(*descriptorpb.FieldOptions), dsl.E_Ignore).(bool)
 }

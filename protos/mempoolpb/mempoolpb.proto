@@ -6,7 +6,7 @@ option go_package = "github.com/filecoin-project/mir/pkg/pb/mempoolpb";
 
 import "contextstorepb/contextstorepb.proto";
 import "dslpb/dslpb.proto";
-import "mir/plugin.proto";
+import "mir/codegen_extensions.proto";
 import "requestpb/requestpb.proto";
 
 // ============================================================

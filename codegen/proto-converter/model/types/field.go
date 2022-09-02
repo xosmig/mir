@@ -41,18 +41,6 @@ func (f *Field) FuncParamMirType() jen.Code {
 	return jen.Id(f.LowercaseName()).Add(f.Type.MirType())
 }
 
-// OmitInConstructor returns true iff the field is marked with option [(mir.omit_in_constructor) = true].
-func (f *Field) OmitInConstructor() bool {
-	fieldDesc, ok := f.ProtoDesc.(protoreflect.FieldDescriptor)
-	if !ok {
-		// This is a oneof and this option does not exist for oneofs.
-		// Return false as the default value.
-		return false
-	}
-
-	return proto.GetExtension(fieldDesc.Options().(*descriptorpb.FieldOptions), mir.E_OmitInConstructor).(bool)
-}
-
 // IsEventTypeOneof returns true iff the field is a oneof and either
 // (a) it is named `type` or `Type`; or
 // (b) it is marked with `option (mir.event_type) = true`.

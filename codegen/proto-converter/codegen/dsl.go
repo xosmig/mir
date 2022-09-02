@@ -68,6 +68,7 @@ func generateDslFunctionsForEmittingEventsRecursively(
 
 func generateDslFunctionsForHandlingEventsRecursively(
 	eventNode *events.EventNode,
+	uponParentEvent *jen.Statement,
 	jenFileBySourcePackagePath map[string]*jen.File,
 ) {
 
@@ -82,37 +83,57 @@ func generateDslFunctionsForHandlingEventsRecursively(
 		jenFile.Line()
 	}
 
+	handlerParameters := eventNode.ThisNodeConstructorParameters()
+
 	// Check if this is an internal node in the hierarchy.
 	if eventNode.IsEventClass() {
+
+		// Generate function for handling the event class.
 		jenFile.Func().Id("Upon"+eventNode.Name()).Types(
-			jen.Id("ChildWrapper").Id(eventNode.TypeOneof().MirWrapperInterfaceName()).Params(jen.Id("Child")),
-			jen.Id("Child").Any(),
-		).Params(jen.Id("m").Add(dslModule), jen.Id("handler").Func().Params())
+			jen.Id("W").Id(eventNode.TypeOneof().MirWrapperInterfaceName()).Types(jen.Id("Ev")),
+			jen.Id("Ev").Any(),
+		).Params(
+			jen.Id("m").Add(dslModule),
+			jen.Id("handler").Func().Params(handlerParameters.MirCode()...).Id("error"),
+		).Block(
+			uponParentEvent.Types(eventNode.OneofOption().PbWrapperType()).Params(
+				jen.Id("m"),
+				jen.Func().Params(jen.Id("ev").Add(eventNode.Message().MirType())).Id("error").Block(
+					jen.List(jen.Id("w"), jen.Id("ok")).Op(":=").
+						Id("ev").Dot(eventNode.Parent().TypeOneof().Name).Op(".").Add(jen.Id("W")),
+					jen.If(jen.Op("!").Id("ok")).Block(
+						jen.Return(jen.Id("nil")),
+					),
+					jen.Return(jen.Id("handler").Params(jen.Id("w").Dot("Unwrap").Params())),
+				),
+			),
+		)
 
+		uponThisEvent := jen.Qual(DslPackagePath(eventNode.Message().PbPkgPath()), "Upon"+eventNode.Name())
+
+		// Recursively invoke the function for the children in the hierarchy.
 		for _, child := range eventNode.Children() {
-			generateDslFunctionsForEmittingEventsRecursively(child, jenFileBySourcePackagePath)
+			generateDslFunctionsForHandlingEventsRecursively(
+				/*eventNode*/ child,
+				/*uponParentEvent*/ uponThisEvent,
+				jenFileBySourcePackagePath,
+			)
 		}
-
-		// // UponEvent registers a handler for the given availability layer event type.
-		//func UponEvent[EvWrapper apb.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handler func(ev *Ev) error) {
-		//	dsl.UponEvent[*eventpb.Event_Availability](m, func(ev *apb.Event) error {
-		//		evWrapper, ok := ev.Type.(EvWrapper)
-		//		if !ok {
-		//			return nil
-		//		}
-		//		return handler(evWrapper.Unwrap())
-		//	})
-		//}
 		return
 	}
 
-	// Generate the function for emitting the event
-	funcParams := append(
-		[]jen.Code{jen.Id("m").Add(dslModule)},
-		eventNode.AllConstructorParameters().MirCode()...,
+	// Generate the function for handling the event.
+	jenFile.Func().Id("Upon"+eventNode.Name()).Params(
+		jen.Id("m").Add(dslModule),
+		jen.Id("handler").Func().Params(handlerParameters.MirCode()...).Id("error"),
+	).Block(
+		uponParentEvent.Types(eventNode.OneofOption().MirWrapperType()).Params(
+			jen.Id("m"),
+			jen.Func().Params(jen.Id("ev").Add(eventNode.Message().MirType()).Id("error")).Block(
+				jen.Return(jen.Id("handler").Params(handlerParameters.IDs()...)),
+			),
+		),
 	)
-
-	// TODO
 }
 
 func GenerateDslFunctions(eventRoot *events.EventNode) error {

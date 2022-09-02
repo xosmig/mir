@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/protobuf/compiler/protogen"
 
+	"github.com/filecoin-project/mir/codegen/proto-converter/model/types"
 	"github.com/filecoin-project/mir/codegen/proto-converter/util/protogenutil"
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 )

@@ -4,7 +4,7 @@ package bcbpb;
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/bcbpb";
 
-import "mir/plugin.proto";
+import "mir/codegen_extensions.proto";
 
 // ============================================================
 // Messages

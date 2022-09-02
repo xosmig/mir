@@ -14,11 +14,13 @@ import "messagepb/messagepb.proto";
 import "isspb/isspb.proto";
 import "google/protobuf/wrappers.proto";
 import "bcbpb/bcbpb.proto";
-import "mir/plugin.proto";
 import "contextstorepb/contextstorepb.proto";
 import "dslpb/dslpb.proto";
 import "mempoolpb/mempoolpb.proto";
 import "availabilitypb/availabilitypb.proto";
+
+import "mir/codegen_extensions.proto";
+import "mir/dsl/dsl_extensions.proto";
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/eventpb";
 
@@ -71,9 +73,9 @@ message Event {
   // after the corresponding entry has been persisted in the write-ahead log (WAL).
   // In this case, the WAL append event would be this event
   // and the next field would contain the message sending event.
-  repeated Event next = 100 [(mir.omit_in_constructor) = true];
+  repeated Event next = 100 [(mir.dsl.ignore) = true];
 
-  string dest_module = 200;
+  string dest_module = 200 [(mir.dsl.omit_in_handler) = true];
 }
 
 message Init {}

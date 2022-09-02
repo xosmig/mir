@@ -4,7 +4,7 @@ package contextstorepb;
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/contextstorepb";
 
-import "mir/plugin.proto";
+import "mir/codegen_extensions.proto";
 
 // ============================================================
 // Messages
