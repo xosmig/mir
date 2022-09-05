@@ -1,10 +1,12 @@
-package model
+package messages
 
 import (
 	"path"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
+
+	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
 )
 
 func PackagePath(sourcePackagePath string) string {
@@ -33,76 +35,78 @@ type NetMessageNode struct {
 	// The parent node in the hierarchy.
 	parent *NetMessageNode
 	// The accumulated parameters for the constructor function.
-	constructorParameters ConstructorParamList
+	constructorParameters types.ConstructorParamList
 }
 
 // IsRoot returns true if this is the root of the message hierarchy.
-func (ev *NetMessageNode) IsRoot() bool {
-	return ev.parent == nil && ev.IsMsgClass()
+func (msg *NetMessageNode) IsRoot() bool {
+	return msg.parent == nil && msg.IsMsgClass()
 }
 
 // IsMsgClass returns true iff the message has a oneof field marked with [(mir.message_type) = true].
-func (ev *NetMessageNode) IsMsgClass() bool {
-	return ev.typeOneof != nil
+func (msg *NetMessageNode) IsMsgClass() bool {
+	return msg.typeOneof != nil
 }
 
 // IsNetMessage returns true if this is not a msg class (see IsMsgClass).
-func (ev *NetMessageNode) IsNetMessage() bool {
-	return !ev.IsMsgClass()
+func (msg *NetMessageNode) IsNetMessage() bool {
+	return !msg.IsMsgClass()
 }
 
 // Name returns the name of the message.
 // Same as ev.Message().Name().
-func (ev *NetMessageNode) Name() string {
-	return ev.Message().Name()
+func (msg *NetMessageNode) Name() string {
+	return msg.Message().Name()
 }
 
 // Message returns the protobuf message for this net message.
-func (ev *NetMessageNode) Message() *types.Message {
-	return ev.message
+func (msg *NetMessageNode) Message() *types.Message {
+	return msg.message
 }
 
 // OneofOption returns the option in the parent's Type oneof.
 // If nil, IsRoot() must be true.
-func (ev *NetMessageNode) OneofOption() *types.OneofOption {
-	return ev.oneofOption
+func (msg *NetMessageNode) OneofOption() *types.OneofOption {
+	return msg.oneofOption
 }
 
 // TypeOneof returns the Type oneof field of the message (if present).
-func (ev *NetMessageNode) TypeOneof() *types.Oneof {
-	return ev.typeOneof
+func (msg *NetMessageNode) TypeOneof() *types.Oneof {
+	return msg.typeOneof
 }
 
 // Children returns the children messages in the hierarchy.
 // NB: It may happen that a message class has no children.
-func (ev *NetMessageNode) Children() []*NetMessageNode {
-	return ev.children
+func (msg *NetMessageNode) Children() []*NetMessageNode {
+	return msg.children
 }
 
-// Parent returns the parent event in the hierarchy.
-func (ev *NetMessageNode) Parent() *NetMessageNode {
-	return ev.parent
+// Parent returns the parent node in the hierarchy.
+func (msg *NetMessageNode) Parent() *NetMessageNode {
+	return msg.parent
 }
 
 // AllConstructorParameters returns the accumulated parameters for the constructor function.
 // The parameters include all the fields of all the ancestors in the hierarchy except those marked with
 // [(mir.omit_in_constructor) = true] and the Type oneofs.
 // To get the parameters that correspond to the fields only of this node
-func (ev *NetMessageNode) AllConstructorParameters() ConstructorParamList {
-	return ev.constructorParameters
+func (msg *NetMessageNode) AllConstructorParameters() types.ConstructorParamList {
+	return msg.constructorParameters
 }
 
 // ThisNodeConstructorParameters returns a suffix of AllConstructorParameters() that corresponds to the fields
 // only of this in the hierarchy, without the fields accumulated from the ancestors.
-func (ev *NetMessageNode) ThisNodeConstructorParameters() ConstructorParamList {
-	if ev.Parent() == nil {
-		return ev.AllConstructorParameters()
+func (msg *NetMessageNode) ThisNodeConstructorParameters() types.ConstructorParamList {
+	if msg.Parent() == nil {
+		return msg.AllConstructorParameters()
 	}
 
 	// Remove the prefix that corresponds to the parameters of the parent.
-	return ConstructorParamList{ev.constructorParameters.Slice[len(ev.Parent().constructorParameters.Slice):]}
+	return types.ConstructorParamList{
+		Slice: msg.constructorParameters.Slice[len(msg.Parent().constructorParameters.Slice):],
+	}
 }
 
-func (ev *NetMessageNode) Constructor() *jen.Statement {
-	return jen.Qual(PackagePath(ev.Message().PbPkgPath()), ev.Name())
+func (msg *NetMessageNode) Constructor() *jen.Statement {
+	return jen.Qual(PackagePath(msg.Message().PbPkgPath()), msg.Name())
 }

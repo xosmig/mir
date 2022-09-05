@@ -155,7 +155,8 @@ func (p *Parser) ParseFields(m *Message) (fields Fields, err error) {
 	}()
 
 	if !m.ShouldGenerateMirType() {
-		return nil, fmt.Errorf("fields can only be parsed for messages with Mir-generated types")
+		return nil, fmt.Errorf("cannot parse field for message %v. "+
+			"Fields can only be parsed for messages with Mir-generated types", m.PbReflectType())
 	}
 
 	for i := 0; i < m.pbGoStructPtrReflect.Elem().NumField(); i++ {

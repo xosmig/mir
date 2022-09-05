@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package mir.events;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/mir/events";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  bool ignore = 60200;
+}

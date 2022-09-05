@@ -4,38 +4,37 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/filecoin-project/mir/codegen/generators/events-gen/events"
-
+	"github.com/filecoin-project/mir/codegen/generators/net-gen/messages"
 	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
 	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
-type EventsGenerator struct{}
+type NetMsgGenerator struct{}
 
-func (EventsGenerator) Run(pbGoStructTypes []reflect.Type) error {
-	rootMessages, err := GetEventHierarchyRootMessages(pbGoStructTypes)
+func (NetMsgGenerator) Run(pbGoStructTypes []reflect.Type) error {
+	rootMessages, err := GetNetMsgHierarchyRootMessages(pbGoStructTypes)
 	if err != nil {
 		return err
 	}
 
-	for _, eventRootMessage := range rootMessages {
-		eventParser := events.DefaultParser()
+	for _, rootMessage := range rootMessages {
+		netMsgsParser := messages.DefaultParser()
 
-		root, err := eventParser.ParseEventHierarchy(eventRootMessage)
+		root, err := netMsgsParser.ParseNetMessageHierarchy(rootMessage)
 		if err != nil {
 			return err
 		}
 
-		err = GenerateEventConstructors(root)
+		err = GenerateMessageConstructors(root)
 		if err != nil {
-			return fmt.Errorf("error generating event constructors: %w", err)
+			return fmt.Errorf("error generating net message constructors: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func GetEventHierarchyRootMessages(pbGoStructTypes []reflect.Type) ([]*types.Message, error) {
+func GetNetMsgHierarchyRootMessages(pbGoStructTypes []reflect.Type) ([]*types.Message, error) {
 	typesParser := types.DefaultParser()
 
 	// For convenience, the parser operates on pointer to struct types and not struct types themselves.
@@ -51,6 +50,6 @@ func GetEventHierarchyRootMessages(pbGoStructTypes []reflect.Type) ([]*types.Mes
 
 	// Look for the root of the hierarchy.
 	return sliceutil.Filter(msgs, func(_ int, msg *types.Message) bool {
-		return types.IsMirEventRoot(msg.ProtoDesc())
+		return types.IsNetMessageRoot(msg.ProtoDesc())
 	}), nil
 }

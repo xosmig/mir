@@ -9,6 +9,163 @@ import (
 	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
+type Event struct {
+	Type Event_Type
+}
+
+type Event_Type interface {
+	mirreflect.GeneratedType
+	isEvent_Type()
+	Pb() availabilitypb.Event_Type
+}
+
+type Event_TypeWrapper[T any] interface {
+	Event_Type
+	Unwrap() *T
+}
+
+func Event_TypeFromPb(pb availabilitypb.Event_Type) Event_Type {
+	switch pb := pb.(type) {
+	case *availabilitypb.Event_RequestCert:
+		return &Event_RequestCert{RequestCert: pb.RequestCert}
+	case *availabilitypb.Event_NewCert:
+		return &Event_NewCert{NewCert: pb.NewCert}
+	case *availabilitypb.Event_VerifyCert:
+		return &Event_VerifyCert{VerifyCert: pb.VerifyCert}
+	case *availabilitypb.Event_CertVerified:
+		return &Event_CertVerified{CertVerified: CertVerifiedFromPb(pb.CertVerified)}
+	case *availabilitypb.Event_RequestTransactions:
+		return &Event_RequestTransactions{RequestTransactions: pb.RequestTransactions}
+	case *availabilitypb.Event_ProvideTransactions:
+		return &Event_ProvideTransactions{ProvideTransactions: pb.ProvideTransactions}
+	}
+	return nil
+}
+
+type Event_RequestCert struct {
+	RequestCert *availabilitypb.RequestCert
+}
+
+func (*Event_RequestCert) isEvent_Type() {}
+
+func (w *Event_RequestCert) Unwrap() *availabilitypb.RequestCert {
+	return w.RequestCert
+}
+
+func (w *Event_RequestCert) Pb() availabilitypb.Event_Type {
+	return &availabilitypb.Event_RequestCert{RequestCert: w.RequestCert}
+}
+
+func (*Event_RequestCert) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_RequestCert]()}
+}
+
+type Event_NewCert struct {
+	NewCert *availabilitypb.NewCert
+}
+
+func (*Event_NewCert) isEvent_Type() {}
+
+func (w *Event_NewCert) Unwrap() *availabilitypb.NewCert {
+	return w.NewCert
+}
+
+func (w *Event_NewCert) Pb() availabilitypb.Event_Type {
+	return &availabilitypb.Event_NewCert{NewCert: w.NewCert}
+}
+
+func (*Event_NewCert) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_NewCert]()}
+}
+
+type Event_VerifyCert struct {
+	VerifyCert *availabilitypb.VerifyCert
+}
+
+func (*Event_VerifyCert) isEvent_Type() {}
+
+func (w *Event_VerifyCert) Unwrap() *availabilitypb.VerifyCert {
+	return w.VerifyCert
+}
+
+func (w *Event_VerifyCert) Pb() availabilitypb.Event_Type {
+	return &availabilitypb.Event_VerifyCert{VerifyCert: w.VerifyCert}
+}
+
+func (*Event_VerifyCert) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_VerifyCert]()}
+}
+
+type Event_CertVerified struct {
+	CertVerified *CertVerified
+}
+
+func (*Event_CertVerified) isEvent_Type() {}
+
+func (w *Event_CertVerified) Unwrap() *CertVerified {
+	return w.CertVerified
+}
+
+func (w *Event_CertVerified) Pb() availabilitypb.Event_Type {
+	return &availabilitypb.Event_CertVerified{CertVerified: (w.CertVerified).Pb()}
+}
+
+func (*Event_CertVerified) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_CertVerified]()}
+}
+
+type Event_RequestTransactions struct {
+	RequestTransactions *availabilitypb.RequestTransactions
+}
+
+func (*Event_RequestTransactions) isEvent_Type() {}
+
+func (w *Event_RequestTransactions) Unwrap() *availabilitypb.RequestTransactions {
+	return w.RequestTransactions
+}
+
+func (w *Event_RequestTransactions) Pb() availabilitypb.Event_Type {
+	return &availabilitypb.Event_RequestTransactions{RequestTransactions: w.RequestTransactions}
+}
+
+func (*Event_RequestTransactions) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_RequestTransactions]()}
+}
+
+type Event_ProvideTransactions struct {
+	ProvideTransactions *availabilitypb.ProvideTransactions
+}
+
+func (*Event_ProvideTransactions) isEvent_Type() {}
+
+func (w *Event_ProvideTransactions) Unwrap() *availabilitypb.ProvideTransactions {
+	return w.ProvideTransactions
+}
+
+func (w *Event_ProvideTransactions) Pb() availabilitypb.Event_Type {
+	return &availabilitypb.Event_ProvideTransactions{ProvideTransactions: w.ProvideTransactions}
+}
+
+func (*Event_ProvideTransactions) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event_ProvideTransactions]()}
+}
+
+func EventFromPb(pb *availabilitypb.Event) *Event {
+	return &Event{
+		Type: Event_TypeFromPb(pb.Type),
+	}
+}
+
+func (m *Event) Pb() *availabilitypb.Event {
+	return &availabilitypb.Event{
+		Type: (m.Type).Pb(),
+	}
+}
+
+func (*Event) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*availabilitypb.Event]()}
+}
+
 type CertVerified struct {
 	Valid  bool
 	Err    string

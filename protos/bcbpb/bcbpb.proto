@@ -35,9 +35,11 @@ message Deliver {
 }
 
 message Message {
-  option (net.message) = true;
+  option (net.message_class) = true;
 
   oneof type {
+    option (net.message_type) = true;
+
     StartMessage start_message = 1;
     EchoMessage  echo_message  = 2;
     FinalMessage final_message = 3;

@@ -17,6 +17,7 @@ package protos
 // Generate the code for codegen extensions.
 //go:generate protoc-events mir/codegen_extensions.proto
 //go:generate protoc-events mir/dsl/codegen_extensions.proto
+//go:generate protoc-events mir/events/codegen_extensions.proto
 //go:generate protoc-events net/codegen_extensions.proto
 
 // Generate the protoc-generated code for events and messages.
@@ -36,6 +37,7 @@ package protos
 
 // Generate the Mir-generated code for events and messages.
 //go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/eventpb"
+//go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/messagepb"
 //go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 //go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
 //go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/availabilitypb"

@@ -81,7 +81,7 @@ func (ev *EventNode) Children() []*EventNode {
 	return ev.children
 }
 
-// Parent returns the parent event in the hierarchy.
+// Parent returns the parent node in the hierarchy.
 func (ev *EventNode) Parent() *EventNode {
 	return ev.parent
 }
@@ -102,7 +102,9 @@ func (ev *EventNode) ThisNodeConstructorParameters() types.ConstructorParamList 
 	}
 
 	// Remove the prefix that corresponds to the parameters of the parent.
-	return types.ConstructorParamList{ev.constructorParameters.Slice[len(ev.Parent().constructorParameters.Slice):]}
+	return types.ConstructorParamList{
+		Slice: ev.constructorParameters.Slice[len(ev.Parent().constructorParameters.Slice):],
+	}
 }
 
 func (ev *EventNode) Constructor() *jen.Statement {

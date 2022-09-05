@@ -5,6 +5,7 @@ import (
 
 	dslgenerator "github.com/filecoin-project/mir/codegen/generators/dsl-gen/generator"
 	eventsgenerator "github.com/filecoin-project/mir/codegen/generators/events-gen/generator"
+	netgenerator "github.com/filecoin-project/mir/codegen/generators/net-gen/generator"
 	typesgenerator "github.com/filecoin-project/mir/codegen/generators/types-gen/generator"
 )
 
@@ -22,9 +23,15 @@ func (CombinedGenerator) Run(structTypes []reflect.Type) error {
 		return err
 	}
 
-	err = dslgenerator.DslGenerator{}.Run(structTypes)
+	err = netgenerator.NetMsgGenerator{}.Run(structTypes)
+	if err != nil {
+		return err
+	}
 
-	// TODO: add net generator.
+	err = dslgenerator.DslGenerator{}.Run(structTypes)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

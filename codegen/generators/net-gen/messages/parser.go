@@ -1,4 +1,4 @@
-package events
+package messages
 
 import (
 	"fmt"
@@ -9,12 +9,12 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
-	"github.com/filecoin-project/mir/pkg/pb/mir"
+	"github.com/filecoin-project/mir/pkg/pb/net"
 )
 
 type Parser struct {
-	typesParser    *types.Parser
-	eventNodeCache map[reflect.Type]*EventNode
+	typesParser     *types.Parser
+	netMessageCache map[reflect.Type]*NetMessageNode
 }
 
 var defaultParser = newParser(types.DefaultParser())
@@ -28,40 +28,40 @@ func DefaultParser() *Parser {
 // newParser is not exported as DefaultParser() is supposed to be used instead.
 func newParser(messageParser *types.Parser) *Parser {
 	return &Parser{
-		typesParser:    messageParser,
-		eventNodeCache: make(map[reflect.Type]*EventNode),
+		typesParser:     messageParser,
+		netMessageCache: make(map[reflect.Type]*NetMessageNode),
 	}
 }
 
-// ParseEventHierarchy extracts the information about the whole event hierarchy by its root.
-func (p *Parser) ParseEventHierarchy(eventRootMsg *types.Message) (root *EventNode, err error) {
+// ParseNetMessageHierarchy extracts the information about the whole net message hierarchy by its root.
+func (p *Parser) ParseNetMessageHierarchy(netMessageRootMsg *types.Message) (root *NetMessageNode, err error) {
 
-	if !types.IsMirEventRoot(eventRootMsg.ProtoDesc()) {
-		return nil, fmt.Errorf("message %v is not marked as event root", eventRootMsg.Name())
+	if !types.IsNetMessageRoot(netMessageRootMsg.ProtoDesc()) {
+		return nil, fmt.Errorf("message %v is not marked as net message root", netMessageRootMsg.Name())
 	}
 
-	root, err = p.parseEventNodeRecursively(eventRootMsg, nil, nil, types.ConstructorParamList{})
+	root, err = p.parseNetMessageNodeRecursively(netMessageRootMsg, nil, nil, types.ConstructorParamList{})
 	return
 }
 
-// parseEventNodeRecursively parses a message from the event hierarchy.
-// parent is the parent in the event hierarchy. Note that the parent's list of children may not be complete.
-func (p *Parser) parseEventNodeRecursively(
+// parseNetMessageNodeRecursively parses a message from the net message hierarchy.
+// parent is the parent in the hierarchy. Note that the parent's list of children may not be complete.
+func (p *Parser) parseNetMessageNodeRecursively(
 	msg *types.Message,
 	optionInParentOneof *types.OneofOption,
-	parent *EventNode,
+	parent *NetMessageNode,
 	constructorParameters types.ConstructorParamList,
-) (node *EventNode, err error) {
+) (node *NetMessageNode, err error) {
 
 	// First, check the cache.
-	if tp, ok := p.eventNodeCache[msg.PbReflectType()]; ok {
+	if tp, ok := p.netMessageCache[msg.PbReflectType()]; ok {
 		return tp, nil
 	}
 
 	// Remember the result in the cache when finished
 	defer func() {
 		if err == nil && node != nil {
-			p.eventNodeCache[msg.PbReflectType()] = node
+			p.netMessageCache[msg.PbReflectType()] = node
 		}
 	}()
 
@@ -71,21 +71,21 @@ func (p *Parser) parseEventNodeRecursively(
 	}
 
 	for _, field := range fields {
-		if IsEventTypeOneof(field) {
+		if IsMessageTypeOneof(field) {
 			continue
 		}
 
 		constructorParameters = constructorParameters.Append(field.LowercaseName(), field)
 	}
 
-	// Check if this is an event class.
+	// Check if this is a net message class.
 	if typeOneof, ok := getTypeOneof(fields); ok {
-		if !types.IsMirEventClass(msg.ProtoDesc()) && parent != nil {
-			return nil, fmt.Errorf("message %v contains a oneof marked with option (mir.event_type) = true, "+
-				"but is not marked with option (mir.event_class) = true", msg.PbReflectType())
+		if !types.IsNetMessageClass(msg.ProtoDesc()) && parent != nil {
+			return nil, fmt.Errorf("message %v contains a oneof marked with option (net.message_type) = true, "+
+				"but is not marked with option (net.message_class) = true", msg.PbReflectType())
 		}
 
-		node := &EventNode{
+		node := &NetMessageNode{
 			message:               msg,
 			oneofOption:           optionInParentOneof,
 			typeOneof:             typeOneof,
@@ -97,7 +97,7 @@ func (p *Parser) parseEventNodeRecursively(
 		for _, opt := range typeOneof.Options {
 			childMsg, ok := opt.Field.Type.(*types.Message)
 			if !ok {
-				return nil, fmt.Errorf("non-message type in the event hierarchy: %v", opt.Name())
+				return nil, fmt.Errorf("non-message type in the net message hierarchy: %v", opt.Name())
 			}
 
 			if !childMsg.ShouldGenerateMirType() {
@@ -105,7 +105,7 @@ func (p *Parser) parseEventNodeRecursively(
 				continue
 			}
 
-			childNode, err := p.parseEventNodeRecursively(childMsg, opt, node, constructorParameters)
+			childNode, err := p.parseNetMessageNodeRecursively(childMsg, opt, node, constructorParameters)
 			if err != nil {
 				return nil, err
 			}
@@ -116,11 +116,11 @@ func (p *Parser) parseEventNodeRecursively(
 		return node, nil
 	}
 
-	if !types.IsMirEvent(msg.ProtoDesc()) {
-		return nil, fmt.Errorf("message %v should be marked with option (mir.event) = true", msg.PbReflectType())
+	if !types.IsNetMessage(msg.ProtoDesc()) {
+		return nil, fmt.Errorf("message %v should be marked with option (net.message) = true", msg.PbReflectType())
 	}
 
-	return &EventNode{
+	return &NetMessageNode{
 		message:               msg,
 		oneofOption:           optionInParentOneof,
 		typeOneof:             nil,
@@ -133,19 +133,19 @@ func (p *Parser) parseEventNodeRecursively(
 func getTypeOneof(fields types.Fields) (*types.Oneof, bool) {
 	for _, field := range fields {
 		// Recursively call the generator on all subtypes.
-		if IsEventTypeOneof(field) {
+		if IsMessageTypeOneof(field) {
 			return field.Type.(*types.Oneof), true
 		}
 	}
 	return nil, false
 }
 
-// IsEventTypeOneof returns true iff the field is marked with `option (mir.event_type) = true`.
-func IsEventTypeOneof(field *types.Field) bool {
+// IsMessageTypeOneof returns true iff the field is marked with `option (net.message_type) = true`.
+func IsMessageTypeOneof(field *types.Field) bool {
 	oneofDesc, ok := field.ProtoDesc.(protoreflect.OneofDescriptor)
 	if !ok {
 		return false
 	}
 
-	return proto.GetExtension(oneofDesc.Options().(*descriptorpb.OneofOptions), mir.E_EventType).(bool)
+	return proto.GetExtension(oneofDesc.Options().(*descriptorpb.OneofOptions), net.E_MessageType).(bool)
 }

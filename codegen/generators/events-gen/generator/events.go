@@ -70,7 +70,7 @@ func generateEventConstructorsRecursively(
 				group.Line()
 			}),
 		)),
-	)
+	).Line()
 }
 
 // GenerateEventConstructors generates functions of form:

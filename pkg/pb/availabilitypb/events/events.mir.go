@@ -1,18 +1,19 @@
 package availabilitypbevents
 
 import (
-	types1 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
-	types2 "github.com/filecoin-project/mir/pkg/pb/eventpb/types"
-	types "github.com/filecoin-project/mir/pkg/types"
+	types2 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
+	types "github.com/filecoin-project/mir/pkg/pb/eventpb/types"
+	types1 "github.com/filecoin-project/mir/pkg/types"
 )
 
-func CertVerified(destModule types.ModuleID, valid bool, err string, origin *types1.VerifyCertOrigin) *types2.Event {
-	return &types2.Event{
+func CertVerified(next []*types.Event, destModule types1.ModuleID, valid bool, err string, origin *types2.VerifyCertOrigin) *types.Event {
+	return &types.Event{
+		Next:       next,
 		DestModule: destModule,
-		Type: &types2.Event_Availability{
-			Availability: &types1.Event{
-				Type: &types1.Event_CertVerified{
-					CertVerified: &types1.CertVerified{
+		Type: &types.Event_Availability{
+			Availability: &types2.Event{
+				Type: &types2.Event_CertVerified{
+					CertVerified: &types2.CertVerified{
 						Valid:  valid,
 						Err:    err,
 						Origin: origin,

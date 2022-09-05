@@ -2,12 +2,9 @@ package types
 
 import (
 	"github.com/dave/jennifer/jen"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/filecoin-project/mir/codegen/util/astutil"
-	"github.com/filecoin-project/mir/pkg/pb/mir"
 	"github.com/filecoin-project/mir/pkg/util/sliceutil"
 )
 
@@ -39,16 +36,6 @@ func (f *Field) FuncParamPbType() jen.Code {
 // FuncParamMirType returns the field lowercase name followed by its mir type.
 func (f *Field) FuncParamMirType() jen.Code {
 	return jen.Id(f.LowercaseName()).Add(f.Type.MirType())
-}
-
-// IsEventTypeOneof returns true iff it is marked with `option (mir.event_type) = true`.
-func (f *Field) IsEventTypeOneof() bool {
-	oneofDesc, ok := f.ProtoDesc.(protoreflect.OneofDescriptor)
-	if !ok {
-		return false
-	}
-
-	return proto.GetExtension(oneofDesc.Options().(*descriptorpb.OneofOptions), mir.E_EventType).(bool)
 }
 
 // Fields is a list of fields of a protobuf message.

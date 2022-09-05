@@ -98,6 +98,11 @@ func (m *Message) LowercaseName() string {
 	return astutil.ToUnexported(m.Name())
 }
 
+// ProtoDesc returns the proto descriptor of the message.
+func (m *Message) ProtoDesc() protoreflect.MessageDescriptor {
+	return m.protoDesc
+}
+
 //func (m *Message) FuncParamPbType() *jen.Statement {
 //	return jen.Id(m.LowercaseName()).Add(m.PbType())
 //}
@@ -119,15 +124,11 @@ func (m *Message) IsMirEvent() bool {
 }
 
 func (m *Message) IsMirMessage() bool {
-	return IsMirMessage(m.protoDesc)
+	return IsNetMessage(m.protoDesc)
 }
 
 func (m *Message) IsMirStruct() bool {
 	return IsMirStruct(m.protoDesc)
-}
-
-func (m *Message) IsEventRoot() bool {
-	return IsEventRoot(m.protoDesc)
 }
 
 // ShouldGenerateMirType returns true if Mir should generate a struct for the message type.
@@ -135,24 +136,38 @@ func (m *Message) ShouldGenerateMirType() bool {
 	return m.shouldGenerateMirType
 }
 
-func IsMirEvent(protoDesc protoreflect.MessageDescriptor) bool {
-	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_Event).(bool)
-}
-
-func IsMirMessage(protoDesc protoreflect.MessageDescriptor) bool {
-	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), net.E_Message).(bool)
-}
-
 func IsMirStruct(protoDesc protoreflect.MessageDescriptor) bool {
 	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_Struct).(bool)
 }
 
-func ShouldGenerateMirType(protoDesc protoreflect.MessageDescriptor) bool {
-	return IsMirEvent(protoDesc) || IsMirMessage(protoDesc) || IsMirStruct(protoDesc) || IsEventRoot(protoDesc)
+func IsMirEventClass(protoDesc protoreflect.MessageDescriptor) bool {
+	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_EventClass).(bool)
 }
 
-func IsEventRoot(protoDesc protoreflect.MessageDescriptor) bool {
+func IsMirEventRoot(protoDesc protoreflect.MessageDescriptor) bool {
 	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_EventRoot).(bool)
+}
+
+func IsMirEvent(protoDesc protoreflect.MessageDescriptor) bool {
+	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), mir.E_Event).(bool)
+}
+
+func IsNetMessageRoot(protoDesc protoreflect.MessageDescriptor) bool {
+	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), net.E_MessageRoot).(bool)
+}
+
+func IsNetMessageClass(protoDesc protoreflect.MessageDescriptor) bool {
+	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), net.E_MessageClass).(bool)
+}
+
+func IsNetMessage(protoDesc protoreflect.MessageDescriptor) bool {
+	return proto.GetExtension(protoDesc.Options().(*descriptorpb.MessageOptions), net.E_Message).(bool)
+}
+
+func ShouldGenerateMirType(protoDesc protoreflect.MessageDescriptor) bool {
+	return IsMirStruct(protoDesc) ||
+		IsMirEventRoot(protoDesc) || IsMirEventClass(protoDesc) || IsMirEvent(protoDesc) ||
+		IsNetMessageRoot(protoDesc) || IsNetMessageClass(protoDesc) || IsNetMessage(protoDesc)
 }
 
 func getProtoNameOfField(field reflect.StructField) (protoName protoreflect.Name, err error) {
