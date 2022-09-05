@@ -7,11 +7,13 @@ import (
 
 	"google.golang.org/protobuf/compiler/protogen"
 
-	"github.com/filecoin-project/mir/codegen/proto-converter/model/types"
-	"github.com/filecoin-project/mir/codegen/proto-converter/util/protogenutil"
+	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
+	"github.com/filecoin-project/mir/codegen/util/protogenutil"
 	"github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
+// This function generates method called Reflect[OneofName]Options for all oneofs. This method lists all
+// protoc-generated types assignable to the oneof.
 func generateReflectMethodsToListOneofOptions(plugin *protogen.Plugin, file *protogen.File) error {
 	var g *protogen.GeneratedFile
 

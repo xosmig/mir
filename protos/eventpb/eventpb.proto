@@ -20,7 +20,7 @@ import "mempoolpb/mempoolpb.proto";
 import "availabilitypb/availabilitypb.proto";
 
 import "mir/codegen_extensions.proto";
-import "mir/dsl/dsl_extensions.proto";
+import "mir/dsl/codegen_extensions.proto";
 
 option go_package = "github.com/filecoin-project/mir/pkg/pb/eventpb";
 
