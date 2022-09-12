@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/filecoin-project/mir/codegen/generators/types-gen/params"
 	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
 	"github.com/filecoin-project/mir/pkg/pb/mir"
 )
@@ -40,7 +41,7 @@ func (p *Parser) ParseEventHierarchy(eventRootMsg *types.Message) (root *EventNo
 		return nil, fmt.Errorf("message %v is not marked as event root", eventRootMsg.Name())
 	}
 
-	root, err = p.parseEventNodeRecursively(eventRootMsg, nil, nil, types.ConstructorParamList{})
+	root, err = p.parseEventNodeRecursively(eventRootMsg, nil, nil, params.ConstructorParamList{})
 	return
 }
 
@@ -50,7 +51,7 @@ func (p *Parser) parseEventNodeRecursively(
 	msg *types.Message,
 	optionInParentOneof *types.OneofOption,
 	parent *EventNode,
-	constructorParameters types.ConstructorParamList,
+	constructorParameters params.ConstructorParamList,
 ) (node *EventNode, err error) {
 
 	// First, check the cache.

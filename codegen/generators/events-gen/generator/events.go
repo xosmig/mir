@@ -50,7 +50,7 @@ func generateEventConstructorsRecursively(
 
 	// If this is an event (i.e., a leaf in the hierarchy), create the event constructor.
 
-	// Get a jen file to which the event constructor will be added.
+	// get a jen file to which the code will be added.
 	sourcePackage := eventNode.Message().PbPkgPath()
 	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
 	if !ok {

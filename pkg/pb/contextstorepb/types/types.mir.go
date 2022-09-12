@@ -1,7 +1,7 @@
 package contextstorepbtypes
 
 import (
-	mirreflect "github.com/filecoin-project/mir/codegen/proto-converter/mirreflect"
+	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
 	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
 	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
 )

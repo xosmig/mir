@@ -9,29 +9,50 @@ import (
 	"github.com/dave/jennifer/jen"
 
 	"github.com/filecoin-project/mir/codegen/generators/events-gen/events"
+	"github.com/filecoin-project/mir/codegen/generators/net-gen/messages"
 
 	eventsgenerator "github.com/filecoin-project/mir/codegen/generators/events-gen/generator"
+	netgenerator "github.com/filecoin-project/mir/codegen/generators/net-gen/generator"
 )
 
 type DslGenerator struct{}
 
 func (DslGenerator) Run(pbGoStructTypes []reflect.Type) error {
-	eventRootMessages, err := eventsgenerator.GetEventHierarchyRootMessages(pbGoStructTypes)
+	eventHierarchyRoots, err := eventsgenerator.GetEventHierarchyRootMessages(pbGoStructTypes)
 	if err != nil {
 		return err
 	}
 
-	for _, eventRootMessage := range eventRootMessages {
+	for _, eventHierarchyRoot := range eventHierarchyRoots {
 		eventParser := events.DefaultParser()
 
-		eventRoot, err := eventParser.ParseEventHierarchy(eventRootMessage)
+		rootNode, err := eventParser.ParseEventHierarchy(eventHierarchyRoot)
 		if err != nil {
 			return err
 		}
 
-		err = GenerateDslFunctionsForEvents(eventRoot)
+		err = GenerateDslFunctionsForEvents(rootNode)
 		if err != nil {
-			return fmt.Errorf("error generating dsl functions: %w", err)
+			return fmt.Errorf("error generating dsl functions for events: %w", err)
+		}
+	}
+
+	netMessageHierarchyRoots, err := netgenerator.GetNetMsgHierarchyRootMessages(pbGoStructTypes)
+	if err != nil {
+		return err
+	}
+
+	for _, netMessageHierarchyRoot := range netMessageHierarchyRoots {
+		netMessageParser := messages.DefaultParser()
+
+		rootNode, err := netMessageParser.ParseNetMessageHierarchy(netMessageHierarchyRoot)
+		if err != nil {
+			return err
+		}
+
+		err = GenerateDslFunctionsForNetMessages(rootNode, netMessageReceivedEvent)
+		if err != nil {
+			return fmt.Errorf("error generating dsl functions for net messages: %w", err)
 		}
 	}
 

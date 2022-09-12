@@ -6,6 +6,7 @@ import (
 
 	"github.com/dave/jennifer/jen"
 
+	"github.com/filecoin-project/mir/codegen/generators/types-gen/params"
 	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
 )
 
@@ -35,7 +36,7 @@ type EventNode struct {
 	// The parent node in the hierarchy.
 	parent *EventNode
 	// The accumulated parameters for the constructor function.
-	constructorParameters types.ConstructorParamList
+	constructorParameters params.ConstructorParamList
 }
 
 // IsRoot returns true if this is the root of the event hierarchy.
@@ -90,19 +91,19 @@ func (ev *EventNode) Parent() *EventNode {
 // The parameters include all the fields of all the ancestors in the hierarchy except those marked with
 // [(mir.omit_in_constructor) = true] and the Type oneofs.
 // To get the parameters that correspond to the fields only of this node
-func (ev *EventNode) AllConstructorParameters() types.ConstructorParamList {
+func (ev *EventNode) AllConstructorParameters() params.ConstructorParamList {
 	return ev.constructorParameters
 }
 
 // ThisNodeConstructorParameters returns a suffix of AllConstructorParameters() that corresponds to the fields
 // only of this in the hierarchy, without the fields accumulated from the ancestors.
-func (ev *EventNode) ThisNodeConstructorParameters() types.ConstructorParamList {
+func (ev *EventNode) ThisNodeConstructorParameters() params.ConstructorParamList {
 	if ev.Parent() == nil {
 		return ev.AllConstructorParameters()
 	}
 
 	// Remove the prefix that corresponds to the parameters of the parent.
-	return types.ConstructorParamList{
+	return params.ConstructorParamList{
 		Slice: ev.constructorParameters.Slice[len(ev.Parent().constructorParameters.Slice):],
 	}
 }

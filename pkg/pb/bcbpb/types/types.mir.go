@@ -1,7 +1,7 @@
 package bcbpbtypes
 
 import (
-	mirreflect "github.com/filecoin-project/mir/codegen/proto-converter/mirreflect"
+	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
 )

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/filecoin-project/mir/codegen/generators/types-gen/params"
 	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
 	"github.com/filecoin-project/mir/pkg/pb/net"
 )
@@ -40,7 +41,7 @@ func (p *Parser) ParseNetMessageHierarchy(netMessageRootMsg *types.Message) (roo
 		return nil, fmt.Errorf("message %v is not marked as net message root", netMessageRootMsg.Name())
 	}
 
-	root, err = p.parseNetMessageNodeRecursively(netMessageRootMsg, nil, nil, types.ConstructorParamList{})
+	root, err = p.parseNetMessageNodeRecursively(netMessageRootMsg, nil, nil, params.ConstructorParamList{})
 	return
 }
 
@@ -50,7 +51,7 @@ func (p *Parser) parseNetMessageNodeRecursively(
 	msg *types.Message,
 	optionInParentOneof *types.OneofOption,
 	parent *NetMessageNode,
-	constructorParameters types.ConstructorParamList,
+	constructorParameters params.ConstructorParamList,
 ) (node *NetMessageNode, err error) {
 
 	// First, check the cache.

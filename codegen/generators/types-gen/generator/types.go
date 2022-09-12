@@ -143,5 +143,5 @@ func GenerateMirTypes(inputDir, sourcePackagePath string, msgs []*types.Message,
 		}
 	}
 
-	return codegen.RenderJenFile(jenFile, types.OutputDir(inputDir), "model.mir.go")
+	return codegen.RenderJenFile(jenFile, types.OutputDir(inputDir), "types.mir.go")
 }

@@ -1,7 +1,7 @@
 package availabilitypbtypes
 
 import (
-	mirreflect "github.com/filecoin-project/mir/codegen/proto-converter/mirreflect"
+	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
 	availabilitypb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 	types1 "github.com/filecoin-project/mir/pkg/pb/contextstorepb/types"
 	dslpb "github.com/filecoin-project/mir/pkg/pb/dslpb"

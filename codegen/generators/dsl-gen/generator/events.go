@@ -29,7 +29,7 @@ func generateDslFunctionsForEmittingEventsRecursively(
 		return
 	}
 
-	// Get a jen file to which the event constructor will be added.
+	// get a jen file to which the code will be added.
 	sourcePackage := eventNode.Message().PbPkgPath()
 	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
 	if !ok {
@@ -71,7 +71,7 @@ func generateDslFunctionsForHandlingEventsRecursively(
 	jenFileBySourcePackagePath map[string]*jen.File,
 ) {
 
-	// Get a jen file to which the event constructor will be added.
+	// get a jen file to which the code will be added.
 	sourcePackage := eventNode.Message().PbPkgPath()
 	jenFile, ok := jenFileBySourcePackagePath[sourcePackage]
 	if !ok {
@@ -91,6 +91,7 @@ func generateDslFunctionsForHandlingEventsRecursively(
 			jen.Id("Ev").Any(),
 		).Params(
 			jen.Id("m").Add(dslModule),
+			// TODO: consider if we need to propagate some parameters from the parent.
 			jen.Id("handler").Func().Params(jen.Id("ev").Op("*").Id("Ev")).Id("error"),
 		).Block(
 			jen.Add(uponEvent).Types(eventNode.OneofOption().MirWrapperType()).Params(
@@ -121,7 +122,9 @@ func generateDslFunctionsForHandlingEventsRecursively(
 	}
 
 	// Generate the function for handling the event.
+	// TODO: consider if we need to propagate some parameters from the parent.
 	handlerParameters := eventNode.ThisNodeConstructorParameters()
+
 	jenFile.Func().Id("Upon"+eventNode.Name()).Params(
 		jen.Id("m").Add(dslModule),
 		jen.Id("handler").Func().Params(handlerParameters.MirCode()...).Id("error"),

@@ -6,6 +6,7 @@ import (
 
 	"github.com/dave/jennifer/jen"
 
+	"github.com/filecoin-project/mir/codegen/generators/types-gen/params"
 	"github.com/filecoin-project/mir/codegen/generators/types-gen/types"
 )
 
@@ -35,7 +36,7 @@ type NetMessageNode struct {
 	// The parent node in the hierarchy.
 	parent *NetMessageNode
 	// The accumulated parameters for the constructor function.
-	constructorParameters types.ConstructorParamList
+	constructorParameters params.ConstructorParamList
 }
 
 // IsRoot returns true if this is the root of the message hierarchy.
@@ -90,19 +91,19 @@ func (msg *NetMessageNode) Parent() *NetMessageNode {
 // The parameters include all the fields of all the ancestors in the hierarchy except those marked with
 // [(mir.omit_in_constructor) = true] and the Type oneofs.
 // To get the parameters that correspond to the fields only of this node
-func (msg *NetMessageNode) AllConstructorParameters() types.ConstructorParamList {
+func (msg *NetMessageNode) AllConstructorParameters() params.ConstructorParamList {
 	return msg.constructorParameters
 }
 
 // ThisNodeConstructorParameters returns a suffix of AllConstructorParameters() that corresponds to the fields
 // only of this in the hierarchy, without the fields accumulated from the ancestors.
-func (msg *NetMessageNode) ThisNodeConstructorParameters() types.ConstructorParamList {
+func (msg *NetMessageNode) ThisNodeConstructorParameters() params.ConstructorParamList {
 	if msg.Parent() == nil {
 		return msg.AllConstructorParameters()
 	}
 
 	// Remove the prefix that corresponds to the parameters of the parent.
-	return types.ConstructorParamList{
+	return params.ConstructorParamList{
 		Slice: msg.constructorParameters.Slice[len(msg.Parent().constructorParameters.Slice):],
 	}
 }

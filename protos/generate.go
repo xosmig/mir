@@ -17,7 +17,6 @@ package protos
 // Generate the code for codegen extensions.
 //go:generate protoc-events mir/codegen_extensions.proto
 //go:generate protoc-events mir/dsl/codegen_extensions.proto
-//go:generate protoc-events mir/events/codegen_extensions.proto
 //go:generate protoc-events net/codegen_extensions.proto
 
 // Generate the protoc-generated code for events and messages.
