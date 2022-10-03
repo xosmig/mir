@@ -64,7 +64,7 @@ func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
 	case *eventpb.Event_RequestReady:
 		return &Event_RequestReady{RequestReady: pb.RequestReady}
 	case *eventpb.Event_SendMessage:
-		return &Event_SendMessage{SendMessage: pb.SendMessage}
+		return &Event_SendMessage{SendMessage: SendMessageFromPb(pb.SendMessage)}
 	case *eventpb.Event_MessageReceived:
 		return &Event_MessageReceived{MessageReceived: MessageReceivedFromPb(pb.MessageReceived)}
 	case *eventpb.Event_DeliverCert:
@@ -350,17 +350,17 @@ func (*Event_RequestReady) MirReflect() mirreflect.Type {
 }
 
 type Event_SendMessage struct {
-	SendMessage *eventpb.SendMessage
+	SendMessage *SendMessage
 }
 
 func (*Event_SendMessage) isEvent_Type() {}
 
-func (w *Event_SendMessage) Unwrap() *eventpb.SendMessage {
+func (w *Event_SendMessage) Unwrap() *SendMessage {
 	return w.SendMessage
 }
 
 func (w *Event_SendMessage) Pb() eventpb.Event_Type {
-	return &eventpb.Event_SendMessage{SendMessage: w.SendMessage}
+	return &eventpb.Event_SendMessage{SendMessage: (w.SendMessage).Pb()}
 }
 
 func (*Event_SendMessage) MirReflect() mirreflect.Type {
@@ -803,6 +803,33 @@ func (m *Event) Pb() *eventpb.Event {
 
 func (*Event) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event]()}
+}
+
+type SendMessage struct {
+	Msg          *types4.Message
+	Destinations []types.NodeID
+}
+
+func SendMessageFromPb(pb *eventpb.SendMessage) *SendMessage {
+	return &SendMessage{
+		Msg: types4.MessageFromPb(pb.Msg),
+		Destinations: types3.ConvertSlice(pb.Destinations, func(t string) types.NodeID {
+			return (types.NodeID)(t)
+		}),
+	}
+}
+
+func (m *SendMessage) Pb() *eventpb.SendMessage {
+	return &eventpb.SendMessage{
+		Msg: (m.Msg).Pb(),
+		Destinations: types3.ConvertSlice(m.Destinations, func(t types.NodeID) string {
+			return (string)(t)
+		}),
+	}
+}
+
+func (*SendMessage) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.SendMessage]()}
 }
 
 type MessageReceived struct {

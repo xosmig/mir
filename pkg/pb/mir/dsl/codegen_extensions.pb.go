@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.28.0
 // 	protoc        v3.21.1
-// source: mir/dsl/codegen_extensions.proto
+// source: dsl/codegen_extensions.proto
 
 package dsl
 
@@ -25,9 +25,9 @@ var file_mir_dsl_codegen_extensions_proto_extTypes = []protoimpl.ExtensionInfo{
 		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
 		ExtensionType: (*bool)(nil),
 		Field:         60100,
-		Name:          "mir.dsl.omit_in_handler",
+		Name:          "dsl.omit_in_handler",
 		Tag:           "varint,60100,opt,name=omit_in_handler",
-		Filename:      "mir/dsl/codegen_extensions.proto",
+		Filename:      "dsl/codegen_extensions.proto",
 	},
 }
 
@@ -59,7 +59,7 @@ var file_mir_dsl_codegen_extensions_proto_goTypes = []interface{}{
 	(*descriptorpb.FieldOptions)(nil), // 0: google.protobuf.FieldOptions
 }
 var file_mir_dsl_codegen_extensions_proto_depIdxs = []int32{
-	0, // 0: mir.dsl.omit_in_handler:extendee -> google.protobuf.FieldOptions
+	0, // 0: dsl.omit_in_handler:extendee -> google.protobuf.FieldOptions
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
