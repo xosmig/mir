@@ -1,8 +1,8 @@
 package eventpbtypes
 
 import (
-	types5 "github.com/filecoin-project/mir/codegen/generators/types-gen/types"
 	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
+	types5 "github.com/filecoin-project/mir/codegen/model/types"
 	types3 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb/types"
 	types2 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
 	types4 "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb/types"
