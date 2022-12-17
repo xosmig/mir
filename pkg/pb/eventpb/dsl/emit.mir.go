@@ -47,3 +47,15 @@ func SendMessage(m dsl.Module, destModule types.ModuleID, msg *types2.Message, d
 func MessageReceived(m dsl.Module, destModule types.ModuleID, from types.NodeID, msg *types2.Message) {
 	dsl.EmitMirEvent(m, events.MessageReceived(destModule, from, msg))
 }
+
+func TimerDelay(m dsl.Module, destModule types.ModuleID, events []*types1.Event, delay types.TimeDuration) {
+	dsl.EmitMirEvent(m, events.TimerDelay(destModule, events, delay))
+}
+
+func TimerRepeat(m dsl.Module, destModule types.ModuleID, events []*types1.Event, delay types.TimeDuration, retentionIndex types.RetentionIndex) {
+	dsl.EmitMirEvent(m, events.TimerRepeat(destModule, events, delay, retentionIndex))
+}
+
+func TimerGarbageCollect(m dsl.Module, destModule types.ModuleID, retentionIndex types.RetentionIndex) {
+	dsl.EmitMirEvent(m, events.TimerGarbageCollect(destModule, retentionIndex))
+}

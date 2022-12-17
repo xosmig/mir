@@ -5,6 +5,7 @@ import (
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
+	types2 "github.com/filecoin-project/mir/pkg/pb/dslpingpongpb/types"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	messagepb "github.com/filecoin-project/mir/pkg/pb/messagepb"
 	ordererspb "github.com/filecoin-project/mir/pkg/pb/ordererspb"
@@ -43,6 +44,8 @@ func Message_TypeFromPb(pb messagepb.Message_Type) Message_Type {
 		return &Message_Checkpoint{Checkpoint: pb.Checkpoint}
 	case *messagepb.Message_SbMessage:
 		return &Message_SbMessage{SbMessage: pb.SbMessage}
+	case *messagepb.Message_Dslpingpong:
+		return &Message_Dslpingpong{Dslpingpong: types2.MessageFromPb(pb.Dslpingpong)}
 	}
 	return nil
 }
@@ -153,6 +156,24 @@ func (w *Message_SbMessage) Pb() messagepb.Message_Type {
 
 func (*Message_SbMessage) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_SbMessage]()}
+}
+
+type Message_Dslpingpong struct {
+	Dslpingpong *types2.Message
+}
+
+func (*Message_Dslpingpong) isMessage_Type() {}
+
+func (w *Message_Dslpingpong) Unwrap() *types2.Message {
+	return w.Dslpingpong
+}
+
+func (w *Message_Dslpingpong) Pb() messagepb.Message_Type {
+	return &messagepb.Message_Dslpingpong{Dslpingpong: (w.Dslpingpong).Pb()}
+}
+
+func (*Message_Dslpingpong) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Dslpingpong]()}
 }
 
 func MessageFromPb(pb *messagepb.Message) *Message {

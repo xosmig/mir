@@ -118,8 +118,6 @@ func generateMirType(g *jen.File, msg *types.Message, parser *types.Parser) erro
 	).Line()
 
 	// Generate the MirReflect method.
-
-	// Generate the MirReflect method.
 	g.Func().Params(jen.Add(msg.MirType())).Id("MirReflect").Params().Add(mirreflectType).Block(
 		jen.Return(jen.Add(mirreflectTypeImpl).Values(
 			jen.Id("PbType_").Op(":").Add(reflectutilTypeOf).Types(msg.PbType()).Params(),

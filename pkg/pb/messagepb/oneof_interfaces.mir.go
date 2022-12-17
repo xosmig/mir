@@ -4,6 +4,7 @@ import (
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
+	dslpingpongpb "github.com/filecoin-project/mir/pkg/pb/dslpingpongpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	ordererspb "github.com/filecoin-project/mir/pkg/pb/ordererspb"
 	pingpongpb "github.com/filecoin-project/mir/pkg/pb/pingpongpb"
@@ -38,4 +39,8 @@ func (w *Message_Checkpoint) Unwrap() *checkpointpb.Message {
 
 func (w *Message_SbMessage) Unwrap() *ordererspb.SBInstanceMessage {
 	return w.SbMessage
+}
+
+func (w *Message_Dslpingpong) Unwrap() *dslpingpongpb.Message {
+	return w.Dslpingpong
 }

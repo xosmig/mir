@@ -2,19 +2,20 @@ package eventpbtypes
 
 import (
 	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
-	types7 "github.com/filecoin-project/mir/codegen/model/types"
+	types8 "github.com/filecoin-project/mir/codegen/model/types"
 	types4 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb/types"
 	types3 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
 	types5 "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb/types"
 	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
-	types8 "github.com/filecoin-project/mir/pkg/pb/contextstorepb/types"
-	types9 "github.com/filecoin-project/mir/pkg/pb/dslpb/types"
+	types9 "github.com/filecoin-project/mir/pkg/pb/contextstorepb/types"
+	types10 "github.com/filecoin-project/mir/pkg/pb/dslpb/types"
+	types7 "github.com/filecoin-project/mir/pkg/pb/dslpingpongpb/types"
 	eventpb "github.com/filecoin-project/mir/pkg/pb/eventpb"
 	factorymodulepb "github.com/filecoin-project/mir/pkg/pb/factorymodulepb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	types2 "github.com/filecoin-project/mir/pkg/pb/mempoolpb/types"
-	types10 "github.com/filecoin-project/mir/pkg/pb/messagepb/types"
+	types11 "github.com/filecoin-project/mir/pkg/pb/messagepb/types"
 	ordererspb "github.com/filecoin-project/mir/pkg/pb/ordererspb"
 	pingpongpb "github.com/filecoin-project/mir/pkg/pb/pingpongpb"
 	types6 "github.com/filecoin-project/mir/pkg/pb/threshcryptopb/types"
@@ -89,11 +90,11 @@ func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
 	case *eventpb.Event_AppRestoreState:
 		return &Event_AppRestoreState{AppRestoreState: pb.AppRestoreState}
 	case *eventpb.Event_TimerDelay:
-		return &Event_TimerDelay{TimerDelay: pb.TimerDelay}
+		return &Event_TimerDelay{TimerDelay: TimerDelayFromPb(pb.TimerDelay)}
 	case *eventpb.Event_TimerRepeat:
-		return &Event_TimerRepeat{TimerRepeat: pb.TimerRepeat}
+		return &Event_TimerRepeat{TimerRepeat: TimerRepeatFromPb(pb.TimerRepeat)}
 	case *eventpb.Event_TimerGarbageCollect:
-		return &Event_TimerGarbageCollect{TimerGarbageCollect: pb.TimerGarbageCollect}
+		return &Event_TimerGarbageCollect{TimerGarbageCollect: TimerGarbageCollectFromPb(pb.TimerGarbageCollect)}
 	case *eventpb.Event_Bcb:
 		return &Event_Bcb{Bcb: types1.EventFromPb(pb.Bcb)}
 	case *eventpb.Event_Mempool:
@@ -118,6 +119,8 @@ func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
 		return &Event_Checkpoint{Checkpoint: pb.Checkpoint}
 	case *eventpb.Event_SbEvent:
 		return &Event_SbEvent{SbEvent: pb.SbEvent}
+	case *eventpb.Event_Dslpingpong:
+		return &Event_Dslpingpong{Dslpingpong: types7.EventFromPb(pb.Dslpingpong)}
 	case *eventpb.Event_TestingString:
 		return &Event_TestingString{TestingString: pb.TestingString}
 	case *eventpb.Event_TestingUint:
@@ -541,17 +544,17 @@ func (*Event_AppRestoreState) MirReflect() mirreflect.Type {
 }
 
 type Event_TimerDelay struct {
-	TimerDelay *eventpb.TimerDelay
+	TimerDelay *TimerDelay
 }
 
 func (*Event_TimerDelay) isEvent_Type() {}
 
-func (w *Event_TimerDelay) Unwrap() *eventpb.TimerDelay {
+func (w *Event_TimerDelay) Unwrap() *TimerDelay {
 	return w.TimerDelay
 }
 
 func (w *Event_TimerDelay) Pb() eventpb.Event_Type {
-	return &eventpb.Event_TimerDelay{TimerDelay: w.TimerDelay}
+	return &eventpb.Event_TimerDelay{TimerDelay: (w.TimerDelay).Pb()}
 }
 
 func (*Event_TimerDelay) MirReflect() mirreflect.Type {
@@ -559,17 +562,17 @@ func (*Event_TimerDelay) MirReflect() mirreflect.Type {
 }
 
 type Event_TimerRepeat struct {
-	TimerRepeat *eventpb.TimerRepeat
+	TimerRepeat *TimerRepeat
 }
 
 func (*Event_TimerRepeat) isEvent_Type() {}
 
-func (w *Event_TimerRepeat) Unwrap() *eventpb.TimerRepeat {
+func (w *Event_TimerRepeat) Unwrap() *TimerRepeat {
 	return w.TimerRepeat
 }
 
 func (w *Event_TimerRepeat) Pb() eventpb.Event_Type {
-	return &eventpb.Event_TimerRepeat{TimerRepeat: w.TimerRepeat}
+	return &eventpb.Event_TimerRepeat{TimerRepeat: (w.TimerRepeat).Pb()}
 }
 
 func (*Event_TimerRepeat) MirReflect() mirreflect.Type {
@@ -577,17 +580,17 @@ func (*Event_TimerRepeat) MirReflect() mirreflect.Type {
 }
 
 type Event_TimerGarbageCollect struct {
-	TimerGarbageCollect *eventpb.TimerGarbageCollect
+	TimerGarbageCollect *TimerGarbageCollect
 }
 
 func (*Event_TimerGarbageCollect) isEvent_Type() {}
 
-func (w *Event_TimerGarbageCollect) Unwrap() *eventpb.TimerGarbageCollect {
+func (w *Event_TimerGarbageCollect) Unwrap() *TimerGarbageCollect {
 	return w.TimerGarbageCollect
 }
 
 func (w *Event_TimerGarbageCollect) Pb() eventpb.Event_Type {
-	return &eventpb.Event_TimerGarbageCollect{TimerGarbageCollect: w.TimerGarbageCollect}
+	return &eventpb.Event_TimerGarbageCollect{TimerGarbageCollect: (w.TimerGarbageCollect).Pb()}
 }
 
 func (*Event_TimerGarbageCollect) MirReflect() mirreflect.Type {
@@ -810,6 +813,24 @@ func (*Event_SbEvent) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_SbEvent]()}
 }
 
+type Event_Dslpingpong struct {
+	Dslpingpong *types7.Event
+}
+
+func (*Event_Dslpingpong) isEvent_Type() {}
+
+func (w *Event_Dslpingpong) Unwrap() *types7.Event {
+	return w.Dslpingpong
+}
+
+func (w *Event_Dslpingpong) Pb() eventpb.Event_Type {
+	return &eventpb.Event_Dslpingpong{Dslpingpong: (w.Dslpingpong).Pb()}
+}
+
+func (*Event_Dslpingpong) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Dslpingpong]()}
+}
+
 type Event_TestingString struct {
 	TestingString *wrapperspb.StringValue
 }
@@ -849,7 +870,7 @@ func (*Event_TestingUint) MirReflect() mirreflect.Type {
 func EventFromPb(pb *eventpb.Event) *Event {
 	return &Event{
 		Type: Event_TypeFromPb(pb.Type),
-		Next: types7.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
+		Next: types8.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
 			return EventFromPb(t)
 		}),
 		DestModule: (types.ModuleID)(pb.DestModule),
@@ -859,7 +880,7 @@ func EventFromPb(pb *eventpb.Event) *Event {
 func (m *Event) Pb() *eventpb.Event {
 	return &eventpb.Event{
 		Type: (m.Type).Pb(),
-		Next: types7.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
+		Next: types8.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
 			return (t).Pb()
 		}),
 		DestModule: (string)(m.DestModule),
@@ -935,9 +956,9 @@ type SignOrigin_TypeWrapper[T any] interface {
 func SignOrigin_TypeFromPb(pb eventpb.SignOrigin_Type) SignOrigin_Type {
 	switch pb := pb.(type) {
 	case *eventpb.SignOrigin_ContextStore:
-		return &SignOrigin_ContextStore{ContextStore: types8.OriginFromPb(pb.ContextStore)}
+		return &SignOrigin_ContextStore{ContextStore: types9.OriginFromPb(pb.ContextStore)}
 	case *eventpb.SignOrigin_Dsl:
-		return &SignOrigin_Dsl{Dsl: types9.OriginFromPb(pb.Dsl)}
+		return &SignOrigin_Dsl{Dsl: types10.OriginFromPb(pb.Dsl)}
 	case *eventpb.SignOrigin_Checkpoint:
 		return &SignOrigin_Checkpoint{Checkpoint: pb.Checkpoint}
 	case *eventpb.SignOrigin_Sb:
@@ -947,12 +968,12 @@ func SignOrigin_TypeFromPb(pb eventpb.SignOrigin_Type) SignOrigin_Type {
 }
 
 type SignOrigin_ContextStore struct {
-	ContextStore *types8.Origin
+	ContextStore *types9.Origin
 }
 
 func (*SignOrigin_ContextStore) isSignOrigin_Type() {}
 
-func (w *SignOrigin_ContextStore) Unwrap() *types8.Origin {
+func (w *SignOrigin_ContextStore) Unwrap() *types9.Origin {
 	return w.ContextStore
 }
 
@@ -965,12 +986,12 @@ func (*SignOrigin_ContextStore) MirReflect() mirreflect.Type {
 }
 
 type SignOrigin_Dsl struct {
-	Dsl *types9.Origin
+	Dsl *types10.Origin
 }
 
 func (*SignOrigin_Dsl) isSignOrigin_Type() {}
 
-func (w *SignOrigin_Dsl) Unwrap() *types9.Origin {
+func (w *SignOrigin_Dsl) Unwrap() *types10.Origin {
 	return w.Dsl
 }
 
@@ -1065,12 +1086,12 @@ type VerifyNodeSigs struct {
 
 func VerifyNodeSigsFromPb(pb *eventpb.VerifyNodeSigs) *VerifyNodeSigs {
 	return &VerifyNodeSigs{
-		Data: types7.ConvertSlice(pb.Data, func(t *eventpb.SigVerData) *SigVerData {
+		Data: types8.ConvertSlice(pb.Data, func(t *eventpb.SigVerData) *SigVerData {
 			return SigVerDataFromPb(t)
 		}),
 		Signatures: pb.Signatures,
 		Origin:     SigVerOriginFromPb(pb.Origin),
-		NodeIds: types7.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
+		NodeIds: types8.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
 			return (types.NodeID)(t)
 		}),
 	}
@@ -1078,12 +1099,12 @@ func VerifyNodeSigsFromPb(pb *eventpb.VerifyNodeSigs) *VerifyNodeSigs {
 
 func (m *VerifyNodeSigs) Pb() *eventpb.VerifyNodeSigs {
 	return &eventpb.VerifyNodeSigs{
-		Data: types7.ConvertSlice(m.Data, func(t *SigVerData) *eventpb.SigVerData {
+		Data: types8.ConvertSlice(m.Data, func(t *SigVerData) *eventpb.SigVerData {
 			return (t).Pb()
 		}),
 		Signatures: m.Signatures,
 		Origin:     (m.Origin).Pb(),
-		NodeIds: types7.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
+		NodeIds: types8.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
 			return (string)(t)
 		}),
 	}
@@ -1104,12 +1125,12 @@ type NodeSigsVerified struct {
 func NodeSigsVerifiedFromPb(pb *eventpb.NodeSigsVerified) *NodeSigsVerified {
 	return &NodeSigsVerified{
 		Origin: SigVerOriginFromPb(pb.Origin),
-		NodeIds: types7.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
+		NodeIds: types8.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
 			return (types.NodeID)(t)
 		}),
 		Valid: pb.Valid,
-		Errors: types7.ConvertSlice(pb.Errors, func(t string) error {
-			return types7.StringToError(t)
+		Errors: types8.ConvertSlice(pb.Errors, func(t string) error {
+			return types8.StringToError(t)
 		}),
 		AllOk: pb.AllOk,
 	}
@@ -1118,12 +1139,12 @@ func NodeSigsVerifiedFromPb(pb *eventpb.NodeSigsVerified) *NodeSigsVerified {
 func (m *NodeSigsVerified) Pb() *eventpb.NodeSigsVerified {
 	return &eventpb.NodeSigsVerified{
 		Origin: (m.Origin).Pb(),
-		NodeIds: types7.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
+		NodeIds: types8.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
 			return (string)(t)
 		}),
 		Valid: m.Valid,
-		Errors: types7.ConvertSlice(m.Errors, func(t error) string {
-			return types7.ErrorToString(t)
+		Errors: types8.ConvertSlice(m.Errors, func(t error) string {
+			return types8.ErrorToString(t)
 		}),
 		AllOk: m.AllOk,
 	}
@@ -1152,11 +1173,11 @@ type SigVerOrigin_TypeWrapper[T any] interface {
 func SigVerOrigin_TypeFromPb(pb eventpb.SigVerOrigin_Type) SigVerOrigin_Type {
 	switch pb := pb.(type) {
 	case *eventpb.SigVerOrigin_ContextStore:
-		return &SigVerOrigin_ContextStore{ContextStore: types8.OriginFromPb(pb.ContextStore)}
+		return &SigVerOrigin_ContextStore{ContextStore: types9.OriginFromPb(pb.ContextStore)}
 	case *eventpb.SigVerOrigin_Iss:
 		return &SigVerOrigin_Iss{Iss: pb.Iss}
 	case *eventpb.SigVerOrigin_Dsl:
-		return &SigVerOrigin_Dsl{Dsl: types9.OriginFromPb(pb.Dsl)}
+		return &SigVerOrigin_Dsl{Dsl: types10.OriginFromPb(pb.Dsl)}
 	case *eventpb.SigVerOrigin_Checkpoint:
 		return &SigVerOrigin_Checkpoint{Checkpoint: pb.Checkpoint}
 	case *eventpb.SigVerOrigin_Sb:
@@ -1166,12 +1187,12 @@ func SigVerOrigin_TypeFromPb(pb eventpb.SigVerOrigin_Type) SigVerOrigin_Type {
 }
 
 type SigVerOrigin_ContextStore struct {
-	ContextStore *types8.Origin
+	ContextStore *types9.Origin
 }
 
 func (*SigVerOrigin_ContextStore) isSigVerOrigin_Type() {}
 
-func (w *SigVerOrigin_ContextStore) Unwrap() *types8.Origin {
+func (w *SigVerOrigin_ContextStore) Unwrap() *types9.Origin {
 	return w.ContextStore
 }
 
@@ -1202,12 +1223,12 @@ func (*SigVerOrigin_Iss) MirReflect() mirreflect.Type {
 }
 
 type SigVerOrigin_Dsl struct {
-	Dsl *types9.Origin
+	Dsl *types10.Origin
 }
 
 func (*SigVerOrigin_Dsl) isSigVerOrigin_Type() {}
 
-func (w *SigVerOrigin_Dsl) Unwrap() *types9.Origin {
+func (w *SigVerOrigin_Dsl) Unwrap() *types10.Origin {
 	return w.Dsl
 }
 
@@ -1274,14 +1295,14 @@ func (*SigVerOrigin) MirReflect() mirreflect.Type {
 }
 
 type SendMessage struct {
-	Msg          *types10.Message
+	Msg          *types11.Message
 	Destinations []types.NodeID
 }
 
 func SendMessageFromPb(pb *eventpb.SendMessage) *SendMessage {
 	return &SendMessage{
-		Msg: types10.MessageFromPb(pb.Msg),
-		Destinations: types7.ConvertSlice(pb.Destinations, func(t string) types.NodeID {
+		Msg: types11.MessageFromPb(pb.Msg),
+		Destinations: types8.ConvertSlice(pb.Destinations, func(t string) types.NodeID {
 			return (types.NodeID)(t)
 		}),
 	}
@@ -1290,7 +1311,7 @@ func SendMessageFromPb(pb *eventpb.SendMessage) *SendMessage {
 func (m *SendMessage) Pb() *eventpb.SendMessage {
 	return &eventpb.SendMessage{
 		Msg: (m.Msg).Pb(),
-		Destinations: types7.ConvertSlice(m.Destinations, func(t types.NodeID) string {
+		Destinations: types8.ConvertSlice(m.Destinations, func(t types.NodeID) string {
 			return (string)(t)
 		}),
 	}
@@ -1302,13 +1323,13 @@ func (*SendMessage) MirReflect() mirreflect.Type {
 
 type MessageReceived struct {
 	From types.NodeID
-	Msg  *types10.Message
+	Msg  *types11.Message
 }
 
 func MessageReceivedFromPb(pb *eventpb.MessageReceived) *MessageReceived {
 	return &MessageReceived{
 		From: (types.NodeID)(pb.From),
-		Msg:  types10.MessageFromPb(pb.Msg),
+		Msg:  types11.MessageFromPb(pb.Msg),
 	}
 }
 
@@ -1321,4 +1342,81 @@ func (m *MessageReceived) Pb() *eventpb.MessageReceived {
 
 func (*MessageReceived) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.MessageReceived]()}
+}
+
+type TimerDelay struct {
+	Events []*Event
+	Delay  types.TimeDuration
+}
+
+func TimerDelayFromPb(pb *eventpb.TimerDelay) *TimerDelay {
+	return &TimerDelay{
+		Events: types8.ConvertSlice(pb.Events, func(t *eventpb.Event) *Event {
+			return EventFromPb(t)
+		}),
+		Delay: (types.TimeDuration)(pb.Delay),
+	}
+}
+
+func (m *TimerDelay) Pb() *eventpb.TimerDelay {
+	return &eventpb.TimerDelay{
+		Events: types8.ConvertSlice(m.Events, func(t *Event) *eventpb.Event {
+			return (t).Pb()
+		}),
+		Delay: (uint64)(m.Delay),
+	}
+}
+
+func (*TimerDelay) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.TimerDelay]()}
+}
+
+type TimerRepeat struct {
+	Events         []*Event
+	Delay          types.TimeDuration
+	RetentionIndex types.RetentionIndex
+}
+
+func TimerRepeatFromPb(pb *eventpb.TimerRepeat) *TimerRepeat {
+	return &TimerRepeat{
+		Events: types8.ConvertSlice(pb.Events, func(t *eventpb.Event) *Event {
+			return EventFromPb(t)
+		}),
+		Delay:          (types.TimeDuration)(pb.Delay),
+		RetentionIndex: (types.RetentionIndex)(pb.RetentionIndex),
+	}
+}
+
+func (m *TimerRepeat) Pb() *eventpb.TimerRepeat {
+	return &eventpb.TimerRepeat{
+		Events: types8.ConvertSlice(m.Events, func(t *Event) *eventpb.Event {
+			return (t).Pb()
+		}),
+		Delay:          (uint64)(m.Delay),
+		RetentionIndex: (uint64)(m.RetentionIndex),
+	}
+}
+
+func (*TimerRepeat) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.TimerRepeat]()}
+}
+
+type TimerGarbageCollect struct {
+	RetentionIndex types.RetentionIndex
+}
+
+func TimerGarbageCollectFromPb(pb *eventpb.TimerGarbageCollect) *TimerGarbageCollect {
+	return &TimerGarbageCollect{
+		RetentionIndex: (types.RetentionIndex)(pb.RetentionIndex),
+	}
+}
+
+func (m *TimerGarbageCollect) Pb() *eventpb.TimerGarbageCollect {
+	return &eventpb.TimerGarbageCollect{
+		RetentionIndex: (uint64)(m.RetentionIndex),
+	}
+}
+
+func (*TimerGarbageCollect) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.TimerGarbageCollect]()}
 }

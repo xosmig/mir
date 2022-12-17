@@ -66,3 +66,21 @@ func UponMessageReceived(m dsl.Module, handler func(from types1.NodeID, msg *typ
 		return handler(ev.From, ev.Msg)
 	})
 }
+
+func UponTimerDelay(m dsl.Module, handler func(events []*types.Event, delay types1.TimeDuration) error) {
+	dsl.UponMirEvent[*types.Event_TimerDelay](m, func(ev *types.TimerDelay) error {
+		return handler(ev.Events, ev.Delay)
+	})
+}
+
+func UponTimerRepeat(m dsl.Module, handler func(events []*types.Event, delay types1.TimeDuration, retentionIndex types1.RetentionIndex) error) {
+	dsl.UponMirEvent[*types.Event_TimerRepeat](m, func(ev *types.TimerRepeat) error {
+		return handler(ev.Events, ev.Delay, ev.RetentionIndex)
+	})
+}
+
+func UponTimerGarbageCollect(m dsl.Module, handler func(retentionIndex types1.RetentionIndex) error) {
+	dsl.UponMirEvent[*types.Event_TimerGarbageCollect](m, func(ev *types.TimerGarbageCollect) error {
+		return handler(ev.RetentionIndex)
+	})
+}

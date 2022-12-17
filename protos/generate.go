@@ -36,6 +36,7 @@ package protos
 //go:generate protoc-events batchfetcherpb/batchfetcherpb.proto
 //go:generate protoc-events threshcryptopb/threshcryptopb.proto
 //go:generate protoc-events pingpongpb/pingpongpb.proto
+//go:generate protoc-events dslpingpongpb/dslpingpongpb.proto
 //go:generate protoc-events checkpointpb/checkpointpb.proto
 //go:generate protoc-events ordererspb/ordererspb.proto
 
@@ -55,6 +56,7 @@ package protos
 //go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb"
 //go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/threshcryptopb"
 //go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/mempoolpb"
+//go:generate std-gen "github.com/filecoin-project/mir/pkg/pb/dslpingpongpb"
 
 // Generate other things.
 //go:generate protoc --proto_path=. --go_out=:../pkg/ --go_opt=paths=source_relative simplewal/simplewal.proto

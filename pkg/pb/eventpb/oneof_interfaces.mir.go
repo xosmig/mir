@@ -8,6 +8,7 @@ import (
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
 	dslpb "github.com/filecoin-project/mir/pkg/pb/dslpb"
+	dslpingpongpb "github.com/filecoin-project/mir/pkg/pb/dslpingpongpb"
 	factorymodulepb "github.com/filecoin-project/mir/pkg/pb/factorymodulepb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	mempoolpb "github.com/filecoin-project/mir/pkg/pb/mempoolpb"
@@ -174,6 +175,10 @@ func (w *Event_Checkpoint) Unwrap() *checkpointpb.Event {
 
 func (w *Event_SbEvent) Unwrap() *ordererspb.SBInstanceEvent {
 	return w.SbEvent
+}
+
+func (w *Event_Dslpingpong) Unwrap() *dslpingpongpb.Event {
+	return w.Dslpingpong
 }
 
 func (w *Event_TestingString) Unwrap() *wrapperspb.StringValue {
